@@ -12,17 +12,18 @@ export async function POST(req: NextRequest) {
 
   const { messages, tripId, contextItemId } = await req.json()
 
+  // Load trip context
   let itinerary = null
   let contextItem = null
-  let tripDestination: string | null = null
+  let trip: { destination: string; country: string; vibes: string[]; budget: string; travelers: number } | null = null
 
   if (tripId) {
-    const [{ data: items }, { data: trip }] = await Promise.all([
+    const [{ data: items }, { data: tripData }] = await Promise.all([
       supabase.from('itinerary_items').select('*').eq('trip_id', tripId).order('position'),
-      supabase.from('trips').select('destination, country').eq('id', tripId).single(),
+      supabase.from('trips').select('destination, country, vibes, budget, travelers').eq('id', tripId).single(),
     ])
     itinerary = items
-    if (trip) tripDestination = `${trip.destination}, ${trip.country}`
+    trip = tripData
   }
 
   if (contextItemId) {
@@ -34,8 +35,38 @@ export async function POST(req: NextRequest) {
     contextItem = data
   }
 
+  // Load chat history for session continuity (Issue 5)
+  let fullMessages = messages
+  if (tripId) {
+    const { data: history } = await supabase
+      .from('chat_messages')
+      .select('role, content')
+      .eq('trip_id', tripId)
+      .order('created_at', { ascending: true })
+      .limit(20)
+
+    if (history?.length) {
+      // Deduplicate: history from DB + current messages from frontend
+      const historySet = new Set(history.map((m: { role: string; content: string }) => `${m.role}:${m.content}`))
+      const newMessages = messages.filter((m: { role: string; content: string }) => !historySet.has(`${m.role}:${m.content}`))
+      fullMessages = [
+        ...history.map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        ...newMessages,
+      ]
+    }
+  }
+
   try {
-    const response = await chatWithAgent(messages, itinerary ?? undefined, contextItem, tripDestination ?? undefined)
+    const response = await chatWithAgent(fullMessages, {
+      tripId: tripId || '',
+      destination: trip?.destination || '',
+      country: trip?.country || '',
+      vibes: trip?.vibes || [],
+      budget: trip?.budget || 'mid',
+      travelers: trip?.travelers || 2,
+      itinerary: itinerary ?? undefined,
+      contextItem,
+    })
 
     // Save messages to DB
     if (tripId && messages.length > 0) {
@@ -59,15 +90,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const toolCall = response.toolCalls[0] as { function: { name: string; arguments: string } } | undefined
-
     return NextResponse.json({
       text: response.text,
-      toolUse: toolCall ? {
-        name: toolCall.function.name,
-        input: JSON.parse(toolCall.function.arguments),
-      } : null,
-      finishReason: response.finishReason,
+      actions: response.actions,
+      toolsUsed: response.toolsUsed,
     })
   } catch (error) {
     console.error('AI chat error:', error)

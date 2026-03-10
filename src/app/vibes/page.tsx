@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NavBar from '@/app/NavBar'
@@ -19,6 +19,14 @@ const VIBES = [
 ]
 
 export default function VibesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#08080c]" />}>
+      <VibesContent />
+    </Suspense>
+  )
+}
+
+function VibesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selected, setSelected] = useState<string[]>([])
@@ -27,6 +35,8 @@ export default function VibesPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [origin, setOrigin] = useState('')
+  const [occasion, setOccasion] = useState('')
+  const [directDest, setDirectDest] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -53,13 +63,21 @@ export default function VibesPage() {
     sessionStorage.setItem('drift_vibes', JSON.stringify({
       vibes: selected,
       budget: budget <= 2000 ? 'budget' : budget <= 4000 ? 'mid' : 'luxury',
+      budgetAmount: budget,
       travelers,
       startDate,
       endDate,
       origin: origin || 'Delhi',
+      occasion: occasion || undefined,
+      directDestination: directDest || undefined,
     }))
 
-    router.push('/destinations')
+    if (directDest) {
+      // Skip destination selection — go straight to generation
+      router.push(`/destinations?direct=${encodeURIComponent(directDest)}`)
+    } else {
+      router.push('/destinations')
+    }
   }
 
   return (
@@ -152,6 +170,38 @@ export default function VibesPage() {
               <button onClick={() => setTravelers(travelers + 1)} className="w-[34px] h-[34px] rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] text-[#f0efe8] text-[15px] flex items-center justify-center hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all max-md:w-10 max-md:h-10 max-md:text-base">+</button>
             </div>
           </div>
+        </div>
+
+        {/* Occasion */}
+        <div className="mb-8">
+          <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">What&apos;s the occasion?</h3>
+          <div className="flex flex-wrap gap-2">
+            {['Just exploring', 'Honeymoon', 'Anniversary', 'Birthday', 'Girls/Guys Trip', 'Family', 'Weekend Getaway'].map(o => (
+              <button
+                key={o}
+                onClick={() => setOccasion(occasion === o ? '' : o)}
+                className={`px-3.5 py-1.5 rounded-full text-xs border transition-all ${
+                  occasion === o
+                    ? 'bg-[rgba(200,164,78,0.15)] border-[rgba(200,164,78,0.3)] text-[#c8a44e]'
+                    : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[#7a7a85] hover:border-[rgba(255,255,255,0.12)]'
+                }`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* I know where I'm going */}
+        <div className="mb-8">
+          <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">Already know your destination?</h3>
+          <input
+            type="text"
+            value={directDest}
+            onChange={e => setDirectDest(e.target.value)}
+            placeholder="e.g. Bali, Dubai, Goa — leave empty to get suggestions"
+            className="w-full max-w-[360px] px-4 py-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all placeholder-[#4a4a55]"
+          />
         </div>
 
         {/* CTA */}

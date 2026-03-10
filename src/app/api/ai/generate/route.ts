@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateItinerary, suggestDestinations } from '@/lib/ai-agent'
+import { generateItinerary } from '@/lib/ai-agent'
 import { createServerClient } from '@/lib/supabase'
-import { getDestinationImage, getItemImage, resetImageCounter } from '@/lib/images'
+import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
 import { searchFlights, flightToItineraryItem, cityToIATA } from '@/lib/amadeus'
 import { findCatalogDestination, getCatalogData, templateToItineraryItems } from '@/lib/catalog'
 
@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+  const reqStart = Date.now()
+  console.log(`\n[Generate] Request: type=${body.type}, destination=${body.destination || '-'}, vibes=${(body.vibes || []).join(',')}`)
 
   try {
     if (body.type === 'destinations') {
@@ -24,10 +26,13 @@ export async function POST(req: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
       )
-      const { data: catalogDests } = await adminDb
+      const { data: catalogDests, error: catErr } = await adminDb
         .from('catalog_destinations')
         .select('city, country, vibes, description, cover_image, avg_budget_per_day')
         .eq('status', 'active')
+
+      if (catErr) console.error(`[Generate] Catalog query error: ${catErr.message}`)
+      console.log(`[Generate] Found ${catalogDests?.length || 0} active catalog destinations`)
 
       // Score catalog destinations by vibe overlap
       const userVibes = body.vibes || []
@@ -52,45 +57,18 @@ export async function POST(req: NextRequest) {
         .filter(d => d.match > 20)
         .sort((a, b) => b.match - a.match)
 
-      // If catalog covers enough, skip LLM entirely
-      if (catalogMatches.length >= 3) {
-        console.log(`[Destinations] Serving ${catalogMatches.length} catalog destinations (no LLM)`)
+      console.log(`[Generate] Catalog matches (score>20): ${catalogMatches.map(d => `${d.name}(${d.match}%)`).join(', ') || 'none'}`)
+
+      // Catalog-only — no LLM suggestions, no hardcoded fallbacks
+      const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
+      if (catalogMatches.length > 0) {
+        console.log(`[Generate] Serving ${catalogMatches.length} catalog destinations in ${elapsed}s`)
         return NextResponse.json({ destinations: catalogMatches.slice(0, 4), source: 'catalog' })
       }
 
-      // Otherwise, use LLM to fill remaining slots
-      const slotsNeeded = 4 - catalogMatches.length
-      try {
-        const llmDests = await suggestDestinations(userVibes, body.budget, body.origin || 'Delhi')
-        // Exclude cities already in catalog matches
-        const catalogCities = new Set(catalogMatches.map(d => d.name.toLowerCase()))
-        const filtered = llmDests
-          .filter((d: { name: string }) => !catalogCities.has(d.name.toLowerCase()))
-          .slice(0, slotsNeeded)
-          .map((d: { name: string; country: string }) => ({
-            ...d,
-            image_url: getDestinationImage(d.name),
-            from_catalog: false,
-          }))
-
-        const combined = [...catalogMatches, ...filtered].slice(0, 4)
-        return NextResponse.json({ destinations: combined, source: 'mixed' })
-      } catch (llmError) {
-        // LLM failed (rate limit etc) — serve catalog only
-        console.error('LLM destination suggestion failed:', llmError)
-        if (catalogMatches.length > 0) {
-          return NextResponse.json({ destinations: catalogMatches.slice(0, 4), source: 'catalog' })
-        }
-        // Complete fallback
-        return NextResponse.json({
-          destinations: [
-            { name: 'Bali', country: 'Indonesia', match: 92, price: '$2,200', tags: ['Temples', 'Surf', 'Rice Terraces'], description: 'Spiritual island paradise with world-class surfing and ancient temples.', image_url: getDestinationImage('Bali'), from_catalog: false },
-            { name: 'Phuket', country: 'Thailand', match: 88, price: '$1,800', tags: ['Beach', 'Nightlife', 'Islands'], description: 'Thailand\'s largest island — stunning beaches, vibrant nightlife, and island-hopping paradise.', image_url: getDestinationImage('Phuket'), from_catalog: false },
-            { name: 'Dubai', country: 'UAE', match: 85, price: '$3,500', tags: ['Luxury', 'Desert', 'Skyline'], description: 'Where futuristic ambition meets Arabian mystique.', image_url: getDestinationImage('Dubai'), from_catalog: false },
-          ],
-          source: 'fallback',
-        })
-      }
+      // No catalog destinations available
+      console.log(`[Generate] No catalog destinations available (${elapsed}s)`)
+      return NextResponse.json({ destinations: [], source: 'catalog' })
     }
 
     if (body.type === 'itinerary') {
@@ -106,6 +84,11 @@ export async function POST(req: NextRequest) {
 
       const useCatalog = catalogData?.template && catalogData.template.items.length > 0
       console.log(`[Generate] ${body.destination}: ${useCatalog ? 'CATALOG (real data)' : 'LLM (fallback)'}`)
+      if (catalogData) {
+        console.log(`[Generate] Catalog data: ${catalogData.hotels.length} hotels, ${catalogData.activities.length} activities, ${catalogData.restaurants.length} restaurants, template: ${catalogData.template ? `${catalogData.template.items.length} items` : 'NONE'}`)
+      } else {
+        console.log(`[Generate] No catalog data found for "${body.destination}" — falling back to LLM`)
+      }
 
       // ─── Fetch flights (always real when possible) ────────────
       const canSearchFlights = cityToIATA(origin) && cityToIATA(body.destination)
@@ -141,7 +124,7 @@ export async function POST(req: NextRequest) {
       if (useCatalog) {
         // Use pre-built template with real catalog data — no LLM needed
         const [outboundFlights, returnFlights] = await Promise.all(flightPromises)
-        items = templateToItineraryItems(catalogData!, body.start_date)
+        items = templateToItineraryItems(catalogData!, body.start_date, body.vibes)
 
         // Merge flights
         items = mergeFlights(items, outboundFlights, returnFlights)
@@ -156,7 +139,9 @@ export async function POST(req: NextRequest) {
             endDate: body.end_date,
             travelers,
             budget,
+            budgetAmount: body.budgetAmount || undefined,
             originCity: origin,
+            occasion: body.occasion || undefined,
           }),
           ...flightPromises,
         ])
@@ -192,7 +177,11 @@ export async function POST(req: NextRequest) {
         .select()
         .single()
 
-      if (tripError) return NextResponse.json({ error: tripError.message }, { status: 500 })
+      if (tripError) {
+        console.error(`[Generate] Trip creation failed: ${tripError.message}`)
+        return NextResponse.json({ error: tripError.message }, { status: 500 })
+      }
+      console.log(`[Generate] Trip created: ${trip.id}`)
 
       // ─── Apply images and insert ──────────────────────────────
       resetImageCounter()
@@ -201,7 +190,7 @@ export async function POST(req: NextRequest) {
         // Prefer catalog image, fall back to curated Unsplash
         const hasRealImage = item.image_url && !item.image_url.startsWith('https://images.unsplash')
         const imageUrl = hasRealImage
-          ? item.image_url
+          ? upsizeGoogleImage(item.image_url)
           : getItemImage(cat, item.name, body.destination)
 
         return {
@@ -223,16 +212,25 @@ export async function POST(req: NextRequest) {
         .from('itinerary_items')
         .insert(itemsToInsert)
 
-      if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
+      if (itemsError) {
+        console.error(`[Generate] Items insert failed: ${itemsError.message}`)
+        return NextResponse.json({ error: itemsError.message }, { status: 500 })
+      }
 
       const dataSource = useCatalog ? 'catalog' : 'ai'
+      const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
+      console.log(`[Generate] SUCCESS — trip=${trip.id}, items=${items.length}, source=${dataSource}, time=${elapsed}s`)
+      const categoryCounts = items.reduce((acc, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc }, {} as Record<string, number>)
+      console.log(`[Generate] Item breakdown: ${Object.entries(categoryCounts).map(([k, v]) => `${k}:${v}`).join(', ')}`)
       return NextResponse.json({ trip, itemCount: items.length, dataSource })
     }
 
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error)
-    console.error('Generation error:', msg)
+    const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
+    console.error(`[Generate] FAILED after ${elapsed}s: ${msg}`)
+    if (error instanceof Error && error.stack) console.error(`[Generate] Stack: ${error.stack}`)
     return NextResponse.json({ error: `Generation failed: ${msg}` }, { status: 500 })
   }
 }

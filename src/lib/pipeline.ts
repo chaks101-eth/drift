@@ -19,11 +19,42 @@ import {
   type PlaceReviewSummary,
 } from './serpapi'
 
-const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: 'https://api.groq.com/openai/v1',
-})
-const MODEL = 'llama-3.3-70b-versatile'
+// LLM Provider: Gemini (primary) → Claude (fallback) → Groq (last resort)
+// Lazy-init to avoid crash at build time when env vars aren't available
+let _llmClient: OpenAI | null = null
+let _llmProvider = 'unknown'
+function getLlmClient() {
+  if (!_llmClient) {
+    if (process.env.GEMINI_API_KEY) {
+      _llmProvider = 'Gemini'
+      _llmClient = new OpenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+      })
+    } else if (process.env.ANTHROPIC_API_KEY) {
+      _llmProvider = 'Anthropic'
+      _llmClient = new OpenAI({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        baseURL: 'https://api.anthropic.com/v1/',
+      })
+    } else {
+      _llmProvider = 'Groq'
+      _llmClient = new OpenAI({
+        apiKey: process.env.GROQ_API_KEY,
+        baseURL: 'https://api.groq.com/openai/v1',
+      })
+    }
+  }
+  return _llmClient
+}
+function getModel() {
+  if (process.env.GEMINI_API_KEY) return 'gemini-2.5-flash'
+  if (process.env.ANTHROPIC_API_KEY) return 'claude-sonnet-4-20250514'
+  return process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+}
+const MODEL = getModel()
+
+console.log(`[Pipeline] LLM provider: ${process.env.GEMINI_API_KEY ? 'Gemini' : process.env.ANTHROPIC_API_KEY ? 'Anthropic' : 'Groq'}, model: ${MODEL}`)
 
 const AMADEUS_BASE = 'https://test.api.amadeus.com'
 
@@ -109,8 +140,10 @@ let cachedToken: { access_token: string; expires_at: number } | null = null
 
 async function getAmadeusToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expires_at) {
+    console.log(`[Amadeus] Using cached token (expires in ${Math.round((cachedToken.expires_at - Date.now()) / 1000)}s)`)
     return cachedToken.access_token
   }
+  console.log(`[Amadeus] Authenticating...`)
   const res = await fetch(`${AMADEUS_BASE}/v1/security/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -120,12 +153,17 @@ async function getAmadeusToken(): Promise<string> {
       client_secret: process.env.AMADEUS_API_SECRET!,
     }),
   })
-  if (!res.ok) throw new Error(`Amadeus auth failed: ${await res.text()}`)
+  if (!res.ok) {
+    const errText = await res.text()
+    console.error(`[Amadeus] Auth failed (${res.status}): ${errText}`)
+    throw new Error(`Amadeus auth failed: ${errText}`)
+  }
   const data = await res.json()
   cachedToken = {
     access_token: data.access_token,
     expires_at: Date.now() + (data.expires_in - 60) * 1000,
   }
+  console.log(`[Amadeus] Authenticated OK (token valid ${data.expires_in}s)`)
   return cachedToken.access_token
 }
 
@@ -190,19 +228,33 @@ async function fetchAmadeusActivities(lat: number, lng: number): Promise<Array<{
 // ─── LLM Helper ──────────────────────────────────────────────
 
 async function llmGenerate(prompt: string): Promise<string> {
-  const res = await groq.chat.completions.create({
-    model: MODEL,
-    max_tokens: 8192,
-    messages: [
-      {
-        role: 'system',
-        content: `You are a travel data enrichment engine. Return ONLY valid JSON. No markdown, no explanation. Be specific with real place names, realistic prices, and vivid descriptions. Write in a warm, editorial travel magazine voice.`,
-      },
-      { role: 'user', content: prompt },
-    ],
-  })
-  const text = res.choices[0].message.content || '[]'
-  return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  const llmStart = Date.now()
+  const promptPreview = prompt.slice(0, 100).replace(/\n/g, ' ')
+  console.log(`[LLM] Calling ${MODEL} — prompt: "${promptPreview}..."`)
+  try {
+    const res = await getLlmClient().chat.completions.create({
+      model: MODEL,
+      max_tokens: 8192,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a travel data enrichment engine. Return ONLY valid JSON. No markdown, no explanation. Be specific with real place names, realistic prices, and vivid descriptions. Write in a warm, editorial travel magazine voice.`,
+        },
+        { role: 'user', content: prompt },
+      ],
+    })
+    const text = res.choices[0].message.content || '[]'
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+    const usage = res.usage
+    console.log(`[LLM] Response in ${elapsed}s — ${cleaned.length} chars, tokens: ${usage?.total_tokens || '?'} (prompt: ${usage?.prompt_tokens || '?'}, completion: ${usage?.completion_tokens || '?'})`)
+    return cleaned
+  } catch (error) {
+    const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error(`[LLM] FAILED after ${elapsed}s: ${msg}`)
+    throw error
+  }
 }
 
 // ─── Step 1: Create/Update Destination ───────────────────────
@@ -363,7 +415,15 @@ Return JSON array:
   "accessibility": ["Wheelchair accessible", "Elevator"]
 }]`)
 
-  const enriched = JSON.parse(raw)
+  let enriched: Record<string, unknown>[]
+  try {
+    enriched = JSON.parse(raw)
+    console.log(`[Pipeline] Hotels: LLM returned ${enriched.length} enriched hotels`)
+  } catch (parseErr) {
+    console.error(`[Pipeline] Hotels: Failed to parse LLM JSON response`)
+    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
+    throw new Error(`Hotels LLM JSON parse failed: ${parseErr}`)
+  }
 
   await db.from('catalog_hotels').delete().eq('destination_id', ctx.destinationId)
 
@@ -442,8 +502,14 @@ Return JSON array:
     }
   })
 
+  console.log(`[Pipeline] Hotels: inserting ${rows.length} rows — sources: ${rows.map(r => r.source).join(', ')}`)
   const { error } = await db.from('catalog_hotels').insert(rows)
-  if (error) throw new Error(`Hotels insert failed: ${error.message}`)
+  if (error) {
+    console.error(`[Pipeline] Hotels insert failed: ${error.message}`)
+    console.error(`[Pipeline] Hotels insert details: ${JSON.stringify(error)}`)
+    throw new Error(`Hotels insert failed: ${error.message}`)
+  }
+  console.log(`[Pipeline] Hotels: ${rows.length} inserted OK`)
 
   return rows.length
 }
@@ -515,7 +581,15 @@ Return JSON array:
   "is_from_api": true
 }]`)
 
-  const enriched = JSON.parse(raw)
+  let enriched: Record<string, unknown>[]
+  try {
+    enriched = JSON.parse(raw)
+    console.log(`[Pipeline] Activities: LLM returned ${enriched.length} enriched activities`)
+  } catch (parseErr) {
+    console.error(`[Pipeline] Activities: Failed to parse LLM JSON response`)
+    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
+    throw new Error(`Activities LLM JSON parse failed: ${parseErr}`)
+  }
 
   await db.from('catalog_activities').delete().eq('destination_id', ctx.destinationId)
 
@@ -606,8 +680,14 @@ Return JSON array:
     }
   })
 
+  console.log(`[Pipeline] Activities: inserting ${rows.length} rows — sources: ${rows.map(r => r.source).join(', ')}`)
   const { error } = await db.from('catalog_activities').insert(rows)
-  if (error) throw new Error(`Activities insert failed: ${error.message}`)
+  if (error) {
+    console.error(`[Pipeline] Activities insert failed: ${error.message}`)
+    console.error(`[Pipeline] Activities insert details: ${JSON.stringify(error)}`)
+    throw new Error(`Activities insert failed: ${error.message}`)
+  }
+  console.log(`[Pipeline] Activities: ${rows.length} inserted OK`)
 
   return rows.length
 }
@@ -673,7 +753,15 @@ Return JSON array:
   "dietary": ["Vegetarian options available", "Halal", "Gluten-free menu"]
 }]`)
 
-  const enriched = JSON.parse(raw)
+  let enriched: Record<string, unknown>[]
+  try {
+    enriched = JSON.parse(raw)
+    console.log(`[Pipeline] Restaurants: LLM returned ${enriched.length} enriched restaurants`)
+  } catch (parseErr) {
+    console.error(`[Pipeline] Restaurants: Failed to parse LLM JSON response`)
+    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
+    throw new Error(`Restaurants LLM JSON parse failed: ${parseErr}`)
+  }
 
   await db.from('catalog_restaurants').delete().eq('destination_id', ctx.destinationId)
 
@@ -733,8 +821,14 @@ Return JSON array:
     }
   })
 
+  console.log(`[Pipeline] Restaurants: inserting ${rows.length} rows — sources: ${rows.map(r => r.source).join(', ')}`)
   const { error } = await db.from('catalog_restaurants').insert(rows)
-  if (error) throw new Error(`Restaurants insert failed: ${error.message}`)
+  if (error) {
+    console.error(`[Pipeline] Restaurants insert failed: ${error.message}`)
+    console.error(`[Pipeline] Restaurants insert details: ${JSON.stringify(error)}`)
+    throw new Error(`Restaurants insert failed: ${error.message}`)
+  }
+  console.log(`[Pipeline] Restaurants: ${rows.length} inserted OK`)
 
   return rows.length
 }
@@ -797,7 +891,15 @@ IMPORTANT: Every non-day, non-transfer item MUST have metadata.reason (a short, 
 
 Start each day with a "day" separator (category: "day", name: "Day 1 — Theme").`)
 
-  const items = JSON.parse(raw)
+  let items: Record<string, unknown>[]
+  try {
+    items = JSON.parse(raw)
+    console.log(`[Pipeline] Template: LLM returned ${items.length} itinerary items`)
+  } catch (parseErr) {
+    console.error(`[Pipeline] Template: Failed to parse LLM JSON response`)
+    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
+    throw new Error(`Template LLM JSON parse failed: ${parseErr}`)
+  }
 
   await db.from('catalog_templates').delete().eq('destination_id', ctx.destinationId)
 
@@ -810,7 +912,11 @@ Start each day with a "day" separator (category: "day", name: "Day 1 — Theme")
     items,
   })
 
-  if (error) throw new Error(`Template insert failed: ${error.message}`)
+  if (error) {
+    console.error(`[Pipeline] Template insert failed: ${error.message}`)
+    throw new Error(`Template insert failed: ${error.message}`)
+  }
+  console.log(`[Pipeline] Template: ${items.length} items inserted OK`)
   return items.length
 }
 
@@ -818,6 +924,7 @@ Start each day with a "day" separator (category: "day", name: "Day 1 — Theme")
 
 async function stepEnrichDestination(ctx: PipelineContext) {
   const db = getAdminClient()
+  console.log(`[Pipeline] Enriching destination metadata for ${ctx.config.city}...`)
 
   const raw = await llmGenerate(`
 Write a compelling 2-3 sentence description of ${ctx.config.city}, ${ctx.config.country} as a travel destination.
@@ -826,9 +933,18 @@ Write in a warm, editorial tone. Make someone want to book immediately.
 Return JSON: {"description": "...", "avg_budget_per_day": {"budget": 50, "mid": 120, "luxury": 350}}
 Use realistic daily budget numbers in USD for this destination.`)
 
-  const enriched = JSON.parse(raw)
+  let enriched: Record<string, unknown>
+  try {
+    enriched = JSON.parse(raw)
+    console.log(`[Pipeline] Enrich: description="${(enriched.description as string)?.slice(0, 80)}..."`)
+    console.log(`[Pipeline] Enrich: avg_budget_per_day=${JSON.stringify(enriched.avg_budget_per_day)}`)
+  } catch (parseErr) {
+    console.error(`[Pipeline] Enrich: Failed to parse LLM JSON`)
+    console.error(`[Pipeline] Raw: ${raw.slice(0, 300)}`)
+    throw new Error(`Enrich LLM JSON parse failed: ${parseErr}`)
+  }
 
-  await db
+  const { error } = await db
     .from('catalog_destinations')
     .update({
       description: enriched.description,
@@ -836,6 +952,12 @@ Use realistic daily budget numbers in USD for this destination.`)
       status: 'active',
     })
     .eq('id', ctx.destinationId)
+
+  if (error) {
+    console.error(`[Pipeline] Enrich update failed: ${error.message}`)
+    throw new Error(`Enrich update failed: ${error.message}`)
+  }
+  console.log(`[Pipeline] Destination set to 'active' — pipeline complete for ${ctx.config.city}`)
 }
 
 // ─── Individual Step Runners (for dashboard) ────────────────
@@ -874,16 +996,26 @@ export async function runPipeline(config: DestinationConfig): Promise<{
   runId: string
   stats: Record<string, number>
 }> {
+  const pipelineStart = Date.now()
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(`[Pipeline] STARTING full pipeline for ${config.city}, ${config.country}`)
+  console.log(`[Pipeline] Vibes: ${config.vibes.join(', ')}`)
+  console.log(`${'='.repeat(60)}\n`)
+
   const db = getAdminClient()
   const destinationId = await stepCreateDestination(config)
+  console.log(`[Pipeline] Destination ID: ${destinationId}`)
 
-  const { data: run } = await db
+  const { data: run, error: runError } = await db
     .from('pipeline_runs')
     .insert({ destination_id: destinationId, status: 'running' })
     .select('id')
     .single()
 
+  if (runError) console.error(`[Pipeline] Failed to create pipeline_run: ${runError.message}`)
+
   const runId = run?.id || 'unknown'
+  console.log(`[Pipeline] Run ID: ${runId}`)
   const ctx: PipelineContext = { config, destinationId, runId, steps: [] }
   const stats: Record<string, number> = {}
 
@@ -897,9 +1029,13 @@ export async function runPipeline(config: DestinationConfig): Promise<{
 
   try {
     for (const step of steps) {
+      const stepStart = Date.now()
+      console.log(`\n--- [Pipeline] Step: ${step.name.toUpperCase()} ---`)
       const result = await step.fn()
+      const elapsed = ((Date.now() - stepStart) / 1000).toFixed(1)
       ctx.steps.push(step.name)
       stats[step.name] = typeof result === 'number' ? result : 1
+      console.log(`[Pipeline] Step ${step.name} completed: ${stats[step.name]} items in ${elapsed}s`)
 
       await db
         .from('pipeline_runs')
@@ -907,12 +1043,22 @@ export async function runPipeline(config: DestinationConfig): Promise<{
         .eq('id', runId)
     }
 
+    const totalElapsed = ((Date.now() - pipelineStart) / 1000).toFixed(1)
     await db
       .from('pipeline_runs')
       .update({ status: 'completed', completed_at: new Date().toISOString(), stats })
       .eq('id', runId)
+
+    console.log(`\n${'='.repeat(60)}`)
+    console.log(`[Pipeline] COMPLETED in ${totalElapsed}s`)
+    console.log(`[Pipeline] Stats: ${JSON.stringify(stats)}`)
+    console.log(`${'='.repeat(60)}\n`)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
+    const totalElapsed = ((Date.now() - pipelineStart) / 1000).toFixed(1)
+    console.error(`\n[Pipeline] FAILED at step "${ctx.steps.length > 0 ? ctx.steps[ctx.steps.length - 1] : 'init'}" after ${totalElapsed}s`)
+    console.error(`[Pipeline] Error: ${msg}`)
+    if (error instanceof Error && error.stack) console.error(`[Pipeline] Stack: ${error.stack}`)
     await db
       .from('pipeline_runs')
       .update({ status: 'failed', error: msg, completed_at: new Date().toISOString(), stats })

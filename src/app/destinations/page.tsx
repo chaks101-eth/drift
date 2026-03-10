@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ITINERARY_MESSAGES } from '@/lib/loading-messages'
 import NavBar from '@/app/NavBar'
@@ -17,14 +17,23 @@ type Destination = {
 }
 
 export default function DestinationsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#08080c]" />}>
+      <DestinationsContent />
+    </Suspense>
+  )
+}
+
+function DestinationsContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [loadMsg, setLoadMsg] = useState(0)
   const [loadProgress, setLoadProgress] = useState(0)
   const [vibeData, setVibeData] = useState<{
-    vibes: string[]; budget: string; travelers: number; startDate: string; endDate: string; origin?: string
+    vibes: string[]; budget: string; budgetAmount?: number; travelers: number; startDate: string; endDate: string; origin?: string; occasion?: string
   } | null>(null)
 
   useEffect(() => {
@@ -33,8 +42,17 @@ export default function DestinationsPage() {
 
     const data = JSON.parse(stored)
     setVibeData(data)
+
+    // Direct destination — skip selection, generate immediately
+    const direct = searchParams.get('direct')
+    if (direct) {
+      selectDestinationDirect(data, direct)
+      return
+    }
+
     fetchDestinations(data)
-  }, [router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, searchParams])
 
   // Progressive loading messages during generation
   useEffect(() => {
@@ -68,11 +86,7 @@ export default function DestinationsPage() {
       const result = await res.json()
       setDestinations(result.destinations || [])
     } catch {
-      setDestinations([
-        { name: 'Bali', country: 'Indonesia', match: 97, price: '$2,200', tags: ['Temples', 'Rice Terraces', 'Surf'], image_url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', description: 'Spiritual island paradise with world-class surfing and ancient temples.' },
-        { name: 'Santorini', country: 'Greece', match: 93, price: '$2,800', tags: ['Sunsets', 'Wine', 'Blue Domes'], image_url: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=600&h=400&fit=crop', description: 'Iconic white-washed villages perched on volcanic cliffs.' },
-        { name: 'Tokyo', country: 'Japan', match: 89, price: '$3,100', tags: ['Ramen', 'Shibuya', 'Shrines'], image_url: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&h=400&fit=crop', description: 'Where ancient tradition meets neon-lit futurism.' },
-      ])
+      setDestinations([])
     }
     setLoading(false)
   }
@@ -102,7 +116,9 @@ export default function DestinationsPage() {
           end_date: vibeData.endDate || '2026-04-17',
           travelers: vibeData.travelers || 2,
           budget: vibeData.budget || 'mid',
+          budgetAmount: vibeData.budgetAmount || undefined,
           origin: vibeData.origin || 'Delhi',
+          occasion: vibeData.occasion || undefined,
         }),
       })
       const result = await res.json()
@@ -116,6 +132,52 @@ export default function DestinationsPage() {
     } catch (err) {
       console.error('Itinerary generation error:', err)
       setGenerating(false)
+    }
+  }
+
+  // Direct destination — skips destination picker entirely
+  async function selectDestinationDirect(data: typeof vibeData, destName: string) {
+    setGenerating(true)
+    setLoadMsg(0)
+    setLoadProgress(5)
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { router.push('/login'); return }
+
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          type: 'itinerary',
+          destination: destName,
+          country: '',
+          vibes: data?.vibes || [],
+          start_date: data?.startDate || '2026-04-10',
+          end_date: data?.endDate || '2026-04-17',
+          travelers: data?.travelers || 2,
+          budget: data?.budget || 'mid',
+          budgetAmount: data?.budgetAmount || undefined,
+          origin: data?.origin || 'Delhi',
+        }),
+      })
+      const result = await res.json()
+      if (result.trip) {
+        setLoadProgress(100)
+        setTimeout(() => router.push(`/trip/${result.trip.id}`), 400)
+      } else {
+        console.error('Generation failed:', result.error || result)
+        setGenerating(false)
+        // Fall back to showing destinations
+        if (data) fetchDestinations(data)
+      }
+    } catch (err) {
+      console.error('Direct generation error:', err)
+      setGenerating(false)
+      if (data) fetchDestinations(data)
     }
   }
 
@@ -164,6 +226,20 @@ export default function DestinationsPage() {
             </div>
             <div className="font-serif text-xl text-[#c8a44e]">Finding perfect matches...</div>
           </div>
+        ) : destinations.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-14 h-14 rounded-full bg-[rgba(200,164,78,0.08)] border border-[rgba(200,164,78,0.15)] flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+            </div>
+            <h2 className="font-serif text-xl text-[#f0efe8] mb-2">No destinations available yet</h2>
+            <p className="text-sm text-[#7a7a85] max-w-[320px] mx-auto mb-6">Our catalog is being built. Use the &quot;Already know your destination?&quot; field on the vibes page to go directly to any city.</p>
+            <button
+              onClick={() => router.push('/vibes')}
+              className="px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 transition-all"
+            >
+              Back to Vibes
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-3 gap-5 dest-grid-responsive">
             {destinations.map((d, i) => (
@@ -176,11 +252,26 @@ export default function DestinationsPage() {
                 <img src={d.image_url} alt={d.name} className="w-full h-[200px] object-cover block max-md:h-[180px]" />
                 <div className="p-[18px] max-md:p-3.5">
                   <div className="font-serif text-[22px] mb-0.5 text-[#f0efe8] max-md:text-xl">{d.name}</div>
-                  <div className="text-xs text-[#7a7a85] mb-2.5">{d.country}</div>
+                  <div className="text-xs text-[#7a7a85] mb-2">{d.country}</div>
+                  {d.description && (
+                    <p className="text-[11px] text-[#4a4a55] leading-relaxed mb-2.5 line-clamp-2">{d.description}</p>
+                  )}
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {d.tags.map(t => (
                       <span key={t} className="px-2.5 py-0.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-full text-[10px] text-[#7a7a85]">{t}</span>
                     ))}
+                  </div>
+                  {/* Match bar */}
+                  <div className="mb-3">
+                    <div className="h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700 ease-out"
+                        style={{
+                          width: `${d.match}%`,
+                          background: d.match >= 90 ? 'linear-gradient(90deg, #4ecdc4, #c8a44e)' : d.match >= 75 ? '#c8a44e' : '#f0a500',
+                        }}
+                      />
+                    </div>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <div className="text-xl font-light text-[#c8a44e] max-md:text-lg">

@@ -2,15 +2,26 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#08080c]" />}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isSurprise = searchParams.get('surprise') === '1'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -33,7 +44,14 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/vibes')
+    if (isSurprise) {
+      const allVibes = ['beach', 'culture', 'foodie', 'adventure', 'party', 'spiritual', 'romance', 'city', 'solo', 'winter']
+      const shuffled = allVibes.sort(() => Math.random() - 0.5)
+      const picked = shuffled.slice(0, 3)
+      router.push(`/vibes?surprise=${picked.join(',')}`)
+    } else {
+      router.push('/vibes')
+    }
   }
 
   async function handleGoogleLogin() {

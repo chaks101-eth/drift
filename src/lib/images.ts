@@ -151,3 +151,10 @@ function hashCode(s: string): number {
   }
   return hash
 }
+
+/** Upsize Google Maps thumbnail URLs to usable resolution */
+export function upsizeGoogleImage(url: string, w = 600, h = 400): string {
+  if (!url || !url.includes('googleusercontent.com')) return url
+  // Replace =wNNN-hNNN-k-no suffix with larger dimensions
+  return url.replace(/=w\d+-h\d+-k-no$/, `=w${w}-h${h}-k-no`)
+}

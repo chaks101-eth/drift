@@ -4,6 +4,7 @@
 // Used by itinerary generation to serve real data instead of LLM hallucinations.
 
 import { createClient } from '@supabase/supabase-js'
+import { upsizeGoogleImage } from '@/lib/images'
 
 function getClient() {
   return createClient(
@@ -108,28 +109,34 @@ export interface CatalogData {
 // ─── Lookup destination by city name ────────────────────────────
 
 export async function findCatalogDestination(city: string): Promise<CatalogDestination | null> {
+  console.log(`[Catalog] Looking up destination: "${city}"`)
   const db = getClient()
-  const { data } = await db
+  const { data, error } = await db
     .from('catalog_destinations')
     .select('*')
     .eq('status', 'active')
     .ilike('city', city)
     .single()
 
+  if (error && error.code !== 'PGRST116') {
+    console.error(`[Catalog] Lookup error: ${error.message} (code: ${error.code})`)
+  }
+  console.log(`[Catalog] Destination "${city}": ${data ? `FOUND (id=${data.id}, status=${data.status})` : 'NOT FOUND'}`)
   return data || null
 }
 
 // ─── Get full catalog data for a destination ────────────────────
 
 export async function getCatalogData(destinationId: string, vibes?: string[], budget?: string): Promise<CatalogData | null> {
+  console.log(`[Catalog] Loading full catalog for destination ${destinationId} (vibes=${vibes?.join(',')}, budget=${budget})`)
   const db = getClient()
 
   const [
-    { data: dest },
-    { data: hotels },
-    { data: activities },
-    { data: restaurants },
-    { data: templates },
+    { data: dest, error: destErr },
+    { data: hotels, error: hotelErr },
+    { data: activities, error: actErr },
+    { data: restaurants, error: restErr },
+    { data: templates, error: tmplErr },
   ] = await Promise.all([
     db.from('catalog_destinations').select('*').eq('id', destinationId).single(),
     db.from('catalog_hotels').select('*').eq('destination_id', destinationId),
@@ -137,6 +144,14 @@ export async function getCatalogData(destinationId: string, vibes?: string[], bu
     db.from('catalog_restaurants').select('*').eq('destination_id', destinationId),
     db.from('catalog_templates').select('*').eq('destination_id', destinationId),
   ])
+
+  if (destErr) console.error(`[Catalog] Destination query error: ${destErr.message}`)
+  if (hotelErr) console.error(`[Catalog] Hotels query error: ${hotelErr.message}`)
+  if (actErr) console.error(`[Catalog] Activities query error: ${actErr.message}`)
+  if (restErr) console.error(`[Catalog] Restaurants query error: ${restErr.message}`)
+  if (tmplErr) console.error(`[Catalog] Templates query error: ${tmplErr.message}`)
+
+  console.log(`[Catalog] Data loaded: dest=${dest ? 'yes' : 'NO'}, hotels=${hotels?.length || 0}, activities=${activities?.length || 0}, restaurants=${restaurants?.length || 0}, templates=${templates?.length || 0}`)
 
   if (!dest) return null
 
@@ -174,13 +189,39 @@ export async function getCatalogData(destinationId: string, vibes?: string[], bu
   }
 }
 
+// ─── Vibe Scoring ───────────────────────────────────────────────
+// Scores a catalog item against trip vibes using metadata.best_for, vibes, features
+
+function vibeScore(itemVibes: string[], tripVibes: string[]): number {
+  if (!tripVibes.length || !itemVibes.length) return 0
+  const lower = itemVibes.map(v => v.toLowerCase())
+  let score = 0
+  for (const tv of tripVibes) {
+    const tvl = tv.toLowerCase()
+    if (lower.some(iv => iv.includes(tvl) || tvl.includes(iv))) score++
+  }
+  return score
+}
+
+function getItemVibes(meta: Record<string, unknown> | null | undefined, fallbackVibes?: string[]): string[] {
+  if (!meta && !fallbackVibes) return []
+  const m = meta || {}
+  return [
+    ...((m.best_for as string[]) || []),
+    ...((m.features as string[]) || []),
+    ...(fallbackVibes || []),
+  ]
+}
+
 // ─── Convert template items to itinerary items format ───────────
 // Maps catalog template items into the same format the generate route expects,
 // enriching with real catalog data (images, booking links, metadata).
+// When tripVibes is provided, items and alternatives are ranked by vibe match.
 
 export function templateToItineraryItems(
   catalog: CatalogData,
   _startDate?: string,
+  tripVibes?: string[],
 ): Array<{
   category: string
   name: string
@@ -221,7 +262,7 @@ export function templateToItineraryItems(
     let catalogMeta: Record<string, unknown> = {}
 
     if (item.category === 'hotel' && hotel) {
-      imageUrl = hotel.image_url || ''
+      imageUrl = upsizeGoogleImage(hotel.image_url || '')
       bookingUrl = hotel.booking_url
       source = hotel.source
       const hm = (hotel as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
@@ -238,7 +279,7 @@ export function templateToItineraryItems(
         dataId: hm.dataId,
       }
     } else if (item.category === 'activity' && activity) {
-      imageUrl = activity.image_url || ''
+      imageUrl = upsizeGoogleImage(activity.image_url || '')
       bookingUrl = activity.booking_url
       source = activity.source
       const am = (activity as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
@@ -255,7 +296,7 @@ export function templateToItineraryItems(
         dataId: am.dataId,
       }
     } else if (item.category === 'food' && restaurant) {
-      imageUrl = restaurant.image_url || ''
+      imageUrl = upsizeGoogleImage(restaurant.image_url || '')
       bookingUrl = restaurant.booking_url
       source = restaurant.source
       const rm = (restaurant as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
@@ -287,52 +328,61 @@ export function templateToItineraryItems(
     }
 
     // Add alternatives from other catalog items of same type, with trust badges
+    // Sort by vibe match when tripVibes is available
+    const vibes = tripVibes || []
+
     if (item.category === 'hotel' && !metadata.alts && hotel) {
       const currentPrice = parsePrice(hotel.price_per_night)
       const currentRating = hotel.rating
-      metadata.alts = catalog.hotels
+      const others = catalog.hotels
         .filter(h => h.name.toLowerCase() !== nameLower)
+        .map(h => ({ h, score: vibeScore(getItemVibes((h as unknown as Record<string, unknown>).metadata as Record<string, unknown> | null, h.vibes), vibes) }))
+        .sort((a, b) => b.score - a.score)
         .slice(0, 3)
-        .map(h => ({
-          name: h.name,
-          detail: `${h.detail || h.category} · ${h.rating}★`,
-          price: h.price_per_night,
-          image_url: h.image_url,
-          bookingUrl: h.booking_url,
-          trust: buildTrustBadges(currentPrice, currentRating, parsePrice(h.price_per_night), h.rating),
-        }))
+      metadata.alts = others.map(({ h }) => ({
+        name: h.name,
+        detail: `${h.detail || h.category} · ${h.rating}★`,
+        price: h.price_per_night,
+        image_url: h.image_url,
+        bookingUrl: h.booking_url,
+        trust: buildTrustBadges(currentPrice, currentRating, parsePrice(h.price_per_night), h.rating),
+      }))
     }
     if (item.category === 'food' && !metadata.alts) {
       const currentPrice = parsePrice(restaurant?.avg_cost)
       const currentRating = (restaurant as unknown as Record<string, unknown>)?.rating as number | undefined
-      metadata.alts = catalog.restaurants
+      const others = catalog.restaurants
         .filter(r => r.name.toLowerCase() !== nameLower)
+        .map(r => ({ r, score: vibeScore(getItemVibes((r as unknown as Record<string, unknown>).metadata as Record<string, unknown> | null, r.vibes), vibes) }))
+        .sort((a, b) => b.score - a.score)
         .slice(0, 3)
-        .map(r => {
-          const rm = (r as unknown as Record<string, unknown>).rating as number | undefined
-          return {
-            name: r.name,
-            detail: `${r.cuisine} · ${r.price_level}`,
-            price: r.avg_cost,
-            image_url: r.image_url,
-            bookingUrl: r.booking_url,
-            trust: buildTrustBadges(currentPrice, currentRating, parsePrice(r.avg_cost), rm),
-          }
-        })
+      metadata.alts = others.map(({ r }) => {
+        const rm = (r as unknown as Record<string, unknown>).rating as number | undefined
+        return {
+          name: r.name,
+          detail: `${r.cuisine} · ${r.price_level}`,
+          price: r.avg_cost,
+          image_url: r.image_url,
+          bookingUrl: r.booking_url,
+          trust: buildTrustBadges(currentPrice, currentRating, parsePrice(r.avg_cost), rm),
+        }
+      })
     }
     if (item.category === 'activity' && !metadata.alts) {
       const currentPrice = parsePrice(activity?.price)
-      metadata.alts = catalog.activities
+      const others = catalog.activities
         .filter(a => a.name.toLowerCase() !== nameLower)
+        .map(a => ({ a, score: vibeScore(getItemVibes((a as unknown as Record<string, unknown>).metadata as Record<string, unknown> | null, a.vibes), vibes) }))
+        .sort((a, b) => b.score - a.score)
         .slice(0, 3)
-        .map(a => ({
-          name: a.name,
-          detail: `${a.category} · ${a.duration}`,
-          price: a.price,
-          image_url: a.image_url,
-          bookingUrl: a.booking_url,
-          trust: buildTrustBadges(currentPrice, undefined, parsePrice(a.price), undefined),
-        }))
+      metadata.alts = others.map(({ a }) => ({
+        name: a.name,
+        detail: `${a.category} · ${a.duration}`,
+        price: a.price,
+        image_url: a.image_url,
+        bookingUrl: a.booking_url,
+        trust: buildTrustBadges(currentPrice, undefined, parsePrice(a.price), undefined),
+      }))
     }
 
     return {

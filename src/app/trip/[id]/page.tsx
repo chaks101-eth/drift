@@ -79,6 +79,21 @@ export default function TripBoardPage() {
         .eq('trip_id', id)
         .order('position')
       setItems((itemData || []) as ItineraryItem[])
+
+      // Load chat history for session continuity
+      const { data: chatHistory } = await supabase
+        .from('chat_messages')
+        .select('role, content')
+        .eq('trip_id', id)
+        .order('created_at', { ascending: true })
+        .limit(20)
+      if (chatHistory?.length) {
+        setChatMessages(chatHistory.map((m: { role: string; content: string }) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })))
+      }
+
       setLoading(false)
     }
     load()
@@ -172,6 +187,24 @@ export default function TripBoardPage() {
       if (data.text) {
         setChatMessages([...newMessages, { role: 'assistant', content: data.text }])
       }
+
+      // Handle AI actions (swaps, additions, etc.)
+      if (data.actions?.length) {
+        for (const action of data.actions) {
+          if (action.type === 'swap_item' && action.payload?.itemId) {
+            // Update the board optimistically — DB already updated by tool
+            setItems(prev => prev.map(i => i.id === action.payload.itemId ? {
+              ...i,
+              ...action.payload.newData,
+              image_url: action.payload.newData?.image_url || i.image_url,
+            } : i))
+          } else if (action.type === 'add_item' && action.payload?.item) {
+            // Add new item to the board
+            setItems(prev => [...prev, action.payload.item as ItineraryItem])
+          }
+          // show_alternatives and show_insight are informational — text response covers them
+        }
+      }
     } catch {
       setChatMessages([...newMessages, { role: 'assistant', content: 'Sorry, I had trouble responding. Try again?' }])
     }
@@ -260,6 +293,33 @@ export default function TripBoardPage() {
     return acc
   }, { flights: 0, hotels: 0, activities: 0, food: 0 })
   const total = costs.flights + costs.hotels + costs.activities + costs.food
+  const numDays = days.length || 1
+  const perPersonPerDay = trip?.travelers ? Math.round(total / trip.travelers / numDays) : 0
+
+  // Vibe match: count items with matching vibes in metadata
+  const vibeMatchStats = (() => {
+    if (!trip?.vibes?.length) return null
+    const real = items.filter(i => i.category !== 'day' && i.category !== 'transfer')
+    if (!real.length) return null
+    const matches: Record<string, number> = {}
+    for (const v of trip.vibes) matches[v] = 0
+    for (const item of real) {
+      const meta = item.metadata as Record<string, unknown> | null
+      const itemVibes = (meta?.best_for || meta?.features || []) as string[]
+      const itemVibesLower = itemVibes.map(iv => iv.toLowerCase())
+      for (const v of trip.vibes) {
+        if (itemVibesLower.some(iv => iv.includes(v.toLowerCase()) || v.toLowerCase().includes(iv))) {
+          matches[v]++
+        }
+      }
+    }
+    const totalItems = real.length
+    return Object.entries(matches).map(([vibe, count]) => ({
+      vibe,
+      pct: Math.round((count / totalItems) * 100),
+      count,
+    }))
+  })()
 
   if (loading) {
     return (
@@ -349,9 +409,15 @@ export default function TripBoardPage() {
               </div>
             ))}
           </div>
-          <div className="flex flex-col items-center pl-6 border-l border-[rgba(255,255,255,0.08)]">
-            <span className="text-[9px] text-[#4a4a55] uppercase tracking-wider">Total ({trip?.travelers} pax)</span>
-            <span className="text-xl font-light text-[#c8a44e]">${total.toLocaleString()}</span>
+          <div className="flex items-center gap-5 pl-6 border-l border-[rgba(255,255,255,0.08)]">
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] text-[#4a4a55] uppercase tracking-wider">Total ({trip?.travelers} pax)</span>
+              <span className="text-xl font-light text-[#c8a44e]">${total.toLocaleString()}</span>
+            </div>
+            <div className="flex flex-col items-center pl-5 border-l border-[rgba(255,255,255,0.06)]">
+              <span className="text-[9px] text-[#4a4a55] uppercase tracking-wider">/person/day</span>
+              <span className="text-base font-light text-[#7a7a85]">${perPersonPerDay}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -635,7 +701,38 @@ export default function TripBoardPage() {
             <span className="text-sm text-[#7a7a85]">Total estimated</span>
             <span className="text-xl font-light text-[#c8a44e]">${total.toLocaleString()}</span>
           </div>
-          {trip?.vibes && trip.vibes.length > 0 && (
+          <div className="flex justify-between items-center pt-1">
+            <span className="text-xs text-[#4a4a55]">Per person, per day</span>
+            <span className="text-sm font-light text-[#7a7a85]">${perPersonPerDay}</span>
+          </div>
+
+          {/* Vibe match breakdown */}
+          {vibeMatchStats && vibeMatchStats.length > 0 && (
+            <div className="mt-5">
+              <div className="text-[10px] text-[#4a4a55] uppercase tracking-wider mb-3">Vibe Alignment</div>
+              <div className="space-y-2.5">
+                {vibeMatchStats.map(v => (
+                  <div key={v.vibe}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-[#f0efe8] capitalize">{v.vibe}</span>
+                      <span className="text-[10px] text-[#7a7a85]">{v.count} items &middot; {v.pct}%</span>
+                    </div>
+                    <div className="h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.max(v.pct, 4)}%`,
+                          background: v.pct >= 50 ? '#4ecdc4' : v.pct >= 25 ? '#c8a44e' : '#f0a500',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {trip?.vibes && trip.vibes.length > 0 && !vibeMatchStats && (
             <div className="mt-4">
               <div className="text-[10px] text-[#4a4a55] uppercase tracking-wider mb-2">Vibes</div>
               <div className="flex flex-wrap gap-1.5">
@@ -755,6 +852,21 @@ export default function TripBoardPage() {
   )
 }
 
+// ─── Source Badge (data trust indicator) ────────────────────────
+function SourceBadge({ source }: { source?: string }) {
+  if (!source) return null
+  if (source === 'catalog' || source === 'serpapi' || source === 'google_maps') {
+    return <span className="px-1.5 py-0.5 rounded text-[8px] font-medium bg-[rgba(78,205,196,0.1)] text-[#4ecdc4] border border-[rgba(78,205,196,0.2)]">Verified</span>
+  }
+  if (source === 'amadeus') {
+    return <span className="px-1.5 py-0.5 rounded text-[8px] font-medium bg-[rgba(78,205,196,0.1)] text-[#4ecdc4] border border-[rgba(78,205,196,0.2)]">Live Price</span>
+  }
+  if (source === 'ai' || source === 'llm') {
+    return <span className="px-1.5 py-0.5 rounded text-[8px] font-medium bg-[rgba(200,164,78,0.08)] text-[#c8a44e] border border-[rgba(200,164,78,0.15)]">AI Pick</span>
+  }
+  return null
+}
+
 // ─── FlowNode Component ────────────────────────────────────────
 function FlowNode({ item, onSelect, onStatusChange, menuOpen, onMenuToggle, locked, onToggleLock, onAskAI, onAlternatives, onPriceAlert }: {
   item: ItineraryItem
@@ -772,6 +884,7 @@ function FlowNode({ item, onSelect, onStatusChange, menuOpen, onMenuToggle, lock
   const meta = item.metadata as Record<string, unknown> | null
   const reason = meta?.reason as string | undefined
   const features = (meta?.features || []) as string[]
+  const source = meta?.source as string | undefined
   const isFlight = item.category === 'flight'
   const width = isFlight ? 'w-[260px] max-md:w-[230px] max-[400px]:w-[200px]' : item.category === 'hotel' ? 'w-[240px] max-md:w-[210px] max-[400px]:w-[185px]' : 'w-[200px] max-md:w-[175px] max-[400px]:w-[155px]'
 
@@ -817,7 +930,10 @@ function FlowNode({ item, onSelect, onStatusChange, menuOpen, onMenuToggle, lock
 
         {/* Airline + tags bar */}
         <div className="flex items-center justify-between px-3 pb-2 cursor-pointer" onClick={onSelect}>
-          <div className="text-[10px] text-[#7a7a85]">{airline}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-[#7a7a85]">{airline}</span>
+            <SourceBadge source={source} />
+          </div>
           <div className="flex gap-1">
             {stops === 'Direct' && <span className="text-[9px] px-1.5 py-0.5 bg-[rgba(255,255,255,0.04)] rounded text-[#7a7a85]">Direct</span>}
             <span className="text-sm font-light text-[#c8a44e]">{item.price}</span>
@@ -853,11 +969,12 @@ function FlowNode({ item, onSelect, onStatusChange, menuOpen, onMenuToggle, lock
       {/* Image */}
       {item.image_url && (
         <div className="relative cursor-pointer" onClick={onSelect}>
-          <img src={item.image_url} alt={item.name} className="w-full h-[100px] object-cover" />
-          <div className="absolute bottom-2 left-2">
+          <img src={item.image_url} alt={item.name} className="w-full h-[100px] object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <div className="absolute bottom-2 left-2 flex items-center gap-1">
             <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider" style={{ background: `${catColor}22`, color: catColor, border: `1px solid ${catColor}44` }}>
               {item.category}
             </span>
+            <SourceBadge source={source} />
           </div>
           {item.time && (
             <div className="absolute bottom-2 right-2 text-[10px] text-[#7a7a85] bg-[#08080c]/80 px-1.5 py-0.5 rounded">
@@ -874,6 +991,7 @@ function FlowNode({ item, onSelect, onStatusChange, menuOpen, onMenuToggle, lock
             <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider" style={{ background: `${catColor}22`, color: catColor, border: `1px solid ${catColor}44` }}>
               {item.category}
             </span>
+            <SourceBadge source={source} />
             {item.time && <span className="text-[10px] text-[#4a4a55]">{item.time}</span>}
           </div>
         )}
@@ -1029,7 +1147,7 @@ function ItemDetail({ item, onPick, onAlternatives, onAskAI }: {
     <div>
       {item.image_url && (
         <div className="relative -mx-6 -mt-1 mb-4">
-          <img src={item.image_url} alt={item.name} className="w-full h-[220px] object-cover" />
+          <img src={item.image_url} alt={item.name} className="w-full h-[220px] object-cover" onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }} />
           <div className="absolute bottom-3 left-4">
             <span className="px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider" style={{ background: `${catColor}dd`, color: '#08080c' }}>
               {item.category}
