@@ -62,26 +62,69 @@ export interface FlightOffer {
 // Common cities. Amadeus also has an airport search API but this
 // avoids an extra call for the most common origins/destinations.
 const CITY_IATA: Record<string, string> = {
+  // India — major cities
   'delhi': 'DEL', 'new delhi': 'DEL', 'mumbai': 'BOM', 'bangalore': 'BLR',
-  'chennai': 'MAA', 'kolkata': 'CCU', 'hyderabad': 'HYD', 'goa': 'GOI',
-  'jaipur': 'JAI', 'ahmedabad': 'AMD', 'pune': 'PNQ', 'kochi': 'COK',
+  'bengaluru': 'BLR', 'chennai': 'MAA', 'kolkata': 'CCU', 'hyderabad': 'HYD',
+  'goa': 'GOI', 'jaipur': 'JAI', 'ahmedabad': 'AMD', 'pune': 'PNQ',
+  'kochi': 'COK', 'cochin': 'COK', 'lucknow': 'LKO', 'varanasi': 'VNS',
+  'benaras': 'VNS', 'amritsar': 'ATQ', 'indore': 'IDR', 'nagpur': 'NAG',
+  'chandigarh': 'IXC', 'thiruvananthapuram': 'TRV', 'trivandrum': 'TRV',
+  'coimbatore': 'CJB', 'patna': 'PAT', 'bhopal': 'BHO', 'ranchi': 'IXR',
+  'bhubaneswar': 'BBI', 'mangalore': 'IXE', 'visakhapatnam': 'VTZ',
+  'vizag': 'VTZ', 'madurai': 'IXM', 'surat': 'STV',
+  // India — tourist destinations (nearest airport)
+  'udaipur': 'UDR', 'jodhpur': 'JDH', 'agra': 'AGR',
+  'srinagar': 'SXR', 'leh': 'IXL', 'ladakh': 'IXL',
+  'rishikesh': 'DED', 'dehradun': 'DED', 'haridwar': 'DED',
+  'shimla': 'SLV', 'manali': 'KUU', 'kullu': 'KUU',
+  'darjeeling': 'IXB', 'siliguri': 'IXB', 'bagdogra': 'IXB',
+  'gangtok': 'IXB', 'port blair': 'IXZ', 'andaman': 'IXZ',
+  'munnar': 'COK', 'ooty': 'CJB', 'coorg': 'IXE',
+  'kodaikanal': 'IXM', 'mysore': 'MYQ', 'mysuru': 'MYQ',
+  'guwahati': 'GAU', 'shillong': 'SHL', 'imphal': 'IMF',
+  'dibrugarh': 'DIB', 'raipur': 'RPR', 'jammu': 'IXJ',
+  // Southeast Asia
   'bali': 'DPS', 'denpasar': 'DPS', 'bangkok': 'BKK', 'tokyo': 'NRT',
   'singapore': 'SIN', 'hanoi': 'HAN', 'seoul': 'ICN', 'dubai': 'DXB',
+  'abu dhabi': 'AUH', 'doha': 'DOH', 'muscat': 'MCT',
   'maldives': 'MLE', 'male': 'MLE', 'colombo': 'CMB', 'sri lanka': 'CMB',
   'hong kong': 'HKG', 'phuket': 'HKT', 'kuala lumpur': 'KUL',
   'ho chi minh': 'SGN', 'saigon': 'SGN', 'kathmandu': 'KTM',
+  'chiang mai': 'CNX', 'siem reap': 'REP', 'phnom penh': 'PNH',
+  'jakarta': 'CGK', 'manila': 'MNL', 'cebu': 'CEB',
+  'taipei': 'TPE', 'shanghai': 'PVG', 'beijing': 'PEK',
+  'guangzhou': 'CAN', 'shenzhen': 'SZX',
+  // Europe
   'london': 'LHR', 'paris': 'CDG', 'rome': 'FCO', 'barcelona': 'BCN',
   'amsterdam': 'AMS', 'berlin': 'BER', 'madrid': 'MAD', 'lisbon': 'LIS',
   'athens': 'ATH', 'istanbul': 'IST', 'prague': 'PRG', 'vienna': 'VIE',
   'zurich': 'ZRH', 'santorini': 'JTR', 'mykonos': 'JMK',
+  'florence': 'FLR', 'milan': 'MXP', 'venice': 'VCE', 'naples': 'NAP',
+  'munich': 'MUC', 'frankfurt': 'FRA', 'dublin': 'DUB', 'edinburgh': 'EDI',
+  'budapest': 'BUD', 'warsaw': 'WAW', 'copenhagen': 'CPH',
+  'stockholm': 'ARN', 'oslo': 'OSL', 'helsinki': 'HEL',
+  'brussels': 'BRU', 'geneva': 'GVA', 'nice': 'NCE',
+  'dubrovnik': 'DBV', 'split': 'SPU', 'reykjavik': 'KEF',
+  // Americas
   'new york': 'JFK', 'los angeles': 'LAX', 'san francisco': 'SFO',
   'miami': 'MIA', 'chicago': 'ORD', 'seattle': 'SEA', 'boston': 'BOS',
-  'sydney': 'SYD', 'melbourne': 'MEL', 'auckland': 'AKL',
-  'cape town': 'CPT', 'nairobi': 'NBO', 'cairo': 'CAI',
+  'las vegas': 'LAS', 'washington': 'IAD', 'dallas': 'DFW',
+  'houston': 'IAH', 'denver': 'DEN', 'atlanta': 'ATL',
   'rio de janeiro': 'GIG', 'sao paulo': 'GRU', 'buenos aires': 'EZE',
   'mexico city': 'MEX', 'cancun': 'CUN', 'toronto': 'YYZ',
-  'vancouver': 'YVR', 'kyoto': 'KIX', 'osaka': 'KIX',
+  'vancouver': 'YVR', 'montreal': 'YUL', 'lima': 'LIM',
+  'bogota': 'BOG', 'medellin': 'MDE', 'havana': 'HAV',
+  // East Asia
+  'kyoto': 'KIX', 'osaka': 'KIX', 'fukuoka': 'FUK',
+  // Africa & Middle East
   'marrakech': 'RAK', 'zanzibar': 'ZNZ', 'mauritius': 'MRU',
+  'cape town': 'CPT', 'nairobi': 'NBO', 'cairo': 'CAI',
+  'johannesburg': 'JNB', 'casablanca': 'CMN', 'tunis': 'TUN',
+  'addis ababa': 'ADD', 'dar es salaam': 'DAR', 'accra': 'ACC',
+  'lagos': 'LOS', 'seychelles': 'SEZ',
+  // Oceania
+  'sydney': 'SYD', 'melbourne': 'MEL', 'auckland': 'AKL',
+  'perth': 'PER', 'brisbane': 'BNE', 'fiji': 'NAN',
 }
 
 export function cityToIATA(city: string): string | null {

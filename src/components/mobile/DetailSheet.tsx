@@ -59,7 +59,10 @@ export default function DetailSheet() {
 
   // Stats
   const stats: Array<{ v: string; l: string }> = []
-  if (item.price) stats.push({ v: item.price, l: item.category === 'hotel' ? 'Per Night' : 'Price' })
+  if (item.price) {
+    const num = parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) || 0
+    stats.push({ v: num === 0 ? 'Free' : formatBudget(num), l: item.category === 'hotel' ? 'Per Night' : 'Price' })
+  }
   info.slice(0, 3).forEach((i) => stats.push({ v: i.v, l: i.l }))
 
   // Booking URL
@@ -184,7 +187,7 @@ export default function DetailSheet() {
                     <div className="text-xs font-semibold text-drift-text line-clamp-1">{alt.name}</div>
                     <div className="mt-0.5 text-[10px] text-drift-text3 line-clamp-1">{alt.detail}</div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs font-bold text-drift-text">{alt.price}</span>
+                      <span className="text-xs font-bold text-drift-text">{(() => { const n = parseFloat((alt.price || '0').replace(/[^0-9.]/g, '')) || 0; return n === 0 ? 'Free' : formatBudget(n) })()}</span>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation()
