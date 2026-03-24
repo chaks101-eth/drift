@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useTripStore } from '@/stores/trip-store'
+import { supabase } from '@/lib/supabase'
 
 const words = [
   { text: 'Every trip ', delay: 0.3 },
@@ -14,6 +16,26 @@ const words = [
 export default function HeroPage() {
   const router = useRouter()
   const token = useTripStore((s) => s.token)
+  const userId = useTripStore((s) => s.userId)
+  const [checked, setChecked] = useState(false)
+
+  // Redirect logged-in users with existing trips to their last trip
+  useEffect(() => {
+    if (!token || !userId || checked) return
+    setChecked(true)
+
+    supabase
+      .from('trips')
+      .select('id')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (data?.length) {
+          router.replace(`/m/board/${data[0].id}`)
+        }
+      })
+  }, [token, userId, checked, router])
 
   const handleStart = () => {
     router.push(token ? '/m/plan/origin' : '/m/login')

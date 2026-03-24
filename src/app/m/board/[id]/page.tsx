@@ -55,13 +55,17 @@ export default function BoardPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Tab content */}
+      {/* Tab content — all tabs stay mounted for instant switching */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'board' && (
+        <div className={activeTab === 'board' ? 'h-full' : 'hidden'}>
           <BoardView trip={currentTrip} items={currentItems} />
-        )}
-        {activeTab === 'trips' && <TripsTab />}
-        {activeTab === 'profile' && <ProfileTab />}
+        </div>
+        <div className={activeTab === 'trips' ? 'h-full' : 'hidden'}>
+          <TripsTab />
+        </div>
+        <div className={activeTab === 'profile' ? 'h-full' : 'hidden'}>
+          <ProfileTab />
+        </div>
       </div>
 
       {/* Bottom nav */}
