@@ -46,7 +46,7 @@ export default function BudgetPage() {
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
       <StepHeader step={3} totalSteps={5} backHref="/m/plan/dates" />
 
-      <h1 className="mb-2 font-serif text-4xl font-light leading-tight">
+      <h1 className="mb-2 font-serif text-[30px] font-light leading-tight">
         Who&apos;s going &amp; <em className="font-normal italic text-drift-gold">how much?</em>
       </h1>
       <p className="mb-3 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">We&apos;ll tailor everything to your group</p>

@@ -53,10 +53,20 @@ export default function DatesPage() {
 
   useEffect(() => { if (token === null) router.replace('/m/login') }, [token, router])
 
-  const [startDate, setStartDate] = useState(onboarding.startDate)
-  const [endDate, setEndDate] = useState(onboarding.endDate)
+  // Pre-fill with "This Weekend" if no dates set
+  const defaultDates = onboarding.startDate ? null : getQuickDates('weekend')
+  const [startDate, setStartDate] = useState(onboarding.startDate || defaultDates?.start || '')
+  const [endDate, setEndDate] = useState(onboarding.endDate || defaultDates?.end || '')
   const [error, setError] = useState('')
-  const [activeQuick, setActiveQuick] = useState<string | null>(null)
+  const [activeQuick, setActiveQuick] = useState<string | null>(onboarding.startDate ? null : 'weekend')
+
+  // Persist defaults to store on mount
+  useEffect(() => {
+    if (!onboarding.startDate && defaultDates) {
+      setDates(defaultDates.start, defaultDates.end)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const today = new Date().toISOString().split('T')[0]
   const isReady = startDate && endDate && endDate >= startDate
@@ -114,7 +124,7 @@ export default function DatesPage() {
             value={startDate}
             min={today}
             onChange={(e) => handleStartChange(e.target.value)}
-            className="w-full rounded-[14px] border border-drift-border2 bg-transparent px-3.5 py-3 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none transition-colors"
+            className="w-full appearance-none rounded-[14px] border border-drift-border2 bg-drift-surface px-3.5 py-3.5 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none transition-colors [color-scheme:dark] min-h-[48px]"
           />
         </div>
         <div className="flex-1">
@@ -126,7 +136,7 @@ export default function DatesPage() {
             value={endDate}
             min={startDate || today}
             onChange={(e) => handleEndChange(e.target.value)}
-            className="w-full rounded-[14px] border border-drift-border2 bg-transparent px-3.5 py-3 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none transition-colors"
+            className="w-full appearance-none rounded-[14px] border border-drift-border2 bg-drift-surface px-3.5 py-3.5 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none transition-colors [color-scheme:dark] min-h-[48px]"
           />
         </div>
       </div>
