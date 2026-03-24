@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
       if (catalogMatches.length > 0) {
         console.log(`[Generate] Serving ${catalogMatches.length} catalog destinations in ${elapsed}s`)
-        return NextResponse.json({ destinations: catalogMatches.slice(0, 4), source: 'catalog' })
+        return NextResponse.json({ destinations: catalogMatches.slice(0, 8), source: 'catalog' })
       }
 
       // No catalog destinations available
