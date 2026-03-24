@@ -1,10 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { useTripStore, type ItineraryItem, type ItemMetadata } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
+
+// Category-specific fallback images (curated Unsplash, never expire)
+const FALLBACK_IMAGES: Record<string, string> = {
+  hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=400&fit=crop&q=80',
+  food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop&q=80',
+  activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400&h=400&fit=crop&q=80',
+  default: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=400&fit=crop&q=80',
+}
 
 interface ItemCardProps {
   item: ItineraryItem
@@ -28,6 +36,10 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
 
   const [showWhy, setShowWhy] = useState(false)
   const [showAlts, setShowAlts] = useState(false)
+  const [imgSrc, setImgSrc] = useState(item.image_url || FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
+  const onImgError = useCallback(() => {
+    setImgSrc(FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
+  }, [item.category])
 
   const reason = (meta.reason as string) || (meta.honest_take as string) || ''
   const alts = (meta.alts as Array<{ name: string; detail: string; price: string; image_url?: string; trust?: Array<{ type: string; text: string }> }>) || []
@@ -61,14 +73,15 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
 
         <div className="flex gap-0">
           {/* Image */}
-          <div className="relative h-[92px] w-[92px] shrink-0">
+          <div className="relative h-[92px] w-[92px] shrink-0 bg-drift-surface">
             <Image
-              src={item.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=90'}
+              src={imgSrc}
               alt={item.name}
               fill
               className="object-cover"
               sizes="92px"
-              unoptimized={!item.image_url?.includes('unsplash.com') && !item.image_url?.includes('googleusercontent.com')}
+              unoptimized={!imgSrc.includes('unsplash.com') && !imgSrc.includes('googleusercontent.com')}
+              onError={onImgError}
             />
           </div>
 
