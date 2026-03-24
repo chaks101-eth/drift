@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
 
       // Score catalog destinations by vibe overlap
       const userVibes = body.vibes || []
+      const userDays = (body.start_date && body.end_date)
+        ? Math.max(1, Math.round((new Date(body.end_date).getTime() - new Date(body.start_date).getTime()) / (1000 * 60 * 60 * 24)))
+        : 5
       const catalogMatches = (catalogDests || [])
         .map(d => {
           const overlap = (d.vibes || []).filter((v: string) => userVibes.includes(v)).length
@@ -50,11 +53,12 @@ export async function POST(req: NextRequest) {
           const budgetData = d.avg_budget_per_day || {}
           const budgetLevel = body.budget || 'mid'
           const dailyCost = budgetData[budgetLevel] || budgetData.mid || 120
+          const estimatedTotal = dailyCost * userDays
           return {
             city: d.city.charAt(0).toUpperCase() + d.city.slice(1),
             country: d.country.charAt(0).toUpperCase() + d.country.slice(1),
             match: Math.min(matchPct + 15, 99), // boost catalog destinations
-            price_usd: dailyCost * 5,
+            price_usd: estimatedTotal,
             vibes: (d.vibes || []).slice(0, 3),
             tagline: d.description || `Explore ${d.city}`,
             image_url: d.cover_image || getDestinationImage(d.city),

@@ -15,32 +15,39 @@ function getDb() {
 // ─── Layer 1: Always loaded (cheap, essential) ───────────────
 
 export function buildTripSummary(items: ItineraryItem[]): string {
-  const real = items.filter(i => i.category !== 'day' && i.category !== 'transfer')
-  if (!real.length) return ''
+  if (!items.length) return ''
 
-  const categories = real.reduce((acc, i) => {
-    acc[i.category] = acc[i.category] || []
-    acc[i.category].push(i)
-    return acc
-  }, {} as Record<string, ItineraryItem[]>)
+  const sorted = [...items].sort((a, b) => a.position - b.position)
+  const lines: string[] = ['Current itinerary (day by day):']
+  let currentDay = ''
+  let total = 0
 
-  const lines: string[] = ['Current itinerary:']
+  for (const item of sorted) {
+    if (item.category === 'day') {
+      currentDay = item.name
+      const meta = (item.metadata || {}) as Record<string, unknown>
+      lines.push(`\n${currentDay}:`)
+      if (meta.day_insight) lines.push(`  Insight: ${meta.day_insight}`)
+      continue
+    }
+    if (item.category === 'transfer') {
+      lines.push(`  → ${item.name} (${item.price || 'included'})`)
+      continue
+    }
 
-  for (const [cat, catItems] of Object.entries(categories)) {
-    const names = catItems.map(i => {
-      const price = i.price ? ` (${i.price})` : ''
-      const status = i.status !== 'none' ? ` [${i.status}]` : ''
-      return `${i.name}${price}${status} [id:${i.id}]`
-    })
-    lines.push(`  ${cat}: ${names.join(', ')}`)
+    const price = item.price ? ` (${item.price})` : ''
+    const time = item.time ? ` at ${item.time}` : ''
+    const status = item.status !== 'none' ? ` [${item.status}]` : ''
+    lines.push(`  ${item.category}: ${item.name}${price}${time}${status} [id:${item.id}]`)
+
+    const numPrice = parseFloat((item.price || '0').replace(/[^0-9.]/g, ''))
+    total += numPrice
   }
 
-  const totalStr = real
-    .map(i => parseFloat((i.price || '0').replace(/[^0-9.]/g, '')))
-    .reduce((a, b) => a + b, 0)
-  lines.push(`  Total estimated: $${Math.round(totalStr)}`)
+  lines.push(`\nTotal estimated: $${Math.round(total)}`)
 
   // Preference signals from pick/skip behavior
+  const real = items.filter(i => i.category !== 'day' && i.category !== 'transfer')
   lines.push(buildPreferenceSignals(real))
 
   return lines.join('\n').trim()
