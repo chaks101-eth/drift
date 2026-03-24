@@ -53,42 +53,64 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] flex justify-center bg-gradient-to-t from-drift-bg/100 via-drift-bg/60 to-transparent px-4 pb-[calc(6px+env(safe-area-inset-bottom))] pt-1.5">
       <div role="tablist" className="flex items-center gap-0 rounded-[20px] border border-drift-border2 bg-drift-card/95 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-label={tab.label}
-            onClick={() => setActiveTab(tab.id)}
-            className={`relative flex h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-[14px] transition-all duration-300 ${
-              activeTab === tab.id
-                ? 'bg-drift-gold-bg text-drift-gold'
-                : 'text-drift-text3'
-            }`}
-          >
-            <span className={`h-[18px] w-[18px] transition-transform duration-300 ${activeTab === tab.id ? 'scale-110' : ''}`}>
-              {tab.icon}
-            </span>
-            <span
-              className={`text-[7px] font-bold uppercase tracking-wider transition-opacity duration-300 ${
-                activeTab === tab.id ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              {tab.label}
-            </span>
-          </button>
-        ))}
+        {/* Board — left */}
+        <button
+          role="tab"
+          aria-selected={activeTab === 'board'}
+          aria-label="Board"
+          onClick={() => setActiveTab('board')}
+          className={`relative flex h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-[14px] transition-all duration-300 ${
+            activeTab === 'board' ? 'bg-drift-gold-bg text-drift-gold' : 'text-drift-text3'
+          }`}
+        >
+          <span className={`h-[18px] w-[18px] transition-transform duration-300 ${activeTab === 'board' ? 'scale-110' : ''}`}>
+            {tabs[0].icon}
+          </span>
+          <span className={`text-[7px] font-bold uppercase tracking-wider transition-opacity duration-300 ${activeTab === 'board' ? 'opacity-100' : 'opacity-0'}`}>Board</span>
+        </button>
 
-        {/* New Trip button */}
+        {/* New Trip — center */}
         <button
           onClick={handleNewTrip}
           aria-label="New trip"
-          className="ml-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.25)] transition-transform duration-300 active:scale-90"
+          className="mx-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.25)] transition-transform duration-300 active:scale-90"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
+        </button>
+
+        {/* Trips — right */}
+        <button
+          role="tab"
+          aria-selected={activeTab === 'trips'}
+          aria-label="My Trips"
+          onClick={() => setActiveTab('trips')}
+          className={`relative flex h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-[14px] transition-all duration-300 ${
+            activeTab === 'trips' ? 'bg-drift-gold-bg text-drift-gold' : 'text-drift-text3'
+          }`}
+        >
+          <span className={`h-[18px] w-[18px] transition-transform duration-300 ${activeTab === 'trips' ? 'scale-110' : ''}`}>
+            {tabs[1].icon}
+          </span>
+          <span className={`text-[7px] font-bold uppercase tracking-wider transition-opacity duration-300 ${activeTab === 'trips' ? 'opacity-100' : 'opacity-0'}`}>Trips</span>
+        </button>
+
+        {/* Profile — far right */}
+        <button
+          role="tab"
+          aria-selected={activeTab === 'profile'}
+          aria-label="Profile"
+          onClick={() => setActiveTab('profile')}
+          className={`relative flex h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-[14px] transition-all duration-300 ${
+            activeTab === 'profile' ? 'bg-drift-gold-bg text-drift-gold' : 'text-drift-text3'
+          }`}
+        >
+          <span className={`h-[18px] w-[18px] transition-transform duration-300 ${activeTab === 'profile' ? 'scale-110' : ''}`}>
+            {tabs[2].icon}
+          </span>
+          <span className={`text-[7px] font-bold uppercase tracking-wider transition-opacity duration-300 ${activeTab === 'profile' ? 'opacity-100' : 'opacity-0'}`}>Profile</span>
         </button>
       </div>
     </div>

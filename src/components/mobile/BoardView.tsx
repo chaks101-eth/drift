@@ -183,10 +183,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                   <div className="absolute inset-0 animate-ping rounded-full border border-drift-gold opacity-30" />
                 )}
               </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-drift-gold">Day {di + 1}</span>
-                <span className="ml-2 text-sm font-medium text-drift-text">{day.label}</span>
-              </div>
+              <div className="text-sm font-medium text-drift-text">{day.label}</div>
             </div>
 
             {/* Items */}

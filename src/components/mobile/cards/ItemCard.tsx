@@ -23,6 +23,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
   const meta = (item.metadata || {}) as ItemMetadata
   const tag = tagConfig[item.category] || tagConfig.activity
   const updateItem = useTripStore((s) => s.updateItem)
+  const formatBudget = useTripStore((s) => s.formatBudget)
   const toast = useUIStore((s) => s.toast)
 
   const [showWhy, setShowWhy] = useState(false)
@@ -69,11 +70,6 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               sizes="92px"
               unoptimized={!item.image_url?.includes('unsplash.com') && !item.image_url?.includes('googleusercontent.com')}
             />
-            {item.time && (
-              <span className="absolute bottom-1 left-1 z-[2] rounded bg-black/55 px-1.5 py-0.5 text-[8px] font-bold text-white backdrop-blur-sm">
-                {item.time}
-              </span>
-            )}
           </div>
 
           {/* Body */}
@@ -88,7 +84,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               {item.detail || ''}
             </div>
             <div className="mt-1 text-xs font-bold text-drift-text">
-              {item.price || ''}
+              {item.price ? formatBudget(parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0) : ''}
             </div>
           </div>
         </div>
