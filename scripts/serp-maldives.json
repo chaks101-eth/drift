@@ -1,0 +1,455 @@
+{
+  "city": "Maldives",
+  "country": "Maldives",
+  "hotels": [
+    {
+      "name": "The Ritz-Carlton Maldives, Fari Islands",
+      "rating": 4.8,
+      "reviews": 336,
+      "price": "$2,300",
+      "type": "Hotel",
+      "address": "Fari Islands North, Male 20013, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepsZLa13zoh6VF69TecVLGBHpXCQvpATesTVcv-0hwdM3Iykty5gnWacoVxi0NSkRa2PFWD3HNJg75tx9u2h3Txuz19fcl9CGOD_80us5BpxT8NGEWShS8hWe50uDRxh8y79ZN2GBrRz50=w138-h92-k-no"
+    },
+    {
+      "name": "Gili Lankanfushi Maldives",
+      "rating": 4.8,
+      "reviews": 334,
+      "price": "$1,817",
+      "type": "Hotel",
+      "address": "Lankanfushi Island, North, 08920, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep7a8IyGNjNbc68j0xxDAB3s6B0kJLX7iJPfeoj4D3AiVYQu8LX07mtdJ6G_TsdzAK2e151LDdmOiORG8U65EHV-5tsQJ2Duj9HQBJ0QeBp0DAjgE7XA4luNjCpFQGKdJEIWydsmw=w140-h92-k-no"
+    },
+    {
+      "name": "Four Seasons Resort Maldives at Kuda Huraa",
+      "rating": 4.8,
+      "reviews": 608,
+      "price": "$1,167",
+      "type": "Hotel",
+      "address": "North Malé Atoll, 20097, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhHAEK-uPpFi_Pt-6mj0jcgr9jrlunoEOCQOUp88c-FlF2qsRRbzgAJD2Dvt3WZ3bKD4tS-RxDgyg9mj1By6D9v_ferWOvwL_OxHZdDFjm98Uj2sWCDx4kakustJeJA9sdL80euD3qsSSdJm4edkDJEl6GtetqOeP8qKayR6LQ6rG054NbgYrXY=w163-h92-k-no"
+    },
+    {
+      "name": "LUX South Ari Atoll",
+      "rating": 4.8,
+      "reviews": 1045,
+      "price": "$380",
+      "type": "Resort hotel",
+      "address": "South Atoll, Dhidhoofinolhu, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerx7-QJvUNffFJpuCMMReY8Zz3jty-Dj0IjOlthOr6VaS7JixPQoC6mErnP7rsK24qUoend_1CZoUEtRAQwwaw0kOWR8f75SnpPxfOPidBocFnKkcULsHXMVTeQG8C7BqhigQa9zw=w138-h92-k-no"
+    },
+    {
+      "name": "Four Seasons Resort Maldives at Landaa Giraavaru",
+      "rating": 4.8,
+      "reviews": 391,
+      "price": "$2,635",
+      "type": "Hotel",
+      "address": "20097, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhGPdDgxpgiqkd69Q1QNxXcdu8jHkuN3wPMVz66SEJSg2Dy2egVPgZdi5LgQxG6Qw7MjZ0HMSVBR5Hb7y1rzBuh-uZ4DDQtMz3qkYNZM3EkEcMnKLdCSXbt6B81awpqamw9dNHHNSl6wrZsN2xa4AqMLIUxriqOGbpcWfV1RRlcmaAQ0tDb0QZQ8Rw=w163-h92-k-no"
+    },
+    {
+      "name": "The St. Regis Maldives Vommuli Resort",
+      "rating": 4.8,
+      "reviews": 619,
+      "price": "$1,850",
+      "type": "Hotel",
+      "address": "Vommuli Island Dhaalu Atoll, 13080, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFpzrydPPq76f-CHB63_ItLqJof0C73NEN5pdmWDrrf9md9lr_2UMLLuGZZrFu7zcB9LHhFSc6vK-RdEgNyz7KVUdQ8ROsKkICZnBRdWuyhITPsVAKNQMj5a_7KU2HMr7hzPZE5DsLg11ASuuhhOmWcWJMBe7-iwFmL0j39Q-kNA3rYFvpfMSti=w138-h92-k-no"
+    },
+    {
+      "name": "Hard Rock Hotel Maldives",
+      "rating": 4.7,
+      "reviews": 1545,
+      "price": "$344",
+      "type": "Hotel",
+      "address": "Akasdhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepsJxm9NAc8ULfrYC9HMdtWQm73w_tEsVKH88dOEQycBod6ot1yzLfPWMtQKhHPE0bgmiEl1FxaZjam3rEYeNJnw9SMZaUv_nCU4QAD9kpcPoEyzMBqlaboq6VjIsPl9pBL0O8=w163-h92-k-no"
+    },
+    {
+      "name": "Emerald Maldives Resort & Spa",
+      "rating": 4.9,
+      "reviews": 483,
+      "price": "$665",
+      "type": "Resort hotel",
+      "address": "Fasmendhoo Island, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepBntfVszNhAtJi9ECPwBRrftyOXtaZWAV9K8eKnbcQ7bAl9wUjoKq-Vj2QCLjoCdSzdGzp8g63CLkLUslYv2OQPSimPdOBdaqOcKZ8stdnGsDTpyqQXmqo3JzYsgjRARVtqoao=w138-h92-k-no"
+    },
+    {
+      "name": "Waldorf Astoria Maldives Ithaafushi",
+      "rating": 4.7,
+      "reviews": 551,
+      "price": "$2,700",
+      "type": "Resort hotel",
+      "address": "Ithaafushi Island South, Male 20009, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFXmh3qX8-R-YQD9pB7ZC8zVc50MMpVRlod6DXhhOykmNLeaP2pBbxiD3uFsG86K1TqolL6lfEcTzBzGBsLdf03bO71-yEArHGe4WaAPaaa8SVzZIcnQ2jdUjXuHhQDiTUCdDlD9VwkpSW6zfa0dOsByanc1oks-lZNtO4FA1X-wh_qcKEwhLgh=w153-h92-k-no"
+    },
+    {
+      "name": "Cocoon Maldives",
+      "rating": 4.8,
+      "reviews": 2220,
+      "price": "$372",
+      "type": "Resort hotel",
+      "address": "Ookolhufinolhu, Lhaviyani Atoll 07040, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerS8mmcL5pjHacncsW91GanlTD-SpdofeAA49HMMXIIzlfNduB9_04yhpLxEh-8PMqAvr91QvoCUxoJ2PZaLMIu6ra9pMxuV9B-iVA5ik1rk4drTnVPNF2FGOuxY1RnFWMfBg34oTi3LqMH=w122-h92-k-no"
+    },
+    {
+      "name": "The Standard, Maldives",
+      "rating": 4.7,
+      "reviews": 708,
+      "price": "$288",
+      "type": "Hotel",
+      "address": "Huruvalhi Island, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerYq_5vqFUbXIBxQ2Kj6YDdJbHURgxKfKKUvRaqNX8IiBjgoRtLLlV694m2JF3XRsN4DlKEK84E0rJuaQXy8xZiPA0wc_psriYV9iaZpfdP2DiDSTLHOO2DOve4kZPu6HbMPx0=w80-h99-k-no"
+    },
+    {
+      "name": "Sheraton Maldives Full Moon Resort & Spa",
+      "rating": 4.5,
+      "reviews": 1723,
+      "price": "$462",
+      "type": "Hotel",
+      "address": "Furanafushi Island North Malé Atol, 08240, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFQUBCHDL4yDdb96hPyouu03v0ZQYdzXQA9dDGxGwkV4fC6mBcZm6WbdSyVWqOPDaasWDW4bPbnagCMZ-sR57fQ6j9XIy7OwQcZA9uoYn8x3gi4Vq25UOGimd9munZ5dHnA4xDh_bvHuJmRq3DN53c1cY717wMmO6fiVK5S-uEsdmn1sjstQoruwA=w105-h92-k-no"
+    },
+    {
+      "name": "W Maldives",
+      "rating": 4.8,
+      "reviews": 696,
+      "price": "$1,200",
+      "type": "Hotel",
+      "address": "Fesdu Island North Ari Atoll, 09110, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerjDW3wqOA4Jtty9rmhIIeenGtnOSNUW4Dsfg9yoqlDheqWVd0peclabIo9rQVLs7G5OqeYLvl2_I-iCbrliizoQ3PCqt1gEo-9tJNf8cATIBI8Sh9PX7CMSmsaYGuTZ1gwx9VsVc39URU=w163-h92-k-no"
+    }
+  ],
+  "attractions": [
+    {
+      "name": "Whale Submarine",
+      "rating": 4,
+      "reviews": 337,
+      "type": "Tourist attraction",
+      "address": "5FGW+7MG, Laccadive Sea, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoHqKcHkRzhl-PxHiqT_AuhjaiQkJpiQ4dgASFbA4RrNeh02Q_v9xdwN5V-QvQTaq1c1wS-TZnKAGUZY1-MNyuZTwkzfvwf_rJVPBYeJAPoSvLETOJxmBzBq-yXwZSQ07YDFcUa0g=w138-h92-k-no"
+    },
+    {
+      "name": "Maldives Discovery Center",
+      "rating": 4.6,
+      "reviews": 45,
+      "type": "Tourist attraction",
+      "address": "4FC7+W4W, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepFHnDNY8Mg5-4lWFlJZ9YzdE0aWvsSmZlXD5qMFj_cQFOB65qAzkWZQulLBy3PiFo3MEXkUWNr0YT_1PHj0j0AQ-U_av6x08PV_jqMin8rPjhEclCZcFz_WNZHD3ngfBLjqLtL=w92-h92-k-no"
+    },
+    {
+      "name": "Victory Monument",
+      "rating": 4.5,
+      "reviews": 85,
+      "type": "Tourist attraction",
+      "address": "5GH6+59X, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq4AhUyxPI8WT6qoMzTuKG6XJbPBdb-Biv5noU2jUC4hgaHMCcNUBx1vbg-Ch5QDISKpGNHvYdVMASxMuMp4ZOgEq55rXOUdTGra8RctP4TnlfpdIKKxKdJRyyPZ0JjOM4-Z7NR=w122-h92-k-no"
+    },
+    {
+      "name": "Sand Bank, Kuramathi Island, Maldives",
+      "rating": 4.8,
+      "reviews": 121,
+      "type": "Tourist attraction",
+      "address": "Kuramathi island, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepe3c4fBY6LMxoDL1MxpGPOEBj3BscBVTKOCxPGe2KXHvfTVcwm2uWPg5cuhZrzQoJjdfDlkIYwD4UdOzan-OBnyzpsuvDXwXNq5-X5-6O2Xq4oFy5BfajFaJ9jz7jRLGTFPjG_=w122-h92-k-no"
+    },
+    {
+      "name": "Central Park (Hulhumalé)",
+      "rating": 4.5,
+      "reviews": 935,
+      "type": "Tourist attraction",
+      "address": "6G8R+J4R, Bageechaa Hingun, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepeerAncMJrmNLTVZgqk9r2CIIjVnSvHblBWaTlnDk8-65nZJtZZ_3-3X_FUc7jHdnEJ4eqjzxZ739q1mf20mtR3Sa5Rz8xqjaTn4rIz425cVQGkJTZsa8zR49Bw8MlexGbkZ0OOw=w163-h92-k-no"
+    },
+    {
+      "name": "Banana Reef K.Guraidhoo",
+      "rating": 5,
+      "reviews": 4,
+      "type": "Tourist attraction",
+      "address": "VFW5+25, Guraidhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep378FH1DUFZBv2GbYQw05ExGa9M6lURSaRqlbeP71vIsyfMdIV4ryNFLMn6PfkM1PbMnpBAqsvQJ4Qv6Zo8D-NFYLaWdrLnyyCxRV-jYvMfBso5udHH90rj8R85N0rSs4DPzv4Xw=w119-h92-k-no"
+    },
+    {
+      "name": "Tsunami Monument",
+      "rating": 4.1,
+      "reviews": 334,
+      "type": "Tourist attraction",
+      "address": "5GC2+JCG, Boduthakurufaanu Magu, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep3K2SzpAYm8Kpmxd1eBVzcwYvcYL4K4FNGhm5nCYxm-il7ahDqW2zmxFjC3eiZ8vKb1QDC-sSbXr9EFOpBNEJsE8isNx8b_HABijN7Hzl4yk_ajf0KWlZxfJVmqvMgJWeP-LfEzg=w80-h106-k-no"
+    },
+    {
+      "name": "National Museum",
+      "rating": 4.1,
+      "reviews": 486,
+      "type": "Tourist attraction",
+      "address": "5GG6+V3C, Chaandhanee Magu, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqnx6fIWAdkqJ5jG_yJ9nL_VdzZ9fFjK5ImpFNDuCoAH0jTVIf7L_p11EPnzpb-RGEpF24P5PMC_wWHCXSMw51mv7JudSk51WbFoJytsyRPkOwbjw_f8GVN6SLocMoiMivTHiCREw=w163-h92-k-no"
+    },
+    {
+      "name": "Sand Bank",
+      "rating": 5,
+      "reviews": 45,
+      "type": "Tourist attraction",
+      "address": "3GHJ+F6P, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoP5ozNw9MWVWXXiVInueuj7uvzhd9F3GIE1_0zZU1GrTHmJrZI5na7qMNnhmrtrnnLj7bhMTwj02CBFgYnAa1iC_BZtuYqnd2VHeRUSsJIEK48NaT8VOF3xI6pU6Jk_nI-S0k=w163-h92-k-no"
+    },
+    {
+      "name": "Medhu Ziyaaraiy",
+      "rating": 4.7,
+      "reviews": 52,
+      "type": "Tourist attraction",
+      "address": "5GH7+323, Lonuziyaarai Magu, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepBxrSfsBw6fiTqDFtcORnrB0ctt22UeFlrHU81X8JZPiXJCFj-p0gpAAR1qMSboUyRx1SnqhB8uhqRXZ2JEMF5TiEqbXvoUcPdSum0bQPnXWoWIjsO9xroNhzhD-rzEU67Q7jL=w147-h92-k-no"
+    },
+    {
+      "name": "Sultan Park",
+      "rating": 4.4,
+      "reviews": 891,
+      "type": "Tourist attraction",
+      "address": "5GH6+2C2, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepi8wTs36U9DXhydun3ATVkAutc-En5f7UKOwiPFLF6My45RIOWlPnkZ7VXgPvEJlB3NSlVJ5HVntLI3qaNXpcqK1oZ0SQNAoo8vipSlCcdHXntyoqbbjwcGoYoXFgOURqFSr5T=w163-h92-k-no"
+    },
+    {
+      "name": "Dharavandhoo hanifaru Bay Beach",
+      "rating": 4.6,
+      "reviews": 15,
+      "type": "Tourist attraction",
+      "address": "545P+49V, Dharavandhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoXq-FGjOrNhkzqHtTBQOTK37ocaG2tJYykraH5DiuTwSQmfZ1t4wqbub-9OWmvC_NsDbfAFcugztbtCcTqri8yWgYVGLT3nL2NgyKPKNmIM44CRwKzWUeax34-JiB43y1G4LoyqQ=w80-h106-k-no"
+    },
+    {
+      "name": "Vaavu Shipwreck",
+      "rating": 4.9,
+      "reviews": 119,
+      "type": "Tourist attraction",
+      "address": "FH26+G8, Keyodhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoIYFgJe9Vixbd8kN3jIg4Q51Z2g_HLGEzgJVh2usLGUW5gAbFvLyVcAJPKyYVTWOvEaVWAtORxc_t6hFR5qor2-gBebMdXsTqj-Q28GDoSNCCycpPU-TkH6N1Bh79Xh2PFHfuKMA=w163-h92-k-no"
+    },
+    {
+      "name": "Hulhumale Public Beach",
+      "rating": 4.3,
+      "reviews": 350,
+      "type": "Tourist attraction",
+      "address": "6G6V+HMP, Beach Rd, Malé, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepSTXXItOQP3o6FOCWQScLQtCtQR2DZLxv7x9WHWG8Dd5-ztWNghUgHqYbLRr6IF8nB1nVDGR9AlPxI3JrrnygYSsmJVuYH47ZchJnXlZfrl1oljdoqnUDXwcJt0QlyC3gWel8=w163-h92-k-no"
+    },
+    {
+      "name": "Makunu eri",
+      "rating": 5,
+      "reviews": 11,
+      "type": "Tourist attraction",
+      "address": "7W5H+CGR, Feeali, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep3ktcw2ApE9qOx54Jj_9hG720DBP8boLr5XqJpyG-Bbk6MIWjfToGg7gxx-QLwpa3c9NwuOyAKU5ktNBwXEdPrKH8zMPG863MQEh1cFPabPa_TGIL0sOpvX9JHT7Aw45AJb0k0_Q=w122-h92-k-no"
+    },
+    {
+      "name": "Lily Beach Sajid D'costa Tourist Information",
+      "rating": 5,
+      "reviews": 4,
+      "type": "Tourist attraction",
+      "address": "Maldives, Huvahandhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep4uWp5OFcBFukBkOwj96dSnUCn_F8_jvii_sS_F2dYTuXlIjggEDKKyrpyQd7KmJkIJXY2OfijoIXFXIxWjtQ-dr81Gc4AzVS4hxK-2VsKpE00c-xDKtoXlU07CJe5ztF4eHvq=w80-h106-k-no"
+    },
+    {
+      "name": "VILU HOUSE REEF",
+      "rating": 4.8,
+      "reviews": 6,
+      "type": "Tourist attraction",
+      "address": "2232+35R, Meedhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq29Ne0FYGSqvchZhTEZYLfuTEzadymt40WzPnBTMIm6gUWtZ_Wq8Kl916dOeuMIp6Tk-W4vFiVPX4k6p5gpx6eKufBMRiYEQp1MngW4DkRu04g_w_mOBODmONYXMRd0JCoPqqgy4gQzLml=w122-h92-k-no"
+    },
+    {
+      "name": "Fenfushee Thun'di",
+      "rating": 5,
+      "reviews": 16,
+      "type": "Tourist attraction",
+      "address": "FQRH+9G7, Fenfushi, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerOpPkeYWPMNYPZUnGsc0jJ3fwkbWNRiIka5lyP5qwL9p-DTCaxjjb8WJkL7U8kcXPAPRG1I_9RvqmMis9FTA39r30LOmjAACsmsJxtbwaecu4vaRWpaN-ubs8ofOL1ge7YDNY-=w122-h92-k-no"
+    },
+    {
+      "name": "Kandumoonu kudagaa",
+      "rating": 5,
+      "reviews": 1,
+      "type": "Tourist attraction",
+      "address": "X257+X9, Bandidhoo, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerbxp7xb48c0nSW8vq30fNzVIGtg5oIHTDS7bYEnxl2VYs-Up5AmFcalEBoJme1qFeeITpNtM87gWCcdzyIJAPMxRukl_ZGQi4_JZ2NOY7KQLoBKdgTp9ES6PTaygNQyQ5aaxiD=w163-h92-k-no"
+    },
+    {
+      "name": "SAii Beach Club at Crossroads Maldives",
+      "rating": 4.5,
+      "reviews": 66,
+      "type": "Tourist attraction",
+      "address": "SAii Lagoon, The Beach Club at SAii Lagoon Maldives Crossroads Maldives, 20026, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepogL_rgNYn9KSYDRk4d1BlSnndTbROYYZptKGtKeU3n6TC65CAgb4s5or4t9w2nY7Jym7jfMpo6j-Z4APg5Ti0fo9jyQar6Mb3OMqqojpY0ej0d10kADGpPmgAR0C-5lWHnUOu=w199-h92-k-no"
+    }
+  ],
+  "restaurants": [
+    {
+      "name": "Reethi Restaurant",
+      "rating": 4.8,
+      "reviews": 119,
+      "price": "$$$$",
+      "type": "Restaurant",
+      "address": "Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqkI_Y62OwX9b-yxz0F7khDpr_89cl9V2ytSforqCR7m-6Xh062wo4RPxuUI7e4OArKRFJciJIi6TlhOogKTRwU8_QNaY_OvdXgyeg11tjfk1Ct-a9iRl_IWCM-0BhsBgciXB7Q=w163-h92-k-no"
+    },
+    {
+      "name": "M6M Restaurant",
+      "rating": 4.8,
+      "reviews": 169,
+      "price": "$$$$",
+      "type": "Restaurant",
+      "address": "Sinamale 2, 3°52'48.9\"N 73°27'32., Ameenee Magu, Malé 20112, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqhwjp87M6-ZEFFVXElv7uC2lA9O5ZbqiLuUDaYSQztD_E-b5rUFnFo4ansYhvM9mqn8iki-gekJfrcGkSl5VUEfYeU9XCuM6PU8hMY_aVpny0NrUYb8P-WwLYTbhBFGzuys-taFg=w122-h92-k-no"
+    },
+    {
+      "name": "The Cloud Restaurant",
+      "rating": 4.6,
+      "reviews": 334,
+      "type": "Restaurant",
+      "address": "5GG9+82J, Samann Grand, Roashanee Magu, Malé 20004, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep2KNS3rtHKKDmN43--4AUHp4byWKA6zg7dcgWel2cpvPYUbUu6xSphmV19BC3EswYCAC6VJO6uAfAugmtA6UjETtHYDStvMfB7o8vFC9sMuLrPzIUUmweYtgBvi8dcQGv6rK5V=w138-h92-k-no"
+    },
+    {
+      "name": "Only BLU Under Ocean Restaurant",
+      "rating": 4.8,
+      "reviews": 195,
+      "type": "Restaurant",
+      "address": "8G42+5V, Himmafushi, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepzzRBjj6vzrVYg-TBH9l2bWNMKkcmcUQbSBVq2jg571MSZg7XpdgadVBiLj41y-sVVU95PiLQSzFdgHbCYsAux2hiZQWIMI_NQj0mEvlKmKbCA9jfrTZ1PWTDY9VrlBsdqorKmMueoooh7=w122-h92-k-no"
+    },
+    {
+      "name": "Bokkura Restaurant",
+      "rating": 4.8,
+      "reviews": 95,
+      "type": "Fine dining restaurant",
+      "address": "Taj Coral Reef Resort & Spa, Maldives North Male Atoll, Republic of Maldives Hembadhu Island, 20195, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqJA8ZsNNmR7gZAH06dx4XYB24TpsP1eITlYsn2GSjg6hGjblO5OeKoMhPUOYUP5qUrlUlo-HTAg3Tw8zaVmn0Kt5VpoSu33iuuJMwGf1L8fTc5LpEdULqlkuAQrYnLW4WGhopK=w122-h92-k-no"
+    },
+    {
+      "name": "Navio restaurant",
+      "rating": 4.8,
+      "reviews": 1213,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "WFRQ+PJF, Maafushi, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoPZrGgMxmyv4xE7mI4qmYXwF1uh5bbPiEkD5uaLbchxDbjGpkHcT3XmMtyD4_Ap7VwJiLDwEu0XBnfzRZcQBFEtLYzPzGBd8OiVjQ3SpbWN2AimFVybqCdFDvKu-JUY1P0tuX56Q=w122-h92-k-no"
+    },
+    {
+      "name": "The Lagoon Restaurant",
+      "rating": 4.7,
+      "reviews": 545,
+      "price": "$$$",
+      "type": "Restaurant",
+      "address": "7HP4+JXV, Water Villa Bridge, Paradise Island Resort, Lankanfinolhu, Himmafushi, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo2Y6EgyszbbhHvtCzaaIGTgDNDQpyzx1AKnVL2-Bc4wAjUkdmpRrBI_HpiayIr9Lay3no_TFOa6AwnxbeYRABxzeee50R44TbmJyJvhdMO5F6LYpLoVz_2TIQpbf37oQCkimrGBw=w122-h92-k-no"
+    },
+    {
+      "name": "Naga's Indian Restaurant",
+      "rating": 4.7,
+      "reviews": 1008,
+      "price": "$$",
+      "type": "Indian restaurant",
+      "address": "10821 Unigas Magu, hulhumale, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoRKzBeaMSMgia6bE0ly-kzeR1Xptm2m6nKBsX-PXISQQJdsz4lwWQb7MsFuY_KCzzbFFjRIwpAjFpsE46OWa6WeO0mZPT70tyb3KBW7FxiN-vhvdpksbVdL-iTvPDb-q26EGc=w80-h106-k-no"
+    },
+    {
+      "name": "The spice lounge",
+      "rating": 5,
+      "reviews": 17,
+      "type": "Restaurant",
+      "address": "2232+XG8, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq7Zy3qnEmZo2wHpjSGlYvKhLeGENkuM2HxgOUEHU_hmBAILw7yMYIM2oZ9ZfBkT9FTV9HMyn2R9rXR5HE1-azWImWJO1X6mUXbzhndhWPXG1y6BcOgDokI5mNEO2xVYWpiWolN=w122-h92-k-no"
+    },
+    {
+      "name": "La Locanda",
+      "rating": 4.9,
+      "reviews": 58,
+      "type": "Italian restaurant",
+      "address": "JH3J+M9V, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepTyw-w8aQfjbwvW9YFdOuIsTSOhF_wf97D8_d88qICx3QIzr0IZMWNmF2g69tbnM37XFLbd7m7ZYLANhiSoT1CQi0VBX0MB54qLPmtdOakXQebrw86k0ejRi_v9Mq9TUmMrjvP=w92-h92-k-no"
+    },
+    {
+      "name": "Ministry of Crab Maldives",
+      "rating": 4.5,
+      "reviews": 160,
+      "type": "Restaurant",
+      "address": "Unit 15, The Marina at the Crossroads Maldives South Male, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepojiepKWfM4k5-dyeeWqJi40ZnZljVR7UyVaFvQSyWPj7hvWgKDfx8LviWVx22zQr0CWH1ouoWbpfi6PzSy_8QlwjGUCrSTds6HZv3RiPaQRT2_7-E1XLJaERAR8GXH8028hso=w122-h92-k-no"
+    },
+    {
+      "name": "Eats and Beats",
+      "rating": 4.9,
+      "reviews": 30,
+      "type": "Restaurant",
+      "address": "GPW9+CG, Fenfushi, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepYBzXQDlKYphKFXnkAA6hJprvGhl36oVTLEV0oMPhoDGuL27GDv-roCu1fIswAedL-uzb-JdnOeFSykh1yYWKbMd8f3zfubud5G1m3NxgCWV4NztG4eOlECDb-JS-utzcZZSqw=w137-h92-k-no"
+    },
+    {
+      "name": "Dosa99 Maldives",
+      "rating": 4.7,
+      "reviews": 222,
+      "type": "South Indian restaurant",
+      "address": "Near IGMH shahid, Shaheed Ali Hingun, Malé 20330, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepkFrQN-eSVHmpT5iT6Q5v_Ic0Hvl7lU6k8IprDZsEc3h-rkO6WaJittKwEtpNjwBsCTrKs1GDdH3-XXvks9MrIxIbfwgTXjvFgSZTdv5WzeD1tObfDekQ3kAbRJybFxRZkH8k=w122-h92-k-no"
+    },
+    {
+      "name": "Meeru Maalan Restaurant",
+      "rating": 4.8,
+      "reviews": 295,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "FP58+GXQ, Meeru Maldives Resort Island, Dhiffushi, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerokfP-fsxTz9Sbb7F9uxInx3LjpkTcQ6BiaCnYYD8woNVounR9CAn9AI2-lVSXyfbGnPmm9daSsDhJA7Fey-gEyXaL4HpMhBfHCb1D5Q4uaJCLPAWi36Sk75yT6qNQZmac01E7Tw=w163-h92-k-no"
+    },
+    {
+      "name": "5.8 Undersea Restaurant",
+      "rating": 4.7,
+      "reviews": 320,
+      "price": "$$$$",
+      "type": "Restaurant",
+      "address": "GCCV+X8X, Laccadive Sea, Hinnavaru, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepvG1ao0Q9ZH0AcSxh0H4IvzPMpIRcO_sseCwQ_hf5sLXhudfNt2QWXumOhFuookVKrzUrPnBFxBDG-lbCAL01yLmaDS9jzgyVih9vQ_A3o1Rhw3gHtmOfIEjAvlkUrLfMAau5y=w189-h92-k-no"
+    },
+    {
+      "name": "Tropical Lounge Restaurant",
+      "rating": 4.6,
+      "reviews": 469,
+      "type": "Fine dining restaurant",
+      "address": "Shaheedh Ali Higun, Thoddoo 09010, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwertmny1XqHmU_WVB2eXYvXHRWV6YhpGiPzoVfoeZdkkiz_hyYGTR4L8TXLDV3pBtsi62R4wxe881i8fa7QN874ebxXUO7CSyLTnlIlcNF63pvk6te16G2KSHj547l2nLBq-TBBuhPiUYm0=w122-h92-k-no"
+    },
+    {
+      "name": "The Maldive Kitchen",
+      "rating": 4.7,
+      "reviews": 195,
+      "type": "Restaurant",
+      "address": "Lot 11429 Chanbeylee Magu, Goalhi No 9, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoos5HN8JI5k6PBHLwEIG0OAWq4kVsfmoFdS6dBGw2er_TW2dmCRz3yvkWQsNYdGtjIavZwlfvbQqcsLZmMX_mKImtx2inM8yh8bFfMTHQO0PFyfM3aTTuuau5971xKnT0z3Rxz=w122-h92-k-no"
+    },
+    {
+      "name": "Cloud Signature",
+      "rating": 4.6,
+      "reviews": 183,
+      "type": "Restaurant",
+      "address": "LOT 10717 Kaani Magu, Hulhumale 23000, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo-y5pJLwfKUxt9E8YZjvNLTFnA77R8JGtkSjMaFmjxU8eBxKAQmNtvRBCIfxOMM1TPpLjNu-Wqp047qLeQOIF3RquUFXEzWwsDjbA6ZVQa2VwzXRx23zSGwCMf_rqV067mL5m0=w138-h92-k-no"
+    },
+    {
+      "name": "Vilu Restaurant & Bar",
+      "rating": 4.7,
+      "reviews": 111,
+      "price": "$$$$",
+      "type": "Italian restaurant",
+      "address": "Rangali Island, 20077, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqL-gqTMOTbc7iMQqjBU5qtfBSHTlaU_TruWIuoHmVNflTfCipzeHsRZJV3udV7bqQdBCHTOlRPwH3hQQZz76E2imFO_Ccz7c7AQgJlvfmKA1E2R4KuEZtIi1TYdrEayjvZquu7=w163-h92-k-no"
+    },
+    {
+      "name": "Arabesque (Ritz Carlton Maldives)",
+      "rating": 4.7,
+      "reviews": 40,
+      "type": "Restaurant",
+      "address": "JHGC+2R, Gaafaru, Maldives",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepecy0yBypCXnapXq3oCzzrMkmVmu07fkOgj64xd7IK4lhN4iy7EsOz_mXafNApKBnPl6FlsSdlzdbcz3-eN8aqCC76QXP-Ef7D3ApRx8_rt-SfIbyNna3HbK47Q6liRnXxVXdJCTPfSqgV=w122-h92-k-no"
+    }
+  ]
+}

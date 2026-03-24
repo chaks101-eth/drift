@@ -5,9 +5,11 @@
 // Restaurants: SerpAPI (Google Maps real data) → LLM enriches descriptions/vibes
 // Templates: LLM builds from real catalog data
 
+import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
-import { getDestinationImage } from './images'
+import { getDestinationImage, upsizeGoogleImage } from './images'
+import { getPlaceFallbackPhotos } from './unsplash'
 import {
   searchRestaurants as serpSearchRestaurants,
   searchHotels as serpSearchHotels,
@@ -19,44 +21,36 @@ import {
   type PlaceReviewSummary,
 } from './serpapi'
 
-// LLM Provider: Gemini (primary) → Claude (fallback) → Groq (last resort)
-// Lazy-init to avoid crash at build time when env vars aren't available
-let _llmClient: OpenAI | null = null
+// LLM Provider: Claude (primary) → Gemini (fallback) → Groq (last resort)
+let _anthropicClient: Anthropic | null = null
+let _openaiClient: OpenAI | null = null
 let _llmProvider = 'unknown'
-function getLlmClient() {
-  if (!_llmClient) {
-    if (process.env.GEMINI_API_KEY) {
-      _llmProvider = 'Gemini'
-      _llmClient = new OpenAI({
-        apiKey: process.env.GEMINI_API_KEY,
-        baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-      })
-    } else if (process.env.ANTHROPIC_API_KEY) {
-      _llmProvider = 'Anthropic'
-      _llmClient = new OpenAI({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-        baseURL: 'https://api.anthropic.com/v1/',
-      })
-    } else {
-      _llmProvider = 'Groq'
-      _llmClient = new OpenAI({
-        apiKey: process.env.GROQ_API_KEY,
-        baseURL: 'https://api.groq.com/openai/v1',
-      })
-    }
+let _llmModel = 'unknown'
+
+function initLlm() {
+  if (_llmProvider !== 'unknown') return
+
+  if (process.env.ANTHROPIC_API_KEY) {
+    _llmProvider = 'Claude'
+    _llmModel = 'claude-sonnet-4-20250514'
+    _anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  } else if (process.env.GEMINI_API_KEY) {
+    _llmProvider = 'Gemini'
+    _llmModel = 'gemini-2.5-flash'
+    _openaiClient = new OpenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    })
+  } else {
+    _llmProvider = 'Groq'
+    _llmModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+    _openaiClient = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.groq.com/openai/v1',
+    })
   }
-  return _llmClient
+  console.log(`[Pipeline] LLM provider: ${_llmProvider}, model: ${_llmModel}`)
 }
-function getModel() {
-  if (process.env.GEMINI_API_KEY) return 'gemini-2.5-flash'
-  if (process.env.ANTHROPIC_API_KEY) return 'claude-sonnet-4-20250514'
-  return process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
-}
-const MODEL = getModel()
-
-console.log(`[Pipeline] LLM provider: ${process.env.GEMINI_API_KEY ? 'Gemini' : process.env.ANTHROPIC_API_KEY ? 'Anthropic' : 'Groq'}, model: ${MODEL}`)
-
-const AMADEUS_BASE = 'https://test.api.amadeus.com'
 
 // ─── Admin DB client ─────────────────────────────────────────
 
@@ -86,174 +80,130 @@ interface PipelineContext {
   steps: string[]
 }
 
-// ─── City metadata (coords + IATA for Amadeus lookups) ───────
-
-const CITY_DATA: Record<string, { lat: number; lng: number; iata: string }> = {
-  'pattaya': { lat: 12.9236, lng: 100.8825, iata: 'UTP' },
-  'bangkok': { lat: 13.7563, lng: 100.5018, iata: 'BKK' },
-  'bali': { lat: -8.4095, lng: 115.1889, iata: 'DPS' },
-  'denpasar': { lat: -8.6705, lng: 115.2126, iata: 'DPS' },
-  'ubud': { lat: -8.5069, lng: 115.2625, iata: 'DPS' },
-  'goa': { lat: 15.2993, lng: 74.1240, iata: 'GOI' },
-  'panaji': { lat: 15.4909, lng: 73.8278, iata: 'GOI' },
-  'delhi': { lat: 28.6139, lng: 77.2090, iata: 'DEL' },
-  'mumbai': { lat: 19.0760, lng: 72.8777, iata: 'BOM' },
-  'jaipur': { lat: 26.9124, lng: 75.7873, iata: 'JAI' },
-  'tokyo': { lat: 35.6762, lng: 139.6503, iata: 'NRT' },
-  'singapore': { lat: 1.3521, lng: 103.8198, iata: 'SIN' },
-  'dubai': { lat: 25.2048, lng: 55.2708, iata: 'DXB' },
-  'paris': { lat: 48.8566, lng: 2.3522, iata: 'CDG' },
-  'london': { lat: 51.5074, lng: -0.1278, iata: 'LHR' },
-  'santorini': { lat: 36.3932, lng: 25.4615, iata: 'JTR' },
-  'rome': { lat: 41.9028, lng: 12.4964, iata: 'FCO' },
-  'barcelona': { lat: 41.3874, lng: 2.1686, iata: 'BCN' },
-  'cancun': { lat: 21.1619, lng: -86.8515, iata: 'CUN' },
-  'maldives': { lat: 3.2028, lng: 73.2207, iata: 'MLE' },
-  'phuket': { lat: 7.8804, lng: 98.3923, iata: 'HKT' },
-  'cape town': { lat: -33.9249, lng: 18.4241, iata: 'CPT' },
-  'new york': { lat: 40.7128, lng: -74.0060, iata: 'JFK' },
-  'sydney': { lat: -33.8688, lng: 151.2093, iata: 'SYD' },
-  'amsterdam': { lat: 52.3676, lng: 4.9041, iata: 'AMS' },
-  'istanbul': { lat: 41.0082, lng: 28.9784, iata: 'IST' },
-  'lisbon': { lat: 38.7223, lng: -9.1393, iata: 'LIS' },
-  'marrakech': { lat: 31.6295, lng: -7.9811, iata: 'RAK' },
-  'rio de janeiro': { lat: -22.9068, lng: -43.1729, iata: 'GIG' },
-  'miami': { lat: 25.7617, lng: -80.1918, iata: 'MIA' },
-  'seoul': { lat: 37.5665, lng: 126.9780, iata: 'ICN' },
-  'hong kong': { lat: 22.3193, lng: 114.1694, iata: 'HKG' },
-  'prague': { lat: 50.0755, lng: 14.4378, iata: 'PRG' },
-  'vienna': { lat: 48.2082, lng: 16.3738, iata: 'VIE' },
-}
-
-function getCityData(city: string) {
-  const key = city.toLowerCase().trim()
-  if (CITY_DATA[key]) return CITY_DATA[key]
-  for (const [k, v] of Object.entries(CITY_DATA)) {
-    if (key.includes(k) || k.includes(key)) return v
-  }
-  return null
-}
-
-// ─── Amadeus Auth ────────────────────────────────────────────
-
-let cachedToken: { access_token: string; expires_at: number } | null = null
-
-async function getAmadeusToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expires_at) {
-    console.log(`[Amadeus] Using cached token (expires in ${Math.round((cachedToken.expires_at - Date.now()) / 1000)}s)`)
-    return cachedToken.access_token
-  }
-  console.log(`[Amadeus] Authenticating...`)
-  const res = await fetch(`${AMADEUS_BASE}/v1/security/oauth2/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: process.env.AMADEUS_API_KEY!,
-      client_secret: process.env.AMADEUS_API_SECRET!,
-    }),
-  })
-  if (!res.ok) {
-    const errText = await res.text()
-    console.error(`[Amadeus] Auth failed (${res.status}): ${errText}`)
-    throw new Error(`Amadeus auth failed: ${errText}`)
-  }
-  const data = await res.json()
-  cachedToken = {
-    access_token: data.access_token,
-    expires_at: Date.now() + (data.expires_in - 60) * 1000,
-  }
-  console.log(`[Amadeus] Authenticated OK (token valid ${data.expires_in}s)`)
-  return cachedToken.access_token
-}
-
-// ─── Amadeus API calls ──────────────────────────────────────
-
-async function fetchAmadeusHotels(iataCode: string): Promise<Array<{
-  name: string; hotelId: string; chainCode?: string;
-  lat: number; lng: number; address: string; distance: number
-}>> {
-  const token = await getAmadeusToken()
-  const res = await fetch(
-    `${AMADEUS_BASE}/v1/reference-data/locations/hotels/by-city?cityCode=${iataCode}&radius=50&radiusUnit=KM`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.data || []).map((h: Record<string, unknown>) => {
-    const geo = h.geoCode as { latitude: number; longitude: number } | undefined
-    const addr = h.address as { lines?: string[]; cityName?: string } | undefined
-    const dist = h.distance as { value: number } | undefined
-    return {
-      name: h.name as string,
-      hotelId: h.hotelId as string,
-      chainCode: h.chainCode as string | undefined,
-      lat: geo?.latitude || 0,
-      lng: geo?.longitude || 0,
-      address: addr?.lines?.[0] || addr?.cityName || '',
-      distance: dist?.value || 0,
-    }
-  })
-}
-
-async function fetchAmadeusActivities(lat: number, lng: number): Promise<Array<{
-  id: string; name: string; description: string; price: string; currency: string;
-  pictures: string[]; bookingLink: string | null; duration: string | null
-}>> {
-  const token = await getAmadeusToken()
-  const res = await fetch(
-    `${AMADEUS_BASE}/v1/shopping/activities?latitude=${lat}&longitude=${lng}&radius=30`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.data || []).map((a: Record<string, unknown>) => {
-    const price = a.price as { amount: string; currencyCode: string } | undefined
-    // Strip HTML from description
-    const rawDesc = (a.description as string) || ''
-    const cleanDesc = rawDesc.replace(/<[^>]+>/g, '').trim()
-    return {
-      id: a.id as string,
-      name: a.name as string,
-      description: cleanDesc,
-      price: price ? `$${Math.round(parseFloat(price.amount) * 1.1)}` : '',  // EUR→USD approx
-      currency: 'USD',
-      pictures: (a.pictures as string[]) || [],
-      bookingLink: (a.bookingLink as string) || null,
-      duration: (a.minimumDuration as string) || null,
-    }
-  })
-}
+// ─── Data source: SerpAPI only (Amadeus removed) ────────────
 
 // ─── LLM Helper ──────────────────────────────────────────────
 
-async function llmGenerate(prompt: string): Promise<string> {
+const SYSTEM_PROMPT = `You are a travel data enrichment engine. Return ONLY valid JSON. No markdown, no explanation. Be specific with real place names, realistic prices, and vivid descriptions. Write in a warm, editorial travel magazine voice.`
+
+async function llmGenerate(prompt: string, retries = 2): Promise<string> {
+  initLlm()
   const llmStart = Date.now()
   const promptPreview = prompt.slice(0, 100).replace(/\n/g, ' ')
-  console.log(`[LLM] Calling ${MODEL} — prompt: "${promptPreview}..."`)
+  console.log(`[LLM] Calling ${_llmProvider}/${_llmModel} — prompt: "${promptPreview}..."`)
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      let text: string
+
+      if (_anthropicClient) {
+        // Claude API (native Anthropic SDK)
+        const res = await _anthropicClient.messages.create({
+          model: _llmModel,
+          max_tokens: 16384,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: prompt }],
+        })
+        const block = res.content[0]
+        text = block.type === 'text' ? block.text : '[]'
+        const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+        console.log(`[LLM] Response in ${elapsed}s — ${text.length} chars, tokens: ${res.usage.input_tokens + res.usage.output_tokens} (in: ${res.usage.input_tokens}, out: ${res.usage.output_tokens})`)
+      } else if (_openaiClient) {
+        // Gemini or Groq via OpenAI-compat
+        const res = await _openaiClient.chat.completions.create({
+          model: _llmModel,
+          max_tokens: 16384,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: prompt },
+          ],
+        })
+        text = res.choices[0].message.content || '[]'
+        const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+        const usage = res.usage
+        console.log(`[LLM] Response in ${elapsed}s — ${text.length} chars, tokens: ${usage?.total_tokens || '?'} (prompt: ${usage?.prompt_tokens || '?'}, completion: ${usage?.completion_tokens || '?'})`)
+      } else {
+        throw new Error('No LLM configured — set ANTHROPIC_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY')
+      }
+
+      return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    } catch (error) {
+      const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+      const msg = error instanceof Error ? error.message : String(error)
+      const isRateLimit = msg.includes('429') || msg.includes('rate') || msg.includes('quota') || msg.includes('overloaded')
+      if (isRateLimit && attempt < retries) {
+        const wait = (attempt + 1) * 15
+        console.warn(`[LLM] Rate limited (attempt ${attempt + 1}/${retries + 1}), waiting ${wait}s...`)
+        await new Promise(r => setTimeout(r, wait * 1000))
+        continue
+      }
+      // Fallback: Claude → Gemini → Groq
+      if (isRateLimit && _llmProvider === 'Claude' && process.env.GEMINI_API_KEY) {
+        console.warn(`[LLM] Claude rate limited — falling back to Gemini`)
+        _anthropicClient = null
+        _openaiClient = new OpenAI({ apiKey: process.env.GEMINI_API_KEY, baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
+        _llmProvider = 'Gemini (fallback)'
+        _llmModel = 'gemini-2.5-flash'
+        continue
+      }
+      if (isRateLimit && process.env.GROQ_API_KEY && _llmProvider !== 'Groq') {
+        console.warn(`[LLM] Falling back to Groq`)
+        _anthropicClient = null
+        _openaiClient = new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
+        _llmProvider = 'Groq (fallback)'
+        _llmModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+        continue
+      }
+      console.error(`[LLM] FAILED after ${elapsed}s: ${msg}`)
+      throw error
+    }
+  }
+  throw new Error('LLM retries exhausted')
+}
+
+// Repair truncated JSON arrays (when LLM output gets cut off)
+function repairJsonArray(raw: string): string {
   try {
-    const res = await getLlmClient().chat.completions.create({
-      model: MODEL,
-      max_tokens: 8192,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a travel data enrichment engine. Return ONLY valid JSON. No markdown, no explanation. Be specific with real place names, realistic prices, and vivid descriptions. Write in a warm, editorial travel magazine voice.`,
-        },
-        { role: 'user', content: prompt },
-      ],
-    })
-    const text = res.choices[0].message.content || '[]'
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
-    const usage = res.usage
-    console.log(`[LLM] Response in ${elapsed}s — ${cleaned.length} chars, tokens: ${usage?.total_tokens || '?'} (prompt: ${usage?.prompt_tokens || '?'}, completion: ${usage?.completion_tokens || '?'})`)
-    return cleaned
-  } catch (error) {
-    const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error(`[LLM] FAILED after ${elapsed}s: ${msg}`)
-    throw error
+    JSON.parse(raw)
+    return raw // Valid already
+  } catch {
+    // Try to close open strings, objects, and arrays
+    let fixed = raw
+    // Count open braces/brackets
+    const opens = (fixed.match(/\{/g) || []).length
+    const closes = (fixed.match(/\}/g) || []).length
+    const openBrackets = (fixed.match(/\[/g) || []).length
+    const closeBrackets = (fixed.match(/\]/g) || []).length
+
+    // If we're inside a string, close it
+    const quoteCount = (fixed.match(/(?<!\\)"/g) || []).length
+    if (quoteCount % 2 !== 0) fixed += '"'
+
+    // Close any open objects
+    for (let i = 0; i < opens - closes; i++) fixed += '}'
+    // Close any open arrays
+    for (let i = 0; i < openBrackets - closeBrackets; i++) fixed += ']'
+
+    // Remove trailing comma before closing bracket
+    fixed = fixed.replace(/,\s*(\]|\})/g, '$1')
+
+    try {
+      JSON.parse(fixed)
+      console.log(`[JSONRepair] Fixed truncated JSON (added ${fixed.length - raw.length} chars)`)
+      return fixed
+    } catch {
+      // Last resort: try to find the last complete object and close the array
+      const lastComplete = fixed.lastIndexOf('},')
+      if (lastComplete > 0) {
+        const trimmed = fixed.slice(0, lastComplete + 1) + ']'
+        try {
+          JSON.parse(trimmed)
+          console.log(`[JSONRepair] Recovered by truncating to last complete object`)
+          return trimmed
+        } catch { /* give up */ }
+      }
+      return raw // Return original, let caller handle the error
+    }
   }
 }
 
@@ -292,7 +242,7 @@ async function stepCreateDestination(config: DestinationConfig): Promise<string>
       city: config.city,
       country: config.country,
       vibes: config.vibes,
-      description: config.description || `Explore ${config.city}, ${config.country}`,
+      description: config.description || `Explore ${config.city}${config.country && config.country.toLowerCase() !== config.city.toLowerCase() ? `, ${config.country}` : ''}`,
       cover_image: getDestinationImage(config.city),
       best_months: config.best_months || [],
       language: config.language,
@@ -352,14 +302,10 @@ function buildPlaceContext(
 
 async function stepFetchAndEnrichHotels(ctx: PipelineContext) {
   const db = getAdminClient()
-  const cityData = getCityData(ctx.config.city)
 
-  // Level 1: Search from Amadeus + SerpAPI in parallel
-  const [rawHotels, googleHotels] = await Promise.all([
-    cityData ? fetchAmadeusHotels(cityData.iata) : Promise.resolve([]),
-    serpSearchHotels(ctx.config.city, ctx.config.country).catch(() => []),
-  ])
-  console.log(`[Pipeline] Hotels: ${rawHotels.length} from Amadeus, ${googleHotels.length} from SerpAPI`)
+  // Level 1: Search from SerpAPI (Google Maps)
+  const googleHotels = await serpSearchHotels(ctx.config.city, ctx.config.country).catch(() => [] as PlaceResult[])
+  console.log(`[Pipeline] Hotels: ${googleHotels.length} from SerpAPI`)
 
   // Level 2+3: Get details and reviews for top SerpAPI results
   const [detailsMap, reviewsMap] = await Promise.all([
@@ -369,15 +315,11 @@ async function stepFetchAndEnrichHotels(ctx: PipelineContext) {
   console.log(`[Pipeline] Hotel details: ${detailsMap.size}, reviews: ${reviewsMap.size}`)
 
   // Build rich context for LLM with all 3 levels of data
-  const richHotelData = googleHotels.slice(0, 12).map(h => {
+  const richHotelData = googleHotels.slice(0, 12).map((h: PlaceResult) => {
     const details = detailsMap.get(h.dataId)
     const reviews = reviewsMap.get(h.dataId)
     return buildPlaceContext(h, details, reviews)
   }).join('\n\n')
-
-  const amadeusData = rawHotels.slice(0, 10).map(h =>
-    `${h.name} — ${h.address} (Amadeus ID: ${h.hotelId})`
-  ).join('\n')
 
   const raw = await llmGenerate(`
 You are enriching REAL hotel data for ${ctx.config.city}, ${ctx.config.country}.
@@ -385,9 +327,6 @@ Destination vibes: ${ctx.config.vibes.join(', ')}
 
 REAL DATA FROM GOOGLE MAPS (with reviews and details):
 ${richHotelData || 'No Google Maps data available.'}
-
-REAL DATA FROM AMADEUS:
-${amadeusData || 'No Amadeus data available.'}
 
 Using ONLY the real hotels above, produce AI-ready structured data for each.
 DO NOT invent hotels. Only use names from the data above.
@@ -417,7 +356,7 @@ Return JSON array:
 
   let enriched: Record<string, unknown>[]
   try {
-    enriched = JSON.parse(raw)
+    enriched = JSON.parse(repairJsonArray(raw))
     console.log(`[Pipeline] Hotels: LLM returned ${enriched.length} enriched hotels`)
   } catch (parseErr) {
     console.error(`[Pipeline] Hotels: Failed to parse LLM JSON response`)
@@ -429,13 +368,9 @@ Return JSON array:
 
   const rows = enriched.map((h: Record<string, unknown>) => {
     const hName = (h.name as string).toLowerCase()
-    const gpMatch = googleHotels.find(g =>
+    const gpMatch = googleHotels.find((g: PlaceResult) =>
       g.name.toLowerCase().includes(hName.split(' ')[0]) ||
       hName.includes(g.name.toLowerCase().split(' ')[0])
-    )
-    const realMatch = rawHotels.find(r =>
-      r.name.toLowerCase().includes(hName.split(' ')[0]) ||
-      hName.includes(r.name.toLowerCase().split(' ')[0])
     )
     const details = gpMatch ? detailsMap.get(gpMatch.dataId) : undefined
     const reviews = gpMatch ? reviewsMap.get(gpMatch.dataId) : undefined
@@ -443,9 +378,7 @@ Return JSON array:
     const validHotelCats = new Set(['hotel', 'resort', 'hostel', 'villa', 'boutique'])
     const hotelCat = validHotelCats.has(String(h.category || 'hotel').toLowerCase()) ? String(h.category).toLowerCase() : 'hotel'
 
-    const source = realMatch && gpMatch ? 'amadeus+serpapi+ai'
-      : realMatch ? 'amadeus+ai'
-      : gpMatch ? 'serpapi+ai' : 'ai'
+    const source = gpMatch ? 'serpapi+ai' : 'ai'
 
     return {
       destination_id: ctx.destinationId,
@@ -459,13 +392,12 @@ Return JSON array:
       vibes: h.vibes || [],
       amenities: h.amenities || [],
       image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
-      location: h.location || details?.address || gpMatch?.address || realMatch?.address || '',
+      location: h.location || details?.address || gpMatch?.address || '',
       booking_url: details?.bookingUrl || generateBookingLink(h.name as string, ctx.config.city, ctx.config.country),
       source,
       metadata: {
         // Real data from SerpAPI
         ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
-        ...(realMatch ? { hotelId: realMatch.hotelId, chainCode: realMatch.chainCode } : {}),
         // Details from Level 2
         ...(details ? {
           phone: details.phone,
@@ -478,7 +410,7 @@ Return JSON array:
         // Reviews from Level 3
         ...(reviews ? {
           topReviewTopics: reviews.topTopics,
-          sampleReviews: reviews.reviews.slice(0, 3).map(r => ({ rating: r.rating, text: r.text.slice(0, 300) })),
+          sampleReviews: reviews.reviews.slice(0, 3).map((r: { rating: number; text: string }) => ({ rating: r.rating, text: r.text.slice(0, 300) })),
         } : {}),
         // AI-ready structured knowledge
         review_synthesis: h.review_synthesis || {},
@@ -487,8 +419,8 @@ Return JSON array:
         best_for: h.best_for || [],
         pairs_with: h.pairs_with || [],
         accessibility: h.accessibility || [],
-        lat: gpMatch?.lat || realMatch?.lat || 0,
-        lng: gpMatch?.lng || realMatch?.lng || 0,
+        lat: gpMatch?.lat || 0,
+        lng: gpMatch?.lng || 0,
         // UI helpers
         info: [
           ...(details?.hours?.length ? [{ l: 'Check-in', v: details.checkInOut?.checkIn || 'N/A' }] : []),
@@ -518,14 +450,10 @@ Return JSON array:
 
 async function stepFetchAndEnrichActivities(ctx: PipelineContext) {
   const db = getAdminClient()
-  const cityData = getCityData(ctx.config.city)
 
-  // Level 1: Fetch from Amadeus + SerpAPI attractions in parallel
-  const [rawActivities, serpAttractions] = await Promise.all([
-    cityData ? fetchAmadeusActivities(cityData.lat, cityData.lng) : Promise.resolve([]),
-    serpSearchAttractions(ctx.config.city, ctx.config.country).catch(() => []),
-  ])
-  console.log(`[Pipeline] Activities: ${rawActivities.length} from Amadeus, ${serpAttractions.length} from SerpAPI`)
+  // Level 1: Search from SerpAPI (Google Maps)
+  const serpAttractions = await serpSearchAttractions(ctx.config.city, ctx.config.country).catch(() => [] as PlaceResult[])
+  console.log(`[Pipeline] Activities: ${serpAttractions.length} from SerpAPI`)
 
   // Level 2+3: Get details and reviews for top SerpAPI attractions
   const [detailsMap, reviewsMap] = await Promise.all([
@@ -535,15 +463,11 @@ async function stepFetchAndEnrichActivities(ctx: PipelineContext) {
   console.log(`[Pipeline] Activity details: ${detailsMap.size}, reviews: ${reviewsMap.size}`)
 
   // Build rich context
-  const richAttractionData = serpAttractions.slice(0, 12).map(a => {
+  const richAttractionData = serpAttractions.slice(0, 12).map((a: PlaceResult) => {
     const details = detailsMap.get(a.dataId)
     const reviews = reviewsMap.get(a.dataId)
     return buildPlaceContext(a, details, reviews)
   }).join('\n\n')
-
-  const amadeusData = rawActivities.slice(0, 15).map(a =>
-    `${a.name} (${a.price}, ${a.duration || '?'}): ${a.description.slice(0, 150)}`
-  ).join('\n')
 
   const raw = await llmGenerate(`
 You are enriching REAL activity/attraction data for ${ctx.config.city}, ${ctx.config.country}.
@@ -551,9 +475,6 @@ Destination vibes: ${ctx.config.vibes.join(', ')}
 
 REAL DATA FROM GOOGLE MAPS (with reviews and details):
 ${richAttractionData || 'No Google Maps data available.'}
-
-REAL DATA FROM AMADEUS TOURS API:
-${amadeusData || 'No Amadeus data available.'}
 
 Using the real data above, produce AI-ready structured data.
 Prefer names from the data. You may add 2-3 well-known must-do experiences if missing.
@@ -583,7 +504,7 @@ Return JSON array:
 
   let enriched: Record<string, unknown>[]
   try {
-    enriched = JSON.parse(raw)
+    enriched = JSON.parse(repairJsonArray(raw))
     console.log(`[Pipeline] Activities: LLM returned ${enriched.length} enriched activities`)
   } catch (parseErr) {
     console.error(`[Pipeline] Activities: Failed to parse LLM JSON response`)
@@ -615,11 +536,7 @@ Return JSON array:
 
   const rows = enriched.map((a: Record<string, unknown>) => {
     const aName = (a.name as string).toLowerCase()
-    const realMatch = rawActivities.find(r =>
-      r.name.toLowerCase().includes(aName.split(':')[0].split('–')[0].trim().slice(0, 20)) ||
-      aName.includes(r.name.toLowerCase().slice(0, 20))
-    )
-    const serpMatch = serpAttractions.find(s =>
+    const serpMatch = serpAttractions.find((s: PlaceResult) =>
       s.name.toLowerCase().includes(aName.split(' ')[0]) ||
       aName.includes(s.name.toLowerCase().split(' ')[0])
     )
@@ -629,9 +546,7 @@ Return JSON array:
     const mappedCat = mapActivityCategory(String(a.category || 'sightseeing'))
     const safeCat = validCategories.has(mappedCat) ? mappedCat : 'sightseeing'
 
-    const source = realMatch && serpMatch ? 'amadeus+serpapi+ai'
-      : realMatch ? 'amadeus+ai'
-      : serpMatch ? 'serpapi+ai' : 'ai'
+    const source = serpMatch ? 'serpapi+ai' : 'ai'
 
     return {
       destination_id: ctx.destinationId,
@@ -639,16 +554,15 @@ Return JSON array:
       description: (a.honest_take as string) || '',
       detail: a.detail,
       category: safeCat,
-      price: a.price || realMatch?.price || '',
-      duration: a.duration || realMatch?.duration || '',
+      price: a.price || '',
+      duration: a.duration || '',
       vibes: a.vibes || [],
       best_time: a.best_time,
-      image_url: details?.photos?.[0] || serpMatch?.photoUrls?.[0] || realMatch?.pictures?.[0] || null,
+      image_url: details?.photos?.[0] || serpMatch?.photoUrls?.[0] || null,
       location: a.location || details?.address || serpMatch?.address || '',
-      booking_url: realMatch?.bookingLink || details?.bookingUrl || null,
+      booking_url: details?.bookingUrl || null,
       source,
       metadata: {
-        ...(realMatch ? { amadeusId: realMatch.id } : {}),
         ...(serpMatch ? { placeId: serpMatch.placeId, dataId: serpMatch.dataId, reviewCount: serpMatch.reviewCount, mapsUrl: serpMatch.mapsUrl } : {}),
         ...(details ? {
           phone: details.phone,
@@ -659,7 +573,7 @@ Return JSON array:
         } : {}),
         ...(reviews ? {
           topReviewTopics: reviews.topTopics,
-          sampleReviews: reviews.reviews.slice(0, 3).map(r => ({ rating: r.rating, text: r.text.slice(0, 300) })),
+          sampleReviews: reviews.reviews.slice(0, 3).map((r: { rating: number; text: string }) => ({ rating: r.rating, text: r.text.slice(0, 300) })),
         } : {}),
         review_synthesis: a.review_synthesis || {},
         practical_tips: a.practical_tips || [],
@@ -669,9 +583,9 @@ Return JSON array:
         lat: serpMatch?.lat || 0,
         lng: serpMatch?.lng || 0,
         info: [
-          { l: 'Duration', v: (a.duration as string) || realMatch?.duration || '' },
+          { l: 'Duration', v: (a.duration as string) || '' },
           { l: 'Best Time', v: (a.best_time as string) || '' },
-          { l: 'Price', v: (a.price as string) || realMatch?.price || '' },
+          { l: 'Price', v: (a.price as string) || '' },
           ...(serpMatch ? [{ l: 'Rating', v: `${serpMatch.rating}★ (${serpMatch.reviewCount} reviews)` }] : []),
         ],
         features: (a.vibes as string[]) || [],
@@ -755,7 +669,7 @@ Return JSON array:
 
   let enriched: Record<string, unknown>[]
   try {
-    enriched = JSON.parse(raw)
+    enriched = JSON.parse(repairJsonArray(raw))
     console.log(`[Pipeline] Restaurants: LLM returned ${enriched.length} enriched restaurants`)
   } catch (parseErr) {
     console.error(`[Pipeline] Restaurants: Failed to parse LLM JSON response`)
@@ -893,7 +807,7 @@ Start each day with a "day" separator (category: "day", name: "Day 1 — Theme")
 
   let items: Record<string, unknown>[]
   try {
-    items = JSON.parse(raw)
+    items = JSON.parse(repairJsonArray(raw))
     console.log(`[Pipeline] Template: LLM returned ${items.length} itinerary items`)
   } catch (parseErr) {
     console.error(`[Pipeline] Template: Failed to parse LLM JSON response`)
@@ -935,7 +849,7 @@ Use realistic daily budget numbers in USD for this destination.`)
 
   let enriched: Record<string, unknown>
   try {
-    enriched = JSON.parse(raw)
+    enriched = JSON.parse(repairJsonArray(raw))
     console.log(`[Pipeline] Enrich: description="${(enriched.description as string)?.slice(0, 80)}..."`)
     console.log(`[Pipeline] Enrich: avg_budget_per_day=${JSON.stringify(enriched.avg_budget_per_day)}`)
   } catch (parseErr) {
@@ -980,6 +894,7 @@ export async function runSingleStep(
     restaurants: () => stepFetchAndEnrichRestaurants(ctx),
     template: () => stepGenerateTemplate(ctx),
     enrich: () => stepEnrichDestination(ctx),
+    photos: () => stepBackfillPhotos(ctx),
   }
 
   const fn = stepMap[stepName]
@@ -987,6 +902,77 @@ export async function runSingleStep(
 
   const result = await fn()
   return { step: stepName, count: typeof result === 'number' ? result : 1 }
+}
+
+// ─── Photo Backfill Step ────────────────────────────────────
+// Runs after all catalog items are created.
+// 1. Upsizes existing Google images to w800
+// 2. Fills missing images with Unsplash search
+// 3. Stores multiple photos in metadata.photos
+async function stepBackfillPhotos(ctx: PipelineContext): Promise<number> {
+  const db = getAdminClient()
+  const tables = ['catalog_hotels', 'catalog_activities', 'catalog_restaurants'] as const
+  let fixed = 0
+
+  for (const table of tables) {
+    const { data: items } = await db
+      .from(table)
+      .select('id, name, image_url, metadata, category')
+      .eq('destination_id', ctx.destinationId)
+
+    if (!items || items.length === 0) continue
+
+    for (const item of items) {
+      const meta = (item.metadata || {}) as Record<string, unknown>
+      const existingPhotos = (meta.photos as string[]) || []
+      let imageUrl = item.image_url as string | null
+      let photos = [...existingPhotos]
+
+      // Step 1: Upsize existing Google image
+      if (imageUrl && imageUrl.includes('googleusercontent.com')) {
+        imageUrl = upsizeGoogleImage(imageUrl, 800, 600)
+      }
+
+      // Step 2: If no photos in metadata, try Unsplash
+      if (photos.length === 0 && !imageUrl) {
+        const category = (item.category as string) || (table === 'catalog_hotels' ? 'hotel' : table === 'catalog_restaurants' ? 'food' : 'activity')
+        const fallback = await getPlaceFallbackPhotos(
+          item.name as string,
+          ctx.config.city,
+          category,
+          3,
+        )
+        if (fallback.length > 0) {
+          photos = fallback
+          if (!imageUrl) imageUrl = fallback[0]
+          console.log(`[Photos] Unsplash fallback for "${item.name}": ${fallback.length} photos`)
+        }
+      }
+
+      // Step 3: Upsize any Google photos in the array
+      photos = photos.map(p =>
+        p.includes('googleusercontent.com') ? upsizeGoogleImage(p, 800, 600) : p
+      )
+
+      // Step 4: If we have an image_url but no photos array, seed photos with it
+      if (imageUrl && photos.length === 0) {
+        photos = [imageUrl]
+      }
+
+      // Update if anything changed
+      const hasChanges = imageUrl !== item.image_url || photos.length !== existingPhotos.length
+      if (hasChanges) {
+        await db.from(table).update({
+          image_url: imageUrl,
+          metadata: { ...meta, photos },
+        }).eq('id', item.id)
+        fixed++
+      }
+    }
+  }
+
+  console.log(`[Photos] Backfilled ${fixed} items across ${tables.length} tables`)
+  return fixed
 }
 
 // ─── Pipeline Runner ─────────────────────────────────────────
@@ -1025,6 +1011,7 @@ export async function runPipeline(config: DestinationConfig): Promise<{
     { name: 'restaurants', fn: () => stepFetchAndEnrichRestaurants(ctx) },
     { name: 'template', fn: () => stepGenerateTemplate(ctx) },
     { name: 'enrich', fn: () => stepEnrichDestination(ctx) },
+    { name: 'photos', fn: () => stepBackfillPhotos(ctx) },
   ]
 
   try {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
@@ -22,6 +22,10 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isSurprise = searchParams.get('surprise') === '1'
+  const emailRef = useRef<HTMLInputElement>(null)
+
+  // Auto-focus email on mount
+  useEffect(() => { emailRef.current?.focus() }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -33,7 +37,13 @@ function LoginContent() {
       : await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
-      setError(authError.message)
+      // Human-readable error messages (philosophy: errors in plain English)
+      const msg = authError.message
+      if (msg.includes('Invalid login')) setError('Wrong email or password. Double-check and try again.')
+      else if (msg.includes('already registered')) setError('This email is already registered. Try signing in instead.')
+      else if (msg.includes('Password')) setError('Password needs to be at least 6 characters.')
+      else if (msg.includes('rate limit')) setError('Too many attempts. Take a breath and try in a minute.')
+      else setError(msg)
       setLoading(false)
       return
     }
@@ -61,6 +71,8 @@ function LoginContent() {
     })
   }
 
+  const isConfirmation = error.includes('Check your email')
+
   return (
     <div className="min-h-screen bg-[#08080c] flex items-center justify-center px-4 relative overflow-hidden">
       {/* Subtle background glow */}
@@ -69,6 +81,15 @@ function LoginContent() {
       />
 
       <div className="w-full max-w-sm relative z-10">
+        {/* Back to home */}
+        <button
+          onClick={() => router.push('/')}
+          className="flex items-center gap-1.5 text-[#4a4a55] text-xs hover:text-[#7a7a85] transition-colors mb-8 opacity-0 animate-[fadeUp_1s_ease_forwards_0.05s]"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to home
+        </button>
+
         {/* Logo */}
         <div className="text-center mb-10 opacity-0 animate-[fadeUp_1s_ease_forwards_0.1s]">
           <h1 className="font-serif text-4xl text-[#c8a44e] mb-2">Drift</h1>
@@ -78,6 +99,7 @@ function LoginContent() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 opacity-0 animate-[fadeUp_1s_ease_forwards_0.3s]">
           <input
+            ref={emailRef}
             type="email"
             placeholder="Email"
             value={email}
@@ -96,7 +118,14 @@ function LoginContent() {
           />
 
           {error && (
-            <p className={`text-xs text-center ${error.includes('Check your email') ? 'text-[#4ecdc4]' : 'text-[#e74c3c]'}`}>{error}</p>
+            <div className={`flex items-start gap-2 px-3 py-2.5 rounded-lg text-xs leading-relaxed ${
+              isConfirmation
+                ? 'bg-[rgba(78,205,196,0.08)] border border-[rgba(78,205,196,0.15)] text-[#4ecdc4]'
+                : 'bg-[rgba(231,76,60,0.08)] border border-[rgba(231,76,60,0.15)] text-[#e74c3c]'
+            }`}>
+              <span className="mt-0.5 flex-shrink-0">{isConfirmation ? '✓' : '!'}</span>
+              <span>{error}</span>
+            </div>
           )}
 
           <button

@@ -1,0 +1,520 @@
+{
+  "city": "Manali",
+  "country": "India",
+  "hotels": [
+    {
+      "name": "Himalayan Heights Manali",
+      "rating": 4.8,
+      "reviews": 3980,
+      "price": "$39",
+      "type": "Hotel",
+      "address": "ADHPL Barrier, Hamta Road, Prini, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerDGY_lFSthQyX4HDcP5tZs6_IIhgpDIcIEr4OqTTKyf3XbJJLooUI1VTBgXJmNdyhaQVciJs7WUyJ0-4fOvQkcG-5pNIfOmtRrD0eU7QkDlVEAeWOl3ET4B4RLe2FD4R6laoMCdA=w138-h92-k-no"
+    },
+    {
+      "name": "Echor Himalayan Heights Luxe Resort & Spa, Manali",
+      "rating": 4.8,
+      "reviews": 1466,
+      "price": "$27",
+      "type": "Hotel",
+      "address": "Hampta Rd, Prini, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepcq2CLH_hTIhEovYYscGuSqfWbIYA2TArglj6sNV2pJPMtQzTL8RZFyZyDOJbxyry0RCans3eqPgMzC-ka6ZRWP6mq-QjMVNjC8FwDOKT1fcFFLLaVDbFpcSETLuDPYY2Qf_KV=w138-h92-k-no"
+    },
+    {
+      "name": "Sun Park Boutique & Spa, Prini, Manali",
+      "rating": 4.9,
+      "reviews": 1675,
+      "price": "$30",
+      "type": "Resort hotel",
+      "address": "Left Bank, Naggar Rd, Prini, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoi0NuRpd2wa-o1CLqhpclkApOSJ49g9JyblbOBDPYkmH0E25oBfsF05tJUZsEAE5Zo-F8PXD_7yzUpUTCP9_juN049e66bHenOfm-pGLDYlPNXWdzYnmk183ytxYMxJKgjiCTUpQ=w137-h92-k-no"
+    },
+    {
+      "name": "The Himalayan",
+      "rating": 4.4,
+      "reviews": 703,
+      "price": "$98",
+      "type": "Resort hotel",
+      "address": "65VJ+VR5, Kullu Valley, Hadimba Temple Rd, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweouSWRyeb8pggeFe3B1OAgVqG1QpGGC7oRs0sxG4TsrzNs4olwgxB_D7UG50KwfzuAKeRndfaTxrqzjZ08TjZKCUfxHA8J6U1lsNynehIzh3E14oMTXKvhrZQhcP5UUbxex6DOT=w138-h92-k-no"
+    },
+    {
+      "name": "Storii Urvashi's Retreat",
+      "rating": 4.5,
+      "reviews": 690,
+      "price": "$173",
+      "type": "Resort hotel",
+      "address": "Shanag Road, P.O. Bahang, Manali, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhG9SRs39ZB9rZKApcz3RiyG57lMRjvOYp0c0_rgs935QDzAI56JTR-ywyRrwin_sS048itP5pSLedvq1H-ooDeDqNeYgfKQC5Z-ogLBEK18xQ4Hk8vpnGy6uGt0pCBWLbivx2LtzKYPl0Qqqou0xymp3oWZwWrq9Aja6uddU2mmecbeGXOjJG0NIg=w175-h92-k-no"
+    },
+    {
+      "name": "Mastiff Grand Manali Resort",
+      "rating": 4.3,
+      "reviews": 3680,
+      "price": "$54",
+      "type": "Resort hotel",
+      "address": "NH 3, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweodG7KOZoGAQYOved0c53y3tiZqiECR0jeSkqorIUQwoy9tcJxsEh3eIMov_SXQ_sr5ptXxTBDxSgoiTVIxSstxLkngWDpcaCMhi-aLEtUGsdOB36EuLMbkpmAdp1qqwLZ5pywW=w138-h92-k-no"
+    },
+    {
+      "name": "Echor Himalayan Aurum Manali",
+      "rating": 4.8,
+      "reviews": 3646,
+      "price": "$26",
+      "type": "Hotel",
+      "address": "Hamta Road, Prini, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweon2X1a2sNA8zSuZpIEqLFx5nygMRA9CIO24QVchiRkXkhr5a8E0bhG0KGlfHM8JPjcS_f7uY48RDJ51LMMjeLZSyiQ3P-pxJry3o-TVCjifBA8lKW64c7eV-lBULxJeRhOzJGAp5WFKr_3=w138-h92-k-no"
+    },
+    {
+      "name": "Hotel Old Manali by Himalayan Hotels",
+      "rating": 4.9,
+      "reviews": 78,
+      "price": "$4,664",
+      "type": "Hotel",
+      "address": "Clubhouse Rd, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqBpo_95fJJ-AOCXlSl1i5zNxc9aTIMQrw_ZFe3gssjKF2egdk0zsQDwNAdVQ2iurgA_MRhsdJFt5QUXUUayxdAulx5M73d_ZCom5cPkaK5tpYKWuqBZomG_jI6jsK1Qxbjjgbhe5ywcg3y=w138-h92-k-no"
+    },
+    {
+      "name": "Honeymoon Inn",
+      "rating": 4.5,
+      "reviews": 2631,
+      "price": "$40",
+      "type": "Hotel",
+      "address": "Left Bank, Aleo, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerqEH3XEZ8qWE1b5x7IbkDMbWs7tV7A7eWU9YWLw40cPA93oqFBrNKGxHyW5RYnFYb3EeCxShMz-afjddlnMKktVVMP8pR9MQUpLhDjvVQOU1427TuXz84hk9O4_sJQtctZXipCEA=w137-h92-k-no"
+    },
+    {
+      "name": "ManuAllaya Resortspa",
+      "rating": 4.3,
+      "reviews": 1571,
+      "price": "$65",
+      "type": "Resort hotel",
+      "address": "Sunny Side, Chadiyari, Manali, Bashisht, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqSDvnNoUZ5i-8s7tV33htMQDqZ9-TWMkZT2iesxr-SG5zIwZNwaNX6bdSJKohM2InUgqVgwomXD3jr-jDsEIVskeNccAxhWFPif0Z5fkwTz1eWZV0Ca6qQ4tCb0g51Z6oRvsJ3=w163-h92-k-no"
+    },
+    {
+      "name": "Hotel Piccadily Manali",
+      "rating": 4.1,
+      "reviews": 1444,
+      "price": "$64",
+      "type": "Hotel",
+      "address": "Mall Rd, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerrjAR1pAZtDnxF4o27_Jee0TuE2eHyBQsmn_FBUs8YrcuWQ0QSHNBQmACE73NEQlITjSJWcRa1PYc3ZE7pp9s7x3q_OEBUcuJfg0Rs_zcS43D0Yco5YwUCDXS7lHFgUXs7QeMS=w157-h92-k-no"
+    },
+    {
+      "name": "Snow Valley Resorts Manali",
+      "rating": 4.3,
+      "reviews": 3179,
+      "price": "$52",
+      "type": "Resort hotel",
+      "address": "Log Hut Area, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqaEY6yYUDcu3kIB25kJsUIYJXMVVV8mTGb3oF2RqZ7BHDVZ9mxVqqBDQVgPF2qrL8tzaKfnYpXoNDBMxwb6dYTBU9pzU3WfkYSuGVbbzTlJLet3B1Kz7UxR_6VIgfNEASiGUxacBpwNMqi=w138-h92-k-no"
+    },
+    {
+      "name": "Cottage Woodland Retreat",
+      "rating": 4.8,
+      "reviews": 407,
+      "price": "$152",
+      "type": "Hotel",
+      "address": "Village, Naggar Road, Shuru Rd, Tax, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq6cwoaouhOXvT66hyyaIBVOZr8_JtJU8A8uEpS_VjSt57m8JmcildlY_QAvGV6qAYjDF4krAyJNsbURIGBykm7sYCILHrijzB_V1USGcfhscZaOGbl4jtzYXbbDk_x4q02gX0=w137-h92-k-no"
+    },
+    {
+      "name": "jüSTa Grand View Resort & Spa, Manali",
+      "rating": 4.8,
+      "reviews": 843,
+      "price": "$48",
+      "type": "Resort hotel",
+      "address": "P.O, Grand View, Shuru Rd, Prini, Manali, Gadherni, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepjJ8X15jJm3DS5XqI0H1xHGEBgUjNTITRd3A5J52_azLxrMTWuJLvWMoPKfrNV-amsW4TzmsJXhqMNF-P_0DqJzDtyg117AvP1HoP83hc16Y29hQLoi7N4ZKMRA-k2IbdySfAtiB8VZERE=w163-h92-k-no"
+    },
+    {
+      "name": "The Khar Hotel, Manali",
+      "rating": 4.8,
+      "reviews": 429,
+      "price": "$48",
+      "type": "Hotel",
+      "address": "753R+JCF, Chadiyari, Bashisht, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep5uBOZt6IzvPKoBdAwj4BhwLmKwMDXT_JLMW3WDkT4P_VJA90matSmnPe4Lmcwnl7EBFlhfkGX5Rzdy3ZqLIPc-F_BKJNdvbVOZqTLJaT82AQAPR6pYLs8NaFxH-4pUcsSE6zV6JI6Z3KJ=w137-h92-k-no"
+    },
+    {
+      "name": "Coral Resort and Spa, Manali",
+      "rating": 4.2,
+      "reviews": 525,
+      "price": "$41",
+      "type": "Resort hotel",
+      "address": "Kullu - Naggar - Manali Road, Shuru Rd, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerabrrB-_Otgai3Md1r7f3t3YZ_kcG-hET0Dyj6ctBKev9yoDZhSawFisBQ_B4BinP1sOpPlfrN3AWxsm_Vjn_cfqiqRjSN2gwO3268om7YwOpbUHXu_zn3Ur9QyuaIeI4CGXKLYlb2zVtP=w138-h92-k-no"
+    },
+    {
+      "name": "Hill River Resort by West Western",
+      "rating": 4.9,
+      "reviews": 1901,
+      "price": "$22",
+      "type": "Resort hotel",
+      "address": "Left Bank, near Mall Road, Aleo, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoiMh82AuBXMJRzyqwKDp-W9qyu__9yJG8LfuBP1UBCZWp6rn1ERYJBSQxa1dS_nIYy07EIgo5ipDzHE3r4xRjyk24OiHvylbp3T2AFVTNMxdCzMuDV0eqKkkfHzzBCud3NdQDnYSD5TA51=w138-h92-k-no"
+    },
+    {
+      "name": "Khvaab Boutique Stay - Hotel In Manali, Old Manali",
+      "rating": 4.7,
+      "reviews": 278,
+      "price": "$26",
+      "type": "Hotel",
+      "address": "Burwa Rd, VPO Burwa, Manali, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer7sjUIrjwzKEPL0zdrFjo2b1LpmyD355IGy0rtP6uC0SfYPmKLdoZqUyFabUt9Rq8vY5x_MCG0Htr5tXgjdhBh9gBPNi5znkb21DZr2dWtKQPkmCxBxLyntxZnyDIYAFkctAui5w=w163-h92-k-no"
+    },
+    {
+      "name": "Renest River Country Resort, Manali",
+      "rating": 4.3,
+      "reviews": 3579,
+      "price": "$72",
+      "type": "Resort hotel",
+      "address": "NH-3, Rangri, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqcOVhMJnQCEUfZOgdnXjQdfg5P2V1vw9FSy0iyNFIIOv4XtSBke10mvUwhosyTdx0icaqpGnCuLolJQeSfCM0kcswc6WHZWtpF3czeeKB9ZaGsUGY5rbhKxJhwbUM3JkG1YiRgLg=w163-h92-k-no"
+    },
+    {
+      "name": "Mrps Eco Eden Resort and Spa",
+      "rating": 4.6,
+      "reviews": 117,
+      "price": "$37",
+      "type": "Resort hotel",
+      "address": "66F4+CF9, Hamta Road, Prini, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqgbtOdXVYUfq_tPN4DEh2RhaCwBkWA2_i62QI69qeRgwjNNd7_Qp7H8L63Wvbe0AUe_ZMzvyOG0DunTlh0DETCqv4D1nbd7Yq_0mozUUGhic9IiW00SvvtlH1TodO6hA02h2E2ZgIdw6A=w138-h92-k-no"
+    }
+  ],
+  "attractions": [
+    {
+      "name": "Museum of Himachal Culture & Folk Art",
+      "rating": 4.1,
+      "reviews": 1125,
+      "type": "Tourist attraction",
+      "address": "Utopia Comlex, Hadimba Temple Rd, near Hadimba Temple, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerqFbrswG24l-f9RPr-adxiNv6TIWE9WCCTZMuNWqPV993F_24_u7sjiNKYsWA7SinIvjV0PVqz9xIaeNpwKFXtfDKpAbFu8qFfUklVo1HxMmaGLLe7aDTP8ekqjBSnXaIR4VJSRg=w80-h106-k-no"
+    },
+    {
+      "name": "Hadimba Devi Temple",
+      "rating": 4.6,
+      "reviews": 47195,
+      "type": "Tourist attraction",
+      "address": "Regency Road, Siyal Rd, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerj6fdFQFngOiSK2gXQmGpU4KIcteHPlX989Sc6xi5o0ZTI31VJJRZ9W9nyRWeF9DGaqDsMirt64xxTGiUfE868N3awV1pxLiTcaUXbvjW7fMOmEZnrinIJMFK2CTEaiee9FHLiyw=w122-h92-k-no"
+    },
+    {
+      "name": "Old Manali snow point",
+      "rating": 4.6,
+      "reviews": 416,
+      "type": "Tourist attraction",
+      "address": "65XJ+J2W, Hadimba Temple Path, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepD9P4FZDvNFwTEQnCHXvnBf54XiPq-OZ6bgWQckNRS6guAiANjSZYabkFWbKR4WGWxvJ6edmGSn2YycV5U3VGqN0k8YWf5BpBCaCNKasyCCWZ2-3oKnMIM1h0N4yo352-JA1w5kg=w122-h92-k-no"
+    },
+    {
+      "name": "Mini Switzerland Manali",
+      "rating": 4.6,
+      "reviews": 73,
+      "type": "Tourist attraction",
+      "address": "near Nehru park, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepio0gRrzk6C1MGGeHOry2Dick4CDqa1ehtR0IU6jxMlSgA4TTqR7EdqsBnN09XIDBKlaK6tE9ERUP_a70Q4Je3UXyrqB3FTkJ2PoegMHtctBE1f6IGLgtSS9_NEsOjB41fwQcovA=w163-h92-k-no"
+    },
+    {
+      "name": "Van Vihar National Park",
+      "rating": 4.2,
+      "reviews": 8875,
+      "type": "Tourist attraction",
+      "address": "65QQ+JJW, Chichoga Rd, Aleo, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepTNFzMDvB5vl8CgYKSj7KMWe65b8qeOdDS4X27I0CZcczki1Tz5kNtK8-XSDqXt1QeFECDD2hZupkF-04RQ9QwHetqcRGICrrCbE63oBjjz0GLZFR3EQFQXAtB5xWtECJvOCkGxA=w122-h92-k-no"
+    },
+    {
+      "name": "Nehru Kund",
+      "rating": 4.4,
+      "reviews": 7587,
+      "type": "Tourist attraction",
+      "address": "Bashisht, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo_oescukQo2vaIXOnWO5poUsy9jIbafYba_dPc73p8g-AHTbx4EvN0wH1wdL66Vp-wjqxXVipEjPOeDz0SjdsBRlii9jG3RTmFpyePuVGSXgNLuLIQUiRjDIdchS2JJVBwHNo=w163-h92-k-no"
+    },
+    {
+      "name": "Manali Bazaar",
+      "rating": 4.3,
+      "reviews": 3977,
+      "type": "Tourist attraction",
+      "address": "65VQ+HQW, Chandigarh-Mandi, Kullu - Naggar - Manali Rd, Dhungri Village, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerv71S89-zh2mBasQyc0Y_lkkh88TA55rIeJQdxKWR0W8WacYVHSrwP_cheIZoMqF2Iy4nQ0jsiXEPupO5b1dP-25D9f7ScGCFFKRFuPNBHI77FyMgSPyEFCxmYHAQSTiIUEA70=w184-h92-k-no"
+    },
+    {
+      "name": "Baror Parsha Waterfall",
+      "rating": 4.7,
+      "reviews": 438,
+      "type": "Tourist attraction",
+      "address": "Baror, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerGQDYdKT8-nQ4nsQ2hKXvBx_LA-RNES5Ffyvn3RSTr5S84hF9aV0ilOzslNJ53MzKZ6l1YET4ozT0vddKFwUfJGNLannhMUVxXAU-RZhkP2kM14qllLvDOX5QZw1hS1z3gR1uj=w138-h92-k-no"
+    },
+    {
+      "name": "Jogini Falls",
+      "rating": 4.6,
+      "reviews": 10452,
+      "type": "Tourist attraction",
+      "address": "On water fall way V.P.O.-Vashist 5 km.from, Manali, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepp-g3JtN7Q5O_BatQywTi1Fa4ycWSqp9sSDKNSH8DthfL7U71EeNqUbc5NOtHkWR4N-rg4CIwKXrd9DJcDa9D3M54HB0x5g_EdnOewX7THEe4kfXwcFNABidda2okczF2bAVg3Yg=w122-h92-k-no"
+    },
+    {
+      "name": "Kharma valley",
+      "rating": 4.8,
+      "reviews": 126,
+      "type": "Tourist attraction",
+      "address": "7539+W6C, Manu Temple Rd, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoH0oSY5sJqcZmmIZe3kzz_SKwFuW1RvLL57HGYzLJD6PcCGq7uYefEEIuwWYM_X0GMIL09u4utTXttAk3cy_KY7NrTPPB5uV7xnZUfP5O6gtcIQw8QMuhT9Tf-qrV-4T3Idg6rSw=w163-h92-k-no"
+    },
+    {
+      "name": "Him Valley Amusement & Cultural Park, Manali",
+      "rating": 4,
+      "reviews": 1106,
+      "type": "Tourist attraction",
+      "address": "75GJ+M72, Manali - Leh Hwy, Bahang, Bashisht, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqSg2JI_4n_SiYcy42lvlfCcGqrAqH2l-nL0ObC0izQxc0rkYw9G60scQ_Y-yuXlPtdv2bXK7uwKqftlzclwcw1ZMVr2JHGJSxrVTl6wmc9lBMGA0-O0ToxtGJRlqq7zufWkNiznw=w122-h92-k-no"
+    },
+    {
+      "name": "Manali View Point",
+      "rating": 4.6,
+      "reviews": 76,
+      "type": "Tourist attraction",
+      "address": "65MP+GW, Nasogi, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweovbWQ1J-kqpTUnCCdPrZ1ndH5SVPG8j8aMoaJAX15-wOtZux7Ofn_y7FDlGb7zH7ohTI_zXeZVkAR99hUkikZm3Qh4uHJQONheNGVxrAQkW2JdkcHYqqhkMHlZkWT-56UjQ8s0FQ=w80-h106-k-no"
+    },
+    {
+      "name": "Himachal PARDESH",
+      "rating": 4.3,
+      "reviews": 6,
+      "type": "Tourist attraction",
+      "address": "65VQ+7MF, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq-HfKbBWYUh45F39YpSL4Hada16Y5RNSGH65slk7kFBHMDPa6bbqK8hshE1fcFfFOEPSwjjc6s-9QFCamUbkZYpZtab7ol2UBL1W_nnTCm8WrS5OOHiBsrGW7XTU5AuM99P-O4RQ=w163-h92-k-no"
+    },
+    {
+      "name": "Manali wildlife sanctuary",
+      "rating": 4.4,
+      "reviews": 189,
+      "type": "Wildlife park",
+      "address": "7528+GPH, Nasogi, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo3wl1OPT9a7viQCBwDCPWKqIZOeEYikl0f5avO7fEy_TLVIjMN4f0JDOM_bDRKNPJSJWF2ZEAJflFlaXcAu9Dw5Zz9hTy5Fgl0poqRAgEbTL0W_5TEx8WSjVEcgrL53_5Q5M0=w122-h92-k-no"
+    },
+    {
+      "name": "Old Manali View point",
+      "rating": 4.6,
+      "reviews": 38,
+      "type": "Tourist attraction",
+      "address": "Stop 1 on Meadows Trek, Top Meadow, 1, Goshal Rd, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqEp7V2YHqtXGgfewbLQEX5tAm0ITdZ70y_YETj1UHdhXSeDAVs7dY9Ml1i1e3cWFZEMt2snwCv_DbEEXgNEPq3xQtrPev-RVTy58-YPAfTu6eyrvoVrxNX9OvATYZ8fFc_1Fak=w122-h92-k-no"
+    },
+    {
+      "name": "Hadimba Forest Block",
+      "rating": 4.4,
+      "reviews": 25,
+      "type": "Tourist attraction",
+      "address": "65PQ+XC7, Hadimba Temple Path, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo_RlR-P4xNejzr1IlLAd7ebWYT0Dt7pBb-IWX53SedjqeVNh7aMHojSN9inCQqz8ew-mS_yg4GVObZc-OUvTJGipqnEsBChAW2HuyfrXU4xILsdp4rY5gYjtkFURjgemYf7L-T=w163-h92-k-no"
+    },
+    {
+      "name": "Manali Snow Point",
+      "rating": 4.6,
+      "reviews": 3849,
+      "type": "Tourist attraction",
+      "address": "75GJ+886, Bahang, Bashisht, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoJyiodpXEdV-ltnU59X1v9ru-TuaSiiSt-Me2qbYucMmDVQtSFksj1LKkyhxOteso6fdao2DCFl3L40Qqvq2Fka-9YY4RVizWkuxfB5rinU_RalKc6NMXBNjWwAP5mUF6WHIY6=w122-h92-k-no"
+    },
+    {
+      "name": "Rahala Waterfalls",
+      "rating": 4.5,
+      "reviews": 785,
+      "type": "Tourist attraction",
+      "address": "86P9+G8X, Manali - Leh Hwy, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweof8DIUUPAmgIlLLL4Kd7F2kai53kJpDSKsa9-8QJLIPJmq0iU1CybacWkPT2Ln9cYV6V1D7vVcnFpgvfN5eJSqDETZEBLsrni_S3mDZAtlLhMpPWuKoaqu-TAOiqhkO6YXZTo=w163-h92-k-no"
+    },
+    {
+      "name": "Manali hp",
+      "rating": 4.9,
+      "reviews": 8,
+      "type": "Tourist attraction",
+      "address": "65RQ+V6F, Gompa Rd, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoXj5fTaSYAtCsRTXeoeFvM3CVCbfxlqb7h0t2F8DjGwpoy--fmbUGGp41bKOYfyd85nRY9mmVCvIuL6G5tcy_zdKpAwY8OeAUD9M1KF4yIboPn_Sk1dFsUr2vnGOLuTibbMvk=w80-h106-k-no"
+    },
+    {
+      "name": "Keylinga's Manali Igloo Stay",
+      "rating": 4.6,
+      "reviews": 169,
+      "type": "Tourist attraction",
+      "address": "Village Sethan, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerScZ8TYYPQmi21VriJPZOIAkDYZiInf07ol8Cfcx_EPIDiM2rBlbf02LtYIc6XPzVMejnXkoHRg1rXPlMv0jTdPWsyM3FdwmRzKlAWfyuJXQL47L3ZrThLmG0D10c6dOJjJYzB=w80-h106-k-no"
+    }
+  ],
+  "restaurants": [
+    {
+      "name": "𝗧𝗵𝗲 𝗟𝗮𝘇𝘆 𝗗𝗼𝗴 | Best Restaurant in Manali | Bar & Grill on Manu Temple Road",
+      "rating": 4.3,
+      "reviews": 7713,
+      "price": "$$$",
+      "type": "Bar & grill",
+      "address": "Manu Temple Rd, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoK7y7GNDgevEVuB3YIjn8bBRbhYP60jrdsVRPbtI4_oMbfC4QSqkjgPaN_2RdhBzQpGiKvooN2Z1b898sP7U0jlKC95Q7b4z-GqP5k9APaMRK4XPG3e_upeXWwtrPrE6TJygzLDg=w163-h92-k-no"
+    },
+    {
+      "name": "Flydining Manali",
+      "rating": 4.5,
+      "reviews": 765,
+      "price": "₹2,000+",
+      "type": "Restaurant",
+      "address": "Old Manali Rd, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq-cI7qdtHlAo8XY9IiCZ4Lox44_PMhpvB57sAYe_17-CzmKXbWfsPErPvgAo3_bRo9gdsU3Ou10wucOongDIylyOlf8gkbIGdMpxCo7bpt48qJwZ3_8KEOWbRBLW9Bgsky_v-c=w122-h92-k-no"
+    },
+    {
+      "name": "Cafe 1986",
+      "rating": 4.6,
+      "reviews": 11655,
+      "type": "Restaurant",
+      "address": "cafe 1986 sarswati complex, Mall Rd, Model Town, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerKzkIqpslHD428IhBPofTRVs6yWgYvlOp-CmCokRXw-75WvrN9S2-t8d3w0bRTeK8bsoiq19tVr1Rqg3YGiiyCt7y9GVPCM8UbNirNEBALHRJAhpvXX1BrIuWHCijn41KoLl_ENw=w137-h92-k-no"
+    },
+    {
+      "name": "The Kullu Kitchen",
+      "rating": 4.9,
+      "reviews": 592,
+      "type": "Restaurant",
+      "address": "Ground Floor, Left Bank Road, near White Mist Cottage, Prini, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerZ_EBite6SwSXRe70UjJqBNAFMrZ-eoJMOZozmnCBf9dyhfInUFs5CaZJ3VQVD4x8CVQqyNUFEE8POM6PO7t2VmKMicJKb5mz8DBvIHcGlVoiILqpGDNMCtUcmc586mw3Gp0fKCg=w80-h120-k-no"
+    },
+    {
+      "name": "Southern Souls ® Cafe (Pure Vegetarian)",
+      "rating": 4.8,
+      "reviews": 1917,
+      "price": "₹200–400",
+      "type": "South Indian restaurant",
+      "address": "Beside Government Primary School, Hadimba Temple Rd / DPS Road, Near, Hadimba Temple, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerYbnYusnM6f8PeKsfee_Rb9Vxcs40MizDG44q5G_D27QNt3MwLBskdJXvX9Bx5h9cRj7Dx95xweISPxPKjMWkacJg4P1_XhJEZ0OWREkoxtWv_e0BgwdCoozaDH2O70BI-zHkDSg=w80-h106-k-no"
+    },
+    {
+      "name": "Restaurant Romany Pure Veg Manali",
+      "rating": 4.8,
+      "reviews": 443,
+      "type": "Restaurant",
+      "address": "Rohtang Road Opposite GSS School Goshal, po, vill, Bahang, Manali, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerVrvKa3R1lmyrSzye7_nSfutbd6aS6x9teXsVL6w-UJIAAvYZX-oXXrX1iK0ih7e6jsILGUUV4QKR_yFKy7gPlp9daLVJGtIhOHWBQcl15DR0Ki4kDvidhgCqnYx7NFU53V5na=w137-h92-k-no"
+    },
+    {
+      "name": "The Johnson's Cafe Hotel & Bar",
+      "rating": 4.3,
+      "reviews": 4801,
+      "type": "Restaurant",
+      "address": "Circuit House Road, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer12f7pMPqeAn7AGrqR_gkd8jFTvD_s5e3eLUC7Mmz9qap9Fqkuml1RZlXuV51q3cbjT_PxaAhvySzlsU5CASZrAmF91311rbnd0BpAH0jg30X5s_aVyjQLJKR6vqP8kaXx8PDi=w163-h92-k-no"
+    },
+    {
+      "name": "Cafe 1947",
+      "rating": 4.1,
+      "reviews": 7723,
+      "price": "$$",
+      "type": "Italian restaurant",
+      "address": "Near Nehru Kund, Leh Manali Hwy Vpo Bahang, Dist, Manali, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerbpAWw_di7HCQiR8FeTg0iaaZf6jcVObKFblo5JyHHtSqtXRJ9m0t_hBYJo-9O-SmuiMb6edV6PvfyeHaxETVhiQh6yrxOt6G6Vpw5fv3nByP4mVxDoHKIv379PI9mGi3-09h5ig=w122-h92-k-no"
+    },
+    {
+      "name": "Taste of India, Manali | Indian Restaurant in Manali | Best Cafe in Manali | Indian Food Takeaway",
+      "rating": 4.1,
+      "reviews": 3566,
+      "type": "Restaurant",
+      "address": "Solang Valley Road, near Indian oil petrol pump, Manali, Bashisht, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoyKnvSfhQ4FyfU6EPQc5ssEJ8rM9uqzOWK2KqJvzJSF0RDjkh6fZurZ1aGyULzDi-_4mVRn5vC-jv9UcjyCNst48SxvNnVAWqnxQ3k47KCPOvVM2RDeBvQ9oBzoosN-Gw7Uy0=w138-h92-k-no"
+    },
+    {
+      "name": "Fat Plate",
+      "rating": 4.2,
+      "reviews": 1232,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "Shuru, Kullu - Naggar - Manali Rd, Manali, Himachal Pradesh 175143, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerksCvYBEnK4WRIzU01cj_8rJH0isN8YQr60XnRol3HqeBkeh2OVntmt07QYCNzcm-nzqOQukzkoIDPhs8KxRtHIr4lWn8gEeAXkhdTBqNhYh9Hcztzn96uH_YtKDqTwE3EWfsZ=w128-h92-k-no"
+    },
+    {
+      "name": "RIDE INN CAFE, BAR & Resort",
+      "rating": 4.5,
+      "reviews": 1876,
+      "type": "Restaurant",
+      "address": "Burwa Rd, across Nehrukund bridge, Manali, Himachal Pradesh 175103, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweolcGAn8Cgc1xC3oP99yLLmu96rf0JkSDEmYKvqACL5houusvyjNyB8fv2JQfcMZm2Ehq8_Q_J8199doP4V_Io49QOU5kVujHomJt-XJi4atg7ySloW15xPUkftDKH8BAIdea7p=w122-h92-k-no"
+    },
+    {
+      "name": "𝗠𝗼𝘂𝗻𝘁 𝗩𝗶𝗲𝘄 𝗡𝗼𝗼𝗱𝗹𝗲𝘀 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁 - Best Fine Dining Restaurant in Manali | Rooftop | Cafe | Lounge | Bar in Manali",
+      "rating": 4.2,
+      "reviews": 2440,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "Mall Rd, Model Town, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerQ19DahZR1IJVEWlaMjy6tf0cw0flPrkj_Rc5c-BZtROZSU42TlpRhzqwBFV45z1t7W9fMFfzF5u585IO0Fd5rbT6F8rvH4FfAvQ_FhgBc7uQ57O3-GX6u6wBDtL-TFUNdxpM=w122-h92-k-no"
+    },
+    {
+      "name": "The Corner House Restaurant & Bar",
+      "rating": 4.3,
+      "reviews": 2551,
+      "price": "$$$",
+      "type": "Restaurant",
+      "address": "Model Town Road, Mall Rd, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerKeVGEs0sLo2o3EyStU_awbBWxg4-OOi0kK7NcLDAriagJeZZw91bPM475qlvP-LxS6x7Bw8XHyNA_wz-b_36NLb1ytXw9vvJgHxx_upiPu7WGH1GWWkEAOrT0VLotCYoMavxDpA=w122-h92-k-no"
+    },
+    {
+      "name": "Zam Zam Mediterranean",
+      "rating": 4.7,
+      "reviews": 1382,
+      "price": "₹200–400",
+      "type": "Restaurant",
+      "address": "House No 48, WARD No 6, Down Town Manali, near SBI Bank, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqlxel0frMqAv0GWyl2QTHQ3VRGwrki61pA4F0SFA_A2L8tLwWuOpFFjpLMgp-9yp5Cr3nA_JG2xdetM6tW5G2aUD-OA3Jgy6UofcYMOF31-_MZdgs13CFKTp42PhWJIgg9nvA=w122-h92-k-no"
+    },
+    {
+      "name": "The Pahadi Cafe",
+      "rating": 4.4,
+      "reviews": 344,
+      "type": "Restaurant",
+      "address": "65WQ+9R4, Ramabagh Chowk, Mall Rd, Siyal, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep_dKmxnR1RDJGV4dKgCsHq1uWw0q1uAWsmwp9RiuUvFgVf36Zme6uAcAEVtwOGruvxjOJykLV9ZGm5JJYW6b9FzHNxtCEL8f5h5A8uaA_p0KUjcbCdqmZM3S-iM3ITgULkH8c=w122-h92-k-no"
+    },
+    {
+      "name": "Manali Meals, Restaurant | Best Cafe in Manali",
+      "rating": 4.8,
+      "reviews": 911,
+      "price": "₹200–400",
+      "type": "North Indian restaurant",
+      "address": "NH-03, Kullu-Manali Highway, Harabag P.O, Bandrol, Himachal Pradesh 175128, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoXnEqqlGqeOHw30MmSNXkcxpGcqyzP5DNM_gQGmtfyY6o8UBcLWh-yKC_GvLhrcRuLrbGrsRsXfK6bwU5h22vWQEfRL-QC-9LSeMnDxZXYLQOTclApOaS-J6C4UrJTg_yuKK1C=w122-h92-k-no"
+    },
+    {
+      "name": "Rocky's Cafe",
+      "rating": 4.4,
+      "reviews": 2391,
+      "type": "Restaurant",
+      "address": "Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepFx2_SPasszkLZ2zM_28y2Ara1oZ1WTKemtmoM_H-LIm9LQsyGRVYNXucfSg3WeoyvLv8kPzt-L5xjh28nD11pxlVmIsX-s_gtAt1lGTGjFatsEBLIvYhlgZjKj0QmtMCWZHnWZg=w122-h92-k-no"
+    },
+    {
+      "name": "Desi Swaad",
+      "rating": 4.4,
+      "reviews": 4002,
+      "price": "₹200–400",
+      "type": "North Indian restaurant",
+      "address": "ground floor, Pnb building, 2, Mall Rd, road, Dhungri Village, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepe4xWZYlTylOaoL-iSnReP9TCxMmBM8NGMQ7kbTYNtMsO425ZyDRBo12NOJev_Ml5k_-xsMOpSfve0pWtdqNHE1U2oVkgaSB-u9WVTdyXBYJzoYNunsjEAEouOpo29Zw6zsWrX=w80-h106-k-no"
+    },
+    {
+      "name": "𝗜𝗡𝗗𝗜𝗔𝗡 𝗙𝗟𝗔𝗩𝗢𝗨𝗥𝗦-Punjabi Food/Indian Food/Authentic Indian cuisine/Riverside Dining/Manali Finest Indian Food",
+      "rating": 4.2,
+      "reviews": 555,
+      "type": "Modern Indian restaurant",
+      "address": "National Highway, Rangri Area, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqSzSeiSLqcgC68RLdGQIG2f9zUCJMmRQksDTO7DmZ3EP4TxUg_2WfXAu6H9kVYhtI7KUkQd2W8aNXr9x818f4WSa_6BWTx1ezXLoo-lAER08Tr3W8iTIPjdcHn6s9M-0otrY0=w163-h92-k-no"
+    },
+    {
+      "name": "Backyard Cafe",
+      "rating": 4.5,
+      "reviews": 508,
+      "type": "Restaurant",
+      "address": "Manu Temple Rd, Old Manali, Manali, Himachal Pradesh 175131, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqtlwlDD2NvtWIdpqswEfgGnBCHqATT_IsiyuQR7Y2tMU84hRzoeBQgtuwRPqDZI0qXixzuZ7NJZHqdqColQS4UFqMZVjew5FO_J1VMwVUo5UTaeombeSC9Hvdox1QK1PlkKdjn=w80-h106-k-no"
+    }
+  ]
+}

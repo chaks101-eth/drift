@@ -155,11 +155,17 @@ export async function getPlaceDetails(dataId: string): Promise<PlaceDetails | nu
   const amenities = (p.amenities as string[]) || []
   const accessibility = (p.accessibility as string[]) || []
 
-  // Photos
+  // Photos — extract up to 8 direct Google image URLs (not serpapi proxied)
   const photos: string[] = []
   if (p.images) {
-    const imgs = p.images as { thumbnail?: string }[]
-    photos.push(...imgs.slice(0, 5).map(i => i.thumbnail).filter(Boolean) as string[])
+    const imgs = p.images as { thumbnail?: string; title?: string }[]
+    // Filter out category headers like "Videos" and extract direct Google URLs
+    const photoUrls = imgs
+      .filter(i => i.thumbnail && !['Videos', 'Street View & 360°'].includes(i.title || ''))
+      .map(i => i.thumbnail as string)
+      .filter(u => u.includes('googleusercontent.com'))
+      .slice(0, 8)
+    photos.push(...photoUrls)
   }
   if (p.thumbnail && photos.length === 0) {
     photos.push(p.thumbnail as string)
@@ -381,6 +387,12 @@ export async function searchAttractions(city: string, country: string): Promise<
     seen.add(key)
     return true
   })
+}
+
+// ─── Targeted place search (for mini-pipeline) ──────────────
+
+export async function searchPlace(query: string): Promise<PlaceResult[]> {
+  return searchGoogleMaps(query)
 }
 
 // ─── Price level mapping ─────────────────────────────────────

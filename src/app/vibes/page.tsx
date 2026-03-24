@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NavBar from '@/app/NavBar'
@@ -38,6 +39,8 @@ function VibesContent() {
   const [occasion, setOccasion] = useState('')
   const [directDest, setDirectDest] = useState('')
   const [loading, setLoading] = useState(false)
+  const [dateError, setDateError] = useState('')
+  const [surpriseReveal, setSurpriseReveal] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -46,7 +49,17 @@ function VibesContent() {
     const surprise = searchParams.get('surprise')
     if (surprise) {
       const vibes = surprise.split(',').filter(v => VIBES.some(vb => vb.id === v))
-      if (vibes.length > 0) setSelected(vibes)
+      if (vibes.length > 0) {
+        // Surprise Me reveal: show vibes one by one with delight
+        setSurpriseReveal(true)
+        setSelected([])
+        vibes.forEach((v, i) => {
+          setTimeout(() => {
+            setSelected(prev => [...prev, v])
+            if (i === vibes.length - 1) setTimeout(() => setSurpriseReveal(false), 800)
+          }, 400 + i * 500)
+        })
+      }
     }
   }, [router, searchParams])
 
@@ -58,6 +71,12 @@ function VibesContent() {
 
   async function handleContinue() {
     if (selected.length === 0) return
+    // Date validation
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      setDateError('End date must be after start date')
+      return
+    }
+    setDateError('')
     setLoading(true)
 
     sessionStorage.setItem('drift_vibes', JSON.stringify({
@@ -90,6 +109,16 @@ function VibesContent() {
         </h1>
         <p className="text-[15px] text-[#7a7a85] mb-9 max-md:text-[13px] max-md:mb-6">Pick as many as you feel. We&apos;ll curate destinations that match your energy.</p>
 
+        {/* Surprise Me reveal banner */}
+        {surpriseReveal && (
+          <div className="mb-6 p-4 rounded-xl border border-[rgba(200,164,78,0.2)] bg-[rgba(200,164,78,0.06)] animate-[fadeUp_0.5s_ease]">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">&#10024;</span>
+              <span className="font-serif text-[#c8a44e] text-base">The universe picked these for you...</span>
+            </div>
+          </div>
+        )}
+
         {/* Vibe Grid — 5 cols desktop, 3 tablet, 2 mobile */}
         <div className="grid grid-cols-5 gap-3 mb-9 vibe-grid-responsive">
           {VIBES.map(v => (
@@ -102,7 +131,7 @@ function VibesContent() {
                   : 'border-transparent scale-100'
               }`}
             >
-              <img src={v.img} alt={v.name} className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.15,1)] ${selected.includes(v.id) ? 'scale-[1.06]' : ''}`} />
+              <Image src={v.img} alt={v.name} fill className={`object-cover transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.15,1)] ${selected.includes(v.id) ? 'scale-[1.06]' : ''}`} sizes="(max-width: 768px) 50vw, 20vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-black/10 z-[1]" />
               {selected.includes(v.id) && (
                 <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#c8a44e] z-[3] flex items-center justify-center">
@@ -153,16 +182,19 @@ function VibesContent() {
               <input
                 type="date"
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                onChange={e => { setStartDate(e.target.value); setDateError('') }}
+                min={new Date().toISOString().split('T')[0]}
                 className="flex-1 px-3 py-2.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all"
               />
               <input
                 type="date"
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="flex-1 px-3 py-2.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all"
+                onChange={e => { setEndDate(e.target.value); setDateError('') }}
+                min={startDate || new Date().toISOString().split('T')[0]}
+                className={`flex-1 px-3 py-2.5 bg-[rgba(255,255,255,0.04)] border rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all ${dateError ? 'border-[#e74c3c]' : 'border-[rgba(255,255,255,0.06)]'}`}
               />
             </div>
+            {dateError && <div className="text-[11px] text-[#e74c3c] mt-1.5">{dateError}</div>}
             <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase mt-4">Travelers</h3>
             <div className="flex items-center gap-3.5">
               <button onClick={() => setTravelers(Math.max(1, travelers - 1))} className="w-[34px] h-[34px] rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] text-[#f0efe8] text-[15px] flex items-center justify-center hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all max-md:w-10 max-md:h-10 max-md:text-base">-</button>
@@ -204,10 +236,17 @@ function VibesContent() {
           />
         </div>
 
+        {/* Missing fields hint */}
+        {selected.length > 0 && (!startDate || !endDate || !origin) && (
+          <div className="mb-3 text-[11px] text-[#c8a44e]">
+            Fill in{!origin ? ' origin city,' : ''}{!startDate ? ' start date,' : ''}{!endDate ? ' end date,' : ''} to continue
+          </div>
+        )}
+
         {/* CTA */}
         <button
           onClick={handleContinue}
-          disabled={selected.length === 0 || loading}
+          disabled={selected.length === 0 || !startDate || !endDate || !origin || loading}
           className="px-11 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(200,164,78,0.3),0_4px_12px_rgba(200,164,78,0.15)] transition-all active:translate-y-0 active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2.5"
         >
           {loading ? (

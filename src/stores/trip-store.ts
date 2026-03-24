@@ -1,0 +1,243 @@
+import { create } from 'zustand'
+import { supabase } from '@/lib/supabase'
+import type { CurrencyCode } from '@/lib/currency'
+import { detectCurrencyFromOrigin, formatPrice } from '@/lib/currency'
+
+// ─── Types ──────────────────────────────────────────────────
+
+export interface Trip {
+  id: string
+  user_id: string
+  destination: string
+  country: string
+  vibes: string[]
+  start_date: string
+  end_date: string
+  travelers: number
+  budget: string
+  status: 'planning' | 'booked' | 'completed'
+  share_slug: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ItemMetadata {
+  reason?: string
+  whyFactors?: string[]
+  info?: Array<{ l: string; v: string }>
+  features?: string[]
+  best_for?: string[]
+  alts?: Array<{
+    name: string
+    detail: string
+    price: string
+    image_url?: string
+    bookingUrl?: string
+    trust?: Array<{ type: string; text: string }>
+  }>
+  photos?: string[]
+  bookingUrl?: string
+  booking_url?: string
+  mapsUrl?: string
+  address?: string
+  rating?: number
+  reviewCount?: number
+  source?: string
+  trip_brief?: string
+  day_insight?: string
+  honest_take?: string
+  practical_tips?: string
+  pairs_with?: string
+  review_synthesis?: string
+  [key: string]: unknown
+}
+
+export interface ItineraryItem {
+  id: string
+  trip_id: string
+  category: 'flight' | 'hotel' | 'activity' | 'food' | 'transfer' | 'day'
+  name: string
+  detail: string
+  description: string | null
+  price: string
+  image_url: string | null
+  time: string | null
+  position: number
+  status: 'none' | 'picked' | 'skipped' | 'saved'
+  metadata: ItemMetadata | null
+  created_at: string
+}
+
+export interface Destination {
+  city: string
+  country: string
+  tagline: string
+  match: number
+  price?: string
+  price_usd?: number
+  image_url?: string
+  vibes?: string[]
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  actions?: Array<{ type: string; [key: string]: unknown }>
+}
+
+// ─── Onboarding State ───────────────────────────────────────
+
+interface OnboardingState {
+  origin: string
+  startDate: string
+  endDate: string
+  budgetLevel: 'budget' | 'mid' | 'luxury'
+  budgetAmount: number
+  travelers: number
+  pickedVibes: string[]
+  occasion: string
+  destination: Destination | null
+}
+
+// ─── Store ──────────────────────────────────────────────────
+
+interface TripStore {
+  // Auth
+  token: string | null
+  userId: string | null
+  userEmail: string | null
+  setAuth: (token: string | null, userId: string | null, email: string | null) => void
+
+  // Currency
+  currency: CurrencyCode
+  formatBudget: (usd: number) => string
+
+  // Onboarding
+  onboarding: OnboardingState
+  setOrigin: (origin: string) => void
+  setDates: (start: string, end: string) => void
+  setBudget: (level: 'budget' | 'mid' | 'luxury', amount: number) => void
+  setTravelers: (count: number) => void
+  addVibe: (vibe: string) => void
+  removeVibe: (vibe: string) => void
+  setVibes: (vibes: string[]) => void
+  setOccasion: (occasion: string) => void
+  setDestination: (dest: Destination | null) => void
+  resetOnboarding: () => void
+
+  // Active trip
+  currentTrip: Trip | null
+  currentItems: ItineraryItem[]
+  setCurrentTrip: (trip: Trip | null) => void
+  setCurrentItems: (items: ItineraryItem[]) => void
+  updateItem: (id: string, updates: Partial<ItineraryItem>) => void
+  removeItem: (id: string) => void
+
+  // Trip loading
+  loadTrip: (tripId: string) => Promise<void>
+
+  // Chat
+  chatHistory: ChatMessage[]
+  addChatMessage: (msg: ChatMessage) => void
+  clearChat: () => void
+}
+
+const defaultOnboarding: OnboardingState = {
+  origin: '',
+  startDate: '',
+  endDate: '',
+  budgetLevel: 'mid',
+  budgetAmount: 3000,
+  travelers: 2,
+  pickedVibes: [],
+  occasion: '',
+  destination: null,
+}
+
+export const useTripStore = create<TripStore>((set, get) => ({
+  // Auth
+  token: null,
+  userId: null,
+  userEmail: null,
+  setAuth: (token, userId, email) => set({ token, userId, userEmail: email }),
+
+  // Currency
+  currency: 'USD',
+  formatBudget: (usd: number) => {
+    const { currency } = get()
+    return formatPrice(usd, currency)
+  },
+
+  // Onboarding
+  onboarding: { ...defaultOnboarding },
+  setOrigin: (origin) => {
+    const currency = detectCurrencyFromOrigin(origin)
+    set((s) => ({
+      currency,
+      onboarding: { ...s.onboarding, origin },
+    }))
+  },
+  setDates: (start, end) =>
+    set((s) => ({ onboarding: { ...s.onboarding, startDate: start, endDate: end } })),
+  setBudget: (level, amount) =>
+    set((s) => ({ onboarding: { ...s.onboarding, budgetLevel: level, budgetAmount: amount } })),
+  setTravelers: (count) =>
+    set((s) => ({ onboarding: { ...s.onboarding, travelers: count } })),
+  addVibe: (vibe) =>
+    set((s) => ({
+      onboarding: {
+        ...s.onboarding,
+        pickedVibes: s.onboarding.pickedVibes.includes(vibe)
+          ? s.onboarding.pickedVibes
+          : [...s.onboarding.pickedVibes, vibe],
+      },
+    })),
+  removeVibe: (vibe) =>
+    set((s) => ({
+      onboarding: {
+        ...s.onboarding,
+        pickedVibes: s.onboarding.pickedVibes.filter((v) => v !== vibe),
+      },
+    })),
+  setVibes: (vibes) =>
+    set((s) => ({ onboarding: { ...s.onboarding, pickedVibes: vibes } })),
+  setOccasion: (occasion) =>
+    set((s) => ({ onboarding: { ...s.onboarding, occasion } })),
+  setDestination: (dest) =>
+    set((s) => ({ onboarding: { ...s.onboarding, destination: dest } })),
+  resetOnboarding: () => set({ onboarding: { ...defaultOnboarding } }),
+
+  // Active trip
+  currentTrip: null,
+  currentItems: [],
+  setCurrentTrip: (trip) => set({ currentTrip: trip }),
+  setCurrentItems: (items) => set({ currentItems: items }),
+  updateItem: (id, updates) =>
+    set((s) => ({
+      currentItems: s.currentItems.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+    })),
+  removeItem: (id) =>
+    set((s) => ({
+      currentItems: s.currentItems.filter((i) => i.id !== id),
+    })),
+
+  // Trip loading
+  loadTrip: async (tripId: string) => {
+    const { token } = get()
+    if (!token) return
+
+    const [tripRes, itemsRes] = await Promise.all([
+      supabase.from('trips').select('*').eq('id', tripId).single(),
+      supabase.from('itinerary_items').select('*').eq('trip_id', tripId).order('position'),
+    ])
+
+    if (tripRes.data) set({ currentTrip: tripRes.data })
+    if (itemsRes.data) set({ currentItems: itemsRes.data })
+  },
+
+  // Chat
+  chatHistory: [],
+  addChatMessage: (msg) =>
+    set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
+  clearChat: () => set({ chatHistory: [] }),
+}))

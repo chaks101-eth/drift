@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runPipeline, runSingleStep, getPipelineRun, getCatalogStats } from '@/lib/pipeline'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'drift-admin-2026'
+const ADMIN_SECRET = process.env.ADMIN_SECRET
+if (!ADMIN_SECRET) console.warn('[Admin] ADMIN_SECRET env var not set — admin routes disabled')
 
 function isAuthorized(req: NextRequest) {
   const auth = req.headers.get('x-admin-secret') || req.nextUrl.searchParams.get('secret')

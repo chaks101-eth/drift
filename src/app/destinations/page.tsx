@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ITINERARY_MESSAGES } from '@/lib/loading-messages'
@@ -10,7 +11,8 @@ type Destination = {
   name: string
   country: string
   match: number
-  price: string
+  price?: string
+  price_usd?: number
   tags: string[]
   image_url: string
   description: string
@@ -184,26 +186,49 @@ function DestinationsContent() {
   // ─── Loading Overlay (philosophy: loading states build anticipation) ───
   if (generating) {
     const msg = ITINERARY_MESSAGES[loadMsg]
+    const isComplete = loadProgress >= 100
     return (
       <div className="fixed inset-0 z-[300] bg-[#08080c] flex items-center justify-center flex-col gap-6">
-        {/* Glowing spinner */}
-        <div className="w-16 h-16 rounded-full flex items-center justify-center animate-[load-breathe_2s_ease-in-out_infinite]"
-          style={{ background: 'radial-gradient(circle, rgba(200,164,78,0.2), transparent 70%)' }}>
-          <div className="w-8 h-8 rounded-full border-[1.5px] border-[#c8a44e] border-t-transparent animate-[load-spin_1s_linear_infinite]" />
-        </div>
-        {/* Message */}
-        <div className="font-serif text-[22px] text-center leading-snug transition-opacity duration-400"
-          dangerouslySetInnerHTML={{ __html: msg.text.replace(/<em>/g, '<em class="text-[#c8a44e] italic">') }}
-        />
-        {/* Step */}
-        <div className="text-xs text-[#4a4a55] tracking-[1px] uppercase transition-opacity duration-400">{msg.step}</div>
-        {/* Progress bar */}
-        <div className="w-[200px] h-0.5 bg-[rgba(255,255,255,0.06)] rounded-sm overflow-hidden">
-          <div
-            className="h-full rounded-sm transition-[width] duration-600 ease-out"
-            style={{ width: `${loadProgress}%`, background: 'linear-gradient(90deg, #c8a44e, #e8cc6e)' }}
-          />
-        </div>
+        {isComplete ? (
+          /* ─── Celebration moment ─── */
+          <>
+            <div className="animate-[celebrate_0.6s_ease_forwards]">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#e8cc6e] flex items-center justify-center shadow-[0_0_48px_rgba(200,164,78,0.4)]">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+            <div className="font-serif text-[26px] text-[#c8a44e] animate-[fadeUp_0.5s_ease_forwards_0.2s] opacity-0">Your trip is ready</div>
+            <div className="text-sm text-[#7a7a85] animate-[fadeUp_0.5s_ease_forwards_0.4s] opacity-0">Taking you to your itinerary...</div>
+          </>
+        ) : (
+          <>
+            {/* Glowing spinner */}
+            <div className="w-16 h-16 rounded-full flex items-center justify-center animate-[load-breathe_2s_ease-in-out_infinite]"
+              style={{ background: 'radial-gradient(circle, rgba(200,164,78,0.2), transparent 70%)' }}>
+              <div className="w-8 h-8 rounded-full border-[1.5px] border-[#c8a44e] border-t-transparent animate-[load-spin_1s_linear_infinite]" />
+            </div>
+            {/* Message */}
+            <div className="font-serif text-[22px] text-center leading-snug transition-opacity duration-400"
+              dangerouslySetInnerHTML={{ __html: msg.text.replace(/<em>/g, '<em class="text-[#c8a44e] italic">') }}
+            />
+            {/* Step */}
+            <div className="text-xs text-[#4a4a55] tracking-[1px] uppercase transition-opacity duration-400">{msg.step}</div>
+            {/* Progress bar */}
+            <div className="w-[200px] h-0.5 bg-[rgba(255,255,255,0.06)] rounded-sm overflow-hidden">
+              <div
+                className="h-full rounded-sm transition-[width] duration-600 ease-out"
+                style={{ width: `${loadProgress}%`, background: 'linear-gradient(90deg, #c8a44e, #e8cc6e)' }}
+              />
+            </div>
+            {/* Cancel — subtle, doesn't shout */}
+            <button
+              onClick={() => { setGenerating(false); router.push('/vibes') }}
+              className="mt-4 text-[11px] text-[#4a4a55] hover:text-[#7a7a85] transition-colors"
+            >
+              Cancel and go back
+            </button>
+          </>
+        )}
       </div>
     )
   }
@@ -249,10 +274,14 @@ function DestinationsContent() {
                 className="rounded-2xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,0.05)] bg-[#0e0e14] transition-all duration-[450ms] ease-[cubic-bezier(0.4,0,0.15,1)] hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_0_1px_rgba(200,164,78,0.1)] hover:border-[rgba(200,164,78,0.15)] active:-translate-y-0.5 active:scale-[0.99]"
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
-                <img src={d.image_url} alt={d.name} className="w-full h-[200px] object-cover block max-md:h-[180px]" />
+                <div className="relative w-full h-[200px] max-md:h-[180px]">
+                  <Image src={d.image_url} alt={d.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                </div>
                 <div className="p-[18px] max-md:p-3.5">
                   <div className="font-serif text-[22px] mb-0.5 text-[#f0efe8] max-md:text-xl">{d.name}</div>
-                  <div className="text-xs text-[#7a7a85] mb-2">{d.country}</div>
+                  {d.country && d.country.toLowerCase() !== d.name.toLowerCase() && (
+                    <div className="text-xs text-[#7a7a85] mb-2">{d.country}</div>
+                  )}
                   {d.description && (
                     <p className="text-[11px] text-[#4a4a55] leading-relaxed mb-2.5 line-clamp-2">{d.description}</p>
                   )}
@@ -275,7 +304,7 @@ function DestinationsContent() {
                   </div>
                   <div className="flex justify-between items-baseline">
                     <div className="text-xl font-light text-[#c8a44e] max-md:text-lg">
-                      {d.price} <span className="text-[11px] text-[#4a4a55]">/ person</span>
+                      {d.price_usd ? `$${d.price_usd.toLocaleString()}` : d.price} <span className="text-[11px] text-[#4a4a55]">/ person</span>
                     </div>
                     <span className="px-2.5 py-0.5 bg-[rgba(200,164,78,0.15)] border border-[rgba(200,164,78,0.2)] rounded-full text-[11px] font-semibold text-[#c8a44e]">
                       {d.match}% Match

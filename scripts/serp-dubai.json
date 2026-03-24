@@ -1,0 +1,522 @@
+{
+  "city": "Dubai",
+  "country": "UAE",
+  "hotels": [
+    {
+      "name": "Jumeirah Burj Al Arab",
+      "rating": 4.7,
+      "reviews": 30808,
+      "price": "$867",
+      "type": "Hotel",
+      "address": "Umm Suqeim Third - Umm Suqeim 3 - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerkKvN-FqPhIy6UMb8YTEZHPGlpMiYXEd19Ju6CAK5UBgzAyl8IwI0-Xq9h2NoSsm_om7aa-AE4OUapq6yFkArXqS7DkqYKjsscDtY7jV-Eu_Y9N3cbOx-D3eR-CPsAufAO6aQY8w=w137-h92-k-no"
+    },
+    {
+      "name": "JW Marriott Marquis Hotel Dubai",
+      "rating": 4.6,
+      "reviews": 22080,
+      "price": "$88",
+      "type": "Hotel",
+      "address": "57P4+8J, Business Bay - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFsP3IdIdpTYG5Kl5GUK6hMJ8HL0lM1IqAfCXZTOdIKFNo-U6m0Ng6-rQz-JNd5yQNZCRiWYCAU9hEsPt_xRlndjbSkyqMednLqREy76jcJj1JiUlRZKxkpKt557INWJ2LuaS1oXw3p4ce79ouwuqI6YAuulrQx2q4JGxh1zgyygGJjLYSzp4n1sQ=w138-h92-k-no"
+    },
+    {
+      "name": "Mandarin Oriental Downtown, Dubai",
+      "rating": 4.7,
+      "reviews": 162,
+      "price": "$312",
+      "type": "Hotel",
+      "address": "Sheikh Zayed Rd, Al Wasl - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepNPMo2DPNUSV8RFYcbagtrpzrbaNYyesSAefhTqalYRB7ES3WJ5qWzpyhuLQ3ShM9B-32ZC6QbRgw5AwPPnrPQ3TfS8CNMoh9DILWCSKeOtU7VB9G3MuJG2Df98k_D03wCnpQHlplOURk=w138-h92-k-no"
+    },
+    {
+      "name": "Palace Downtown",
+      "rating": 4.7,
+      "reviews": 6264,
+      "price": "$267",
+      "type": "Hotel",
+      "address": "Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerFshG2JT9Nko1iY2NOzZTVDYAaSj2CvtGSxk57PNFz3_QYp3HB9TUPTs1TScR6g4AIJaLVBRbjW8oVzl4sGOQZn5fxx3q-_xQXXGFsBFenKMJRo7adBZYqp3dIREvUgC-zCAmu=w138-h92-k-no"
+    },
+    {
+      "name": "Atlantis - The Palm",
+      "rating": 4.7,
+      "reviews": 101506,
+      "price": "$407",
+      "type": "Resort hotel",
+      "address": "Crescent Rd, The Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweopYzqUNVHacJyKj-HMB4w0nOa8MsaoatorFgYaDYPrBmzPLFrZMz8jfkEWGklqVhWTP-4mycyl1pNH19KJno4SNBiB7h9R9WynphkDrYkl1djv9NrRaiHhvqr6e7Lxed08u14O=w130-h92-k-no"
+    },
+    {
+      "name": "Four Seasons Resort Dubai at Jumeirah Beach",
+      "rating": 4.7,
+      "reviews": 9451,
+      "price": "$456",
+      "type": "Hotel",
+      "address": "Jumeira St, Jumeirah - Jumeirah 2 - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo6oI2BQUWphRy9Aw2qYSBpMX_dJAkGzUlDKD7Dq3ralmRJGhN4B8l7KgZLS2a2QZRVwojOmxS3EDjtaDwBsAlRGiSCJSZDaoNqYEY_G0VMYuUc6nka5AfqDf4iIyNY614yYsYFxBonFAWs=w163-h92-k-no"
+    },
+    {
+      "name": "The St. Regis Dubai, The Palm",
+      "rating": 4.5,
+      "reviews": 1795,
+      "price": "$163",
+      "type": "Hotel",
+      "address": "The Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqECFBDv3DGEZ2wGZBWnC-dC5exkS_-ReGtuPH5aGuVMoDDcBGn8d6PlLmj9-Er7ubzbOFwZ3J4U_pkdsDM2d0kNVo8KpMlihuKgfjuVLtR1IFV0ATrHj9M9p0SEGMIBrqia0X944CJU1I=w138-h92-k-no"
+    },
+    {
+      "name": "Waldorf Astoria Dubai Palm Jumeirah",
+      "rating": 4.8,
+      "reviews": 14417,
+      "price": "$200",
+      "type": "Resort hotel",
+      "address": "Crescent Rd, The Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep0puPsISHeeJt5BD3m09nYDEvPuTck5HNjhhn5EIg3wX1bRHYOQFJu4ktowKAOvqxi98oipghnSyHZXqerVS--I9bb3Z_7C0ujsBHCmU-x_VWaN6ifdfoq8wVjg28RYJIxGSh4=w122-h92-k-no"
+    },
+    {
+      "name": "Mandarin Oriental Jumeira, Dubai",
+      "rating": 4.7,
+      "reviews": 5152,
+      "price": "$396",
+      "type": "Hotel",
+      "address": "Jumeirah Beach Road, Jumeirah - Jumeirah 1 - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoZlM_03jdgy-l95MhOXmKJsjfKpK37gajkbNP4bO2TkjCDnETIaB6CLmn1bLbW8_ln23P4n8iA84b07hc8AaP3qPPKG2VEovpPx3j08H4dYmqKSLjmUOqq1pkUl6RGeV32Zhk=w138-h92-k-no"
+    },
+    {
+      "name": "FIVE Palm Jumeirah Hotel",
+      "rating": 4.7,
+      "reviews": 25112,
+      "price": "$109",
+      "type": "Hotel",
+      "address": "No. 1 Palm, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepFG7JPkMQDjsxf77JHy3vA5l2-vKHgMvl266JRabjFwCMDH3AwOEkVXMuZvvPdNyqsILNAPx8aDmRHNhaZVAsj_QrDSQyIlTHtv6iFtV3A46E4vIaGX2hzfKT_KDHOdY9f8VDU=w137-h92-k-no"
+    },
+    {
+      "name": "Waldorf Astoria Dubai International Financial Centre",
+      "rating": 4.8,
+      "reviews": 2453,
+      "price": "$177",
+      "type": "Hotel",
+      "address": "Burj Daman, Al Mustaqbal St, Zaa'beel Second - DIFC - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepn0JzSIPQfqyy_MKhUqr2QCUvxnDejwgRUdnLlah0ebJRXQ8aAwiP9yXE2SRLJXCuF6Uf1dvp5XpSbcMxVuS8_ISNr99OMILKFJm-zL-aS90DzAESMeOi9Pjb06keQozR9AywT=w135-h92-k-no"
+    },
+    {
+      "name": "The Ritz-Carlton, Dubai International Financial Centre",
+      "rating": 4.6,
+      "reviews": 6555,
+      "price": "$192",
+      "type": "Hotel",
+      "address": "DIFC, off, Sheikh Zayed Rd, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepolAGPwU6Hh3XBUXHwbTJCTtn6pCRjXrAPxj67Es_ci3AnAWgI9Pp5OW0LicD-yzl1Y-MfvUBVhYAi9p9tKHxbYUZpkx9PgKxQWdXxP9nmdL3myQnm9gXGTeQmMFlb8-xl2Rla5Lcpy7IM=w138-h92-k-no"
+    },
+    {
+      "name": "Taj Dubai",
+      "rating": 4.6,
+      "reviews": 7675,
+      "price": "$87",
+      "type": "Hotel",
+      "address": "Burj Khalifa St, Business Bay - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoYCHLzov7tUHcfV4BytAz7dsJNFp8WBzvCQc46i3lXfkIiDz4A4jwyzPgUB6OqqRwJ2fSPHF7x6NqNsxY1YNLiz6z1OKiYDEr6GKUkLSb8r6LW_TwracFH8mDm1rX4CWTWBHEJIQ=w189-h92-k-no"
+    },
+    {
+      "name": "Bvlgari Resort Dubai",
+      "rating": 4.6,
+      "reviews": 3868,
+      "price": "$694",
+      "type": "Hotel",
+      "address": "Jumeirah Bay Island, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerXbYVv1JwbE279PFHP0BsTO8GXSdrCfNWSCROkBCebxS6ga8LxM_9Ykdhv8twtwNjicskzsVhVl48i6w4ezbjdMSivsWMkqJhqlmP4F7Kjn8So1-l6Qkq6DUTgZ6xrLUENuOcF18LKbC1J=w138-h92-k-no"
+    },
+    {
+      "name": "The Ritz-Carlton, Dubai",
+      "rating": 4.6,
+      "reviews": 6308,
+      "price": "$270",
+      "type": "Hotel",
+      "address": "Al Mamsha St, Marsa Dubai - Jumeirah Beach Residence - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqsj8T8sNz9t4uuk3dhbY6rmseJw8vYTlmKTW5zv5DbDveZkKTAthUMszQ0z2WqNtNdzt-dsdOzQdFgHUuiQ4KqSiMjk5fV7LyPrpxsvvWTQ7TXhLmaI4cGn1KNLPEEN7OwsKQZEmMOWWio=w163-h92-k-no"
+    },
+    {
+      "name": "The St. Regis Downtown Dubai",
+      "rating": 4.6,
+      "reviews": 3793,
+      "price": "$158",
+      "type": "Hotel",
+      "address": "Marasi Dr, Business Bay - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoxjNBZTmOrbnXs71wgYjYTKK1p-UCPqwa9CDLJVCgJeDIWg_8tyayVoor6o0vl7Dh5gAbMMZCcVY4gwhFYxM2tGOVWcuLQBZv62T1Y6tSPuAh4GRyCsl-pDY97h6R1LOWQ58vet8dwK1SM=w163-h92-k-no"
+    },
+    {
+      "name": "Kempinski Central Avenue Dubai",
+      "rating": 4.8,
+      "reviews": 15208,
+      "price": "$76",
+      "type": "Hotel",
+      "address": "Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqHulS0ilOvLm3ITQX_LuoSsSC027hqc3MEahKJHcBNTEx9Or3ZYVyFfCG_jr8quXTyILjxFtK9oeELPx5ql9M87meMnCcxDozzl9kcUQI59oNNpDoNjWEzFnsInWP27_AnMBxNsw=w138-h92-k-no"
+    },
+    {
+      "name": "Sofitel Dubai Downtown",
+      "rating": 4.7,
+      "reviews": 12648,
+      "price": "$107",
+      "type": "Hotel",
+      "address": "Sheikh Zayed Rd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq8d1BrrmcgDYM8ihqSt3O7_IIlQap88f5ybUvE7ULeKIvbuhgI_3tQnACpBRqu-Mic9onlUbjcxDD27z9qnUQOYrjaNLXf8WYI2GjoXtARe-ZshqBvlx7S17od07maJkYTVRFsq75D2ZXm=w122-h92-k-no"
+    },
+    {
+      "name": "Address Downtown",
+      "rating": 4.6,
+      "reviews": 9306,
+      "price": "$413",
+      "type": "Hotel",
+      "address": "Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqqQspwSknXQ-sd7aHjyJxGRWbLCrXHG7_-hJSyzzwPOEeQI97FVurigblLw9K6QhX2kRNKv47yV8Q4VY5OdUVrfdh6Kr_jaZMzK-YXkDiCcQmMKjkzLiFUC5voLrTofQWWnX34=w138-h92-k-no"
+    },
+    {
+      "name": "Marriott Resort Palm Jumeirah, Dubai",
+      "rating": 4.6,
+      "reviews": 2759,
+      "price": "$102",
+      "type": "Hotel",
+      "address": "444W+J75, Palm West Beach Palm, Jumeirah Road, The Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerQTpIgmFx2Ve66LdakSPUiTZqTIdOXHJMGkLxRt0DTMHcitFJCJYWw5_FtJgtKF7WuYd1hQX6f0MWw9qJJJTxpSdDASzGc0-VGFHKLz-IJn3pouSAzYaRIZiFp7ndCjoKerYmv3qFwzPI1=w138-h92-k-no"
+    }
+  ],
+  "attractions": [
+    {
+      "name": "Dubai Aquarium & Underwater Zoo",
+      "rating": 4.5,
+      "reviews": 78679,
+      "type": "Tourist attraction",
+      "address": "Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerCxKSsQ-aGTc2tF40dxOy6tQ_UOv6CqChIKmYLn3phyxqi7Wl_kJ4RRbyJM0epXptgPf6_V6oOtP3YooI3RGpHymHfdRolWClz_Kncbzqqqex7i2aHx2LvLMc5pdIXxIE1vBDyTA=w153-h92-k-no"
+    },
+    {
+      "name": "Dubai Dolphinarium",
+      "rating": 4.5,
+      "reviews": 18646,
+      "type": "Tourist attraction",
+      "address": "Dubai Dolphinarium Building, Riyadh Street, Inside the Creek Park Gate 1 - Dubai Dolphinarium Building - Street, Umm Hurair Second - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqw0FDj1YtdY-zuz_YfJb2H3VoZ9H8i4rnPX8niDnVO6VobDMFvetTuXC6kqGC8CMrtf9r03Yjq-cdbS9ICuXDD5ENtmSBS0a7AF5OY6EKExkeg1F70Smh_Wyo9kUh5j2vK2_SW=w163-h92-k-no"
+    },
+    {
+      "name": "The Green Planet Dubai",
+      "rating": 4.4,
+      "reviews": 11801,
+      "type": "Tourist attraction",
+      "address": "6746+F58, Al Wasl - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoz48CgDK8y4kSPLDaYtdH3FVUp4v0OpOQK5b6ZmcmkJpsZrL3JO-NwH0o3fJ1JZaXeQEOkPZ8Ysau1-LclfwwcHC4lU9i18nX0nXjTHwB-QUutijYUPjLt34JqSgBL_W5gjTuF=w138-h92-k-no"
+    },
+    {
+      "name": "IMG Worlds of Adventure",
+      "rating": 4.3,
+      "reviews": 32840,
+      "type": "Tourist attraction",
+      "address": "Wadi Al Safa 4 - City of Arabia - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo6nrVPX8TAjmAcu8aEYU7wPh0syLxHJ6DZB4Auh3RjBfE2tnvMZWQ5Y4Fagbh986hbXW-a8M9HaacrzLJAosvRaIKvx9qZB9G5PKI_w7l2_BmMbAExFRwJLbNhRld0TiQHECxV=w122-h92-k-no"
+    },
+    {
+      "name": "Dubai Garden Glow - Dinosaur Park & Fantasy Park",
+      "rating": 4.2,
+      "reviews": 17269,
+      "type": "Tourist attraction",
+      "address": "Zabeel Park, Gate No- 3, next to Dubai Frame Area - A, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoBbDaSgLq3ONYOl83PDfDzRMzpmcIiEhSLU7E9LuS9reTe4WhEuXCQnR4qi9pYHlKH0QygRFGvhA2hcG_eHOP8ASeSLrgP8JssODGOdii2sZqas6_E7QpddTlMasDMfw_FRra1=w122-h92-k-no"
+    },
+    {
+      "name": "Dubai Butterfly Garden",
+      "rating": 4.4,
+      "reviews": 11873,
+      "type": "Tourist attraction",
+      "address": "Al Barsha South 3, Dubailand Area, Beside Dubai Miracle Garden, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqSVBJA4A-wRmg7KGDHbZvGie4mqMNdx5htUlXzCSDWj1Z5evWV_BjqQpepUrnz0dwzcB4qnlYAte0Ld0qLumX-ygQ_phD8Vl2RJ9bMsXBZloBuVD82clrbfQHwSONO1B0XazYX5w=w138-h92-k-no"
+    },
+    {
+      "name": "The Dubai Fountain",
+      "rating": 4.8,
+      "reviews": 138412,
+      "type": "Tourist attraction",
+      "address": "Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweooSEsqGaaTroB4l4j7jh_B45KQiHggsA7R8iOQt-TL73zGQN5onm4TkSwl923IkEnUIK1gs-u2L5Q-9SXB9g-F0CzHlLaZpombEfj5JE9OsuRV-1nHwpfC0OnsgP2sLPj6K9D-=w133-h92-k-no"
+    },
+    {
+      "name": "Burj Park",
+      "rating": 4.8,
+      "reviews": 61735,
+      "type": "Tourist attraction",
+      "address": "Burj Khalifa, Burj Khalifa Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqLaV6TtdyuYS41gwcoE6Xy4ujpqxyvWmCplUY07O7nJfb2ORQcsLQm3QWc-q4mptx-Bm6H4vJkWwEuBAzcQmbnlZMDtpkKswtnAQ2k9tGJBnASlzeY9f5rPg_E69J579eQcfh7UA=w208-h92-k-no"
+    },
+    {
+      "name": "The World of Riverland",
+      "rating": 4.5,
+      "reviews": 16763,
+      "type": "Tourist attraction",
+      "address": "Sheikh Zayed Rd, Saih Shuaib 1 - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqPyzcy4E5QSv_Wg9H1zJ7O6VdCVjJg-qW6q-cKEL6N43MgI8005YLwK6_sAzKjnCnQy5z6cWa_D0owSUXx4loRLN843rgPYmt0ceyCjDIxWT5vTJniCD9qhdoNdT9Sw8F-i2Yl=w122-h92-k-no"
+    },
+    {
+      "name": "Dubai Frame",
+      "rating": 4.6,
+      "reviews": 72565,
+      "type": "Tourist attraction",
+      "address": "Zabeel Park Jogging Track, Al Kifaf - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweolEFK0vfVZeGYbnXMZbD3wK360us7SzfKceN3hSO_qO0Gl_806Lwl7OWYvsmrxFFEai2WKhcK_f_NwAysioLLnBIhmIFOyvIGAV_e5new8X48bWKW6E18uqgIpvPIHJKnIS4ha=w122-h92-k-no"
+    },
+    {
+      "name": "Dubai Marina Walk",
+      "rating": 4.7,
+      "reviews": 28189,
+      "type": "Tourist attraction",
+      "address": "34JR+64M, Dubai Marina Walk, Dubai Marina - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerknA-Gua6orL5pJZoMIU666BL_F-h9SnccanBDNJ1lm2AqzlzdnURT04XGtu3sDzbVO4aeVWv4fg87UA02ks3SWiqAQP2SqgWHVXqWOAtMIsthQmyecUh_rBzuCQ_OzCSAq1M=w199-h92-k-no"
+    },
+    {
+      "name": "The View Palm Jumeirah",
+      "rating": 4.7,
+      "reviews": 22204,
+      "type": "Tourist attraction",
+      "address": "The Palm Tower, Palm Jumeirah Rd - 52nd Floor, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep0qyyGAwQ6wvGm90HSv4h8auFWuRCRuxpDnKEytgmjXnDArL4NQqEJi-xYWcEsZPHVDS9QquX41SW2jAe6x-t8GiN6TC2wOabCWN9n5dzybwHgUnbAiyEoA_ITWXrl0_l4Tsg8eQ=w122-h92-k-no"
+    },
+    {
+      "name": "Aquaventure World",
+      "rating": 4.6,
+      "reviews": 38168,
+      "type": "Tourist attraction",
+      "address": "Atlantis The Palm, Crescent Rd, The Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqM8sr8IVqH1cEwwDxhkG_J-UTIaQsHaarRtGVnRWfr2UC6ie2M10TKf3XJeBBGINsxRNcNAsR7UuOjQsh3QG1jDU-COYaZ2JW59hX7p9HuwzKir0Z6hlHwsSSD0xDpoBF6QzAL=w118-h92-k-no"
+    },
+    {
+      "name": "Dubai Miracle Garden",
+      "rating": 4.6,
+      "reviews": 94157,
+      "type": "Tourist attraction",
+      "address": "Street 3, Al Barsha South Third - Al Barsha South - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwergWPKEtbwgy71fFx6usOwMaiPNZEfqEg5AxlyCBglCLN-FhGfRweX0d85gTqN30mFszC6-v7iWWJsol8DeA1gWES0lK6Tk49injFjXP9LzxBqyljE0l24nNw1TTgji2HbcCeMdhQ=w122-h92-k-no"
+    },
+    {
+      "name": "Burj Khalifa",
+      "rating": 4.7,
+      "reviews": 169526,
+      "type": "Tourist attraction",
+      "address": "1 Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweobz4YmpdYcrCgQyvb50sScnqNKAZya28o5WAR9kBERbXR-zs1mYAceyTER2roIoYOuCwOt5wbwxd9o0uCgkozdTwB1ftbQ7cN5U1RivxFzgP-y7PAeGiISGr68B4yq87JObHKR=w92-h92-k-no"
+    },
+    {
+      "name": "Mermaids of Arabia",
+      "rating": 4.7,
+      "reviews": 724,
+      "type": "Tourist attraction",
+      "address": "Dubai Mall on Financial Center Street, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepxVqFXOjioXshln_JKKQXCt9mSGUJqpEtPGUNn63m1QTuuCXeGi3_SCkcrQHhxZpk2CnX5oNr_whgecXHIT0zNhBqrfdiW8v0qkT5nze9uGmb83q9Zzqd0ya5s9IqaB6prTF7T9cqBqA0=w80-h106-k-no"
+    },
+    {
+      "name": "Dubai Waterfall",
+      "rating": 4.6,
+      "reviews": 1010,
+      "type": "Tourist attraction",
+      "address": "260 Sheikh Zayed Rd, Al Wasl - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerLYSKb6favGJGdnHh9tT7OerB8Sh4C6HifR25tYVMcZamUGpGnlX93GMnI7jENVTuLGmKvGihso1PTmdLz65lO3br361ww_ugbzHveS59i5t2g3QJnEwh8ijb9ihNGcpNZzpM=w122-h92-k-no"
+    },
+    {
+      "name": "Ain Dubai",
+      "rating": 4.7,
+      "reviews": 22476,
+      "type": "Tourist attraction",
+      "address": "Bluewaters by Dubai Retail, Marsa Dubai - Bluewaters Island - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo8YC7gio8b4bIVWTH6BRQJkE8a5AGwSIVGZFxGEY6PvWHZuomiwpnd2m2OklEQ4SSENqTzoFUmOjh06xgfO4F65NleB4oFlELA-odogB0pavcfz3sqWnQnWRiI3XYZuo-v9MnEhg=w137-h92-k-no"
+    },
+    {
+      "name": "Best Of Dubai",
+      "rating": 4.7,
+      "reviews": 12,
+      "type": "Tourist attraction",
+      "address": "Palm jumeriah, The Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerrLENau0bR8lHBOlrJl1dluq9YVc593UJMbuLGF_S5RRKnqZ9uieLid5u_d0D1Qz4oPhnKVw7uZ3pcp846e2nZjrca5F_UwZhSEs89cn0CLCoCF0d22HAsTDkuUsxiCBSmYtJCSfW9yc3N=w195-h92-k-no"
+    },
+    {
+      "name": "Downtown Slide",
+      "rating": 4.4,
+      "reviews": 101,
+      "type": "Tourist attraction",
+      "address": "Zabeel Plaza, Za'abeel Road, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqJu0clQAdBhgJUdwOnm3RYEvWUi-eYDKcCBv6plaA0KSPIT0u0Lrme1O-JMUm_7cByiEmwrQH875cYeDe9LXPAKPCdGgle__HskaQmw2HslH92RD9Ch1bYY-3xeFJ9wVbz0AFfLw=w80-h106-k-no"
+    }
+  ],
+  "restaurants": [
+    {
+      "name": "Dinner In The Sky",
+      "rating": 4.8,
+      "reviews": 4314,
+      "price": "AED 500+",
+      "type": "Restaurant",
+      "address": "34RM+FW, Al Sufoh - Al Seyahi St, next to zero gravity - Skydive - Dubai Marina - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerJnC4h9iu64hy_OOmytaoBpsydfN_qmIc-w37v1z6nIyUl_fDfLBiljjVyowiQbfz436hMpZ6Fl2FVhAq_auMwFGKXrx0wQU2V87aplV9qugyZo4J7e-YIhfROkwKDiL7gaSX2YlX-w7eA=w92-h92-k-no"
+    },
+    {
+      "name": "Maison De Curry | Restaurant with the best views of Burj Khalifa & Dubai Fountains",
+      "rating": 4.8,
+      "reviews": 5593,
+      "type": "Restaurant",
+      "address": "Souk Al Bahar, Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepXDDJb0XrKZR_o1QhjuGCIoTDjeOQcahuXkgjaHxMuwD2M2_OGZqVSwA95v1Nvuauw6-4bjhbEG-Hiip6MvgTPpxfUSrpWdJ-Ygv_dbgFI5zjA8IDmCKPyhMD_vSvsnFhvJzUc=w138-h92-k-no"
+    },
+    {
+      "name": "Al Khayma Heritage Restaurant | مطعم الخيمة التراثي",
+      "rating": 4.9,
+      "reviews": 16899,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "Historical Neighbourhood, 79 Al Mussallah Rd, Al Souq Al Kabeer - Al Fahidi - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqVdsBR5iyhHSqJg7LrChQA39imsjmAFVo7LLGGR4gVahJVoxq8SPh0uZ8VILaZWWNHSf71KE2TD9JUniX_gKbuBSkP2RAv-cigdtTqbFEheaLCOYDfWNQem2eR7BJy0ShyYBnOSw=w80-h106-k-no"
+    },
+    {
+      "name": "Social House",
+      "rating": 4.9,
+      "reviews": 16572,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "level LG, Unit LG - 100 - B - Financial Ctr St, Burj Khalifa - Dubai Mall - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer1VqvyOMnoUa0xNQKY_P5Y6lof0tmXg-bHlZMnUs3y_mXHgwqT9bAM4TuUAvI1apk1q3RTo0VDDngaWqln_BuC5MQmEEgjEQbAeS_KEelSGYaVN0lkPayQ2qz00jHyaQ_WKpVh=w122-h92-k-no"
+    },
+    {
+      "name": "CÉ LA VI",
+      "rating": 4.5,
+      "reviews": 7796,
+      "price": "AED 500+",
+      "type": "Restaurant",
+      "address": "Tower 2 - Level 54, Address Sky View Hotel, Sheikh Mohammed bin Rashid Blvd, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerShgaIjxmTabIe5bvmbgi8wSdsV6LIjAd2yf7nkECnCwXPhv8jLestEer_Z6AP8sTwkKXjJSSNdKkeh-d5dLocZVssWYqm41W_71jU7QVAm8QePHLjB6p_GcQh2NXv2URoD1FJyg=w138-h92-k-no"
+    },
+    {
+      "name": "Trèsind Dubai",
+      "rating": 4.5,
+      "reviews": 1826,
+      "price": "AED 500+",
+      "type": "Fine dining restaurant",
+      "address": "One&Only Royal Mirage, Arabian Court, Dubai Marina - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepyM7BobGDIO7YFuEIgkBPKKrdHTzIzNDqtCsnKuaumj4OE9PuZBqUlqEGgowOZ2T1bmfqkjfQ4Pya8d6rwUf-E8BWEfuWTM-9O3oTqLLa3ClWACBfGNK9L54zbj02UqMI1-iitwg=w138-h92-k-no"
+    },
+    {
+      "name": "Reef & Beef Steakhouse & Seafood – Downtown Dubai",
+      "rating": 4.8,
+      "reviews": 1627,
+      "type": "Restaurant",
+      "address": "The Heritage Hotel, Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerLcCESeQV4-jVNkY1BaRrT0KtL0bL-_QBu4hH_PRuaeHYSO-RqQxqeuluphQCHtn9gpw5KxVhwcF03iX_JTAk879G4TKNlwHnIRAcS02Xku7TtpoiJPn8sAbkOw8VlkDJdIZbZqA=w122-h92-k-no"
+    },
+    {
+      "name": "Jovee - Japanese & European Restaurant",
+      "rating": 4.8,
+      "reviews": 2930,
+      "type": "Restaurant",
+      "address": "souk al bahar , Level 2, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqJqWV7h9h4hWWgT3jJDWrBplSZxQxHXAbhRvLAWOAs-t1Kvs4uQh5YHbCjju7IvhIrS2agamgIiY9AzkYj6xb3RhpUB9ixz6gzAhynL4dPD1k--G6RmLDkhWEBvVcUrZVlsVJm=w138-h92-k-no"
+    },
+    {
+      "name": "Krasota Dubai Restaurant",
+      "rating": 4.9,
+      "reviews": 1699,
+      "price": "AED 500+",
+      "type": "Restaurant",
+      "address": "The Address Downtown, G Floor Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepWXjZbj9-bZsie3OXD9qQk9_woRjkIBEFjbb_vO0_e9mgAalH6cdvdeD5V1TfzI-JgcwyrCr2WTB16WOOog9KrQWUTUB84y-WOFdO8GfeebxoIGbWzTUWOu3-GOTyqvjXnQAkkRg=w122-h92-k-no"
+    },
+    {
+      "name": "Sallet al Sayad seafood restaurant مطعم سلة الصياد للمأكولات البحرية",
+      "rating": 4.9,
+      "reviews": 16326,
+      "price": "$$",
+      "type": "Seafood restaurant",
+      "address": "Bin Abdulah, AL Shafar building - 46 47C Street, Al Karama - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerzFGeGBpOFMmTE44EVS9U55DR5Y350uWc9cTl3c_9KpZmrexz5ZvlQRKV-LXEvg9Ly0vYPoOmzSWpfvUNYZoMGUJSLOJgEPmnjOL14IW7gWkGrB0NDnzaWJPfb1T1xbzEFMFk2=w163-h92-k-no"
+    },
+    {
+      "name": "Swiss Butter - Sofitel Downtown",
+      "rating": 4.7,
+      "reviews": 3219,
+      "price": "AED 100–150",
+      "type": "Steak house",
+      "address": "Sofitel Downtown, Sheikh Zayed Rd, Burj Khalifa - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoJ-mKXX3iqhUwlMLF9apDDhboN-DIDQKOmQOQCyKwssYOVl2jnnZATtUmQSfO3XCAX4Ry1sK04sXwKTu1NEV9UVm5iDn4ASF3BVDgaR3HGbc3KCTCtTYLEBeh4xrzuhqDQsNlrFQ=w122-h92-k-no"
+    },
+    {
+      "name": "COYA Dubai",
+      "rating": 4.6,
+      "reviews": 4147,
+      "price": "AED 500+",
+      "type": "Peruvian restaurant",
+      "address": "Restaurant Village Four Seasons Resort, Jumeirah Beach Road, Jumeirah - Jumeirah 2 - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweon2wSfAXWmsCexQsxQU960NLLskI_ask5UETHAY6_xBg0ZUUC4nZFX1KQ1i7T-6LW1hnVxEvFRMShIUkPuKk_Hf_kfM6KJiSEaaa0zzKS1_bbOJmgpj05NvdfgAVl5GeGDYFbqYw=w138-h92-k-no"
+    },
+    {
+      "name": "Alba Restaurant Dubai",
+      "rating": 4.8,
+      "reviews": 445,
+      "type": "Japanese restaurant",
+      "address": "Dubai Opera Plaza, Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep0UONRapy6D1HZ8epQzLTzM0HLAWrrJIIUmH7O3ugdAyhAdwzvVFDy3JCertrnwbsJ2ZlVVmNnt6t7mz-lxXvBhoVBgUQec05dR8e3EjIFXfhCSjPFGWQA-0yJtsfiHnMcuDo59c6k94o3=w80-h106-k-no"
+    },
+    {
+      "name": "NAZCAA",
+      "rating": 4.7,
+      "reviews": 1505,
+      "type": "Restaurant",
+      "address": "Address Dubai Mall Hotel, Level 12 - Sheikh Mohammed bin Rashid Blvd, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoabxgz6A23xpSlovq7LCOt3ywBfU7hcucsv-my2T7orXcH0ftGsc1u2NOSA0S4ssfNsxy10SdWbfPa61p8Y53YZLGwRNkIDqQw1FNunMyxp2bVUcdXk-3lt003MJxuTLNsrIHQET8vCsFp=w122-h92-k-no"
+    },
+    {
+      "name": "FRNDS Restaurant",
+      "rating": 4.7,
+      "reviews": 1226,
+      "type": "Restaurant",
+      "address": "Dubai Dubai Mall, Ground Floor, Burj Khalifa - Downtown Dubai - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoFSPAY5DMzumzOxl9FcQY_-J9gnhp5EIFmdmPK8XTJKkC6wD5AawbY7sdL7vQ3d-lO8KAoLCNhoGijSfPZu69CumFYNZ_Hhl0nYEUJw7g7rQERrzleFRIIfUgBBQ-keVp4kiXsMQ=w138-h92-k-no"
+    },
+    {
+      "name": "Tribes Dubai Mall",
+      "rating": 4.7,
+      "reviews": 4453,
+      "type": "African restaurant",
+      "address": "Level 2, Star Atrium, above apple store, The Dubai Mall, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqdsycOTpN9HSc5vgW6LY-A862OjQ4KwKhP_ESxbZ-BSvJyN3yARQUYH2jmQY7P7ti_oL3HjOBzmdjUyoKOpGJFQ927-9Yobe9omADwxoRAoo4Sxb0NDq1d3YpHeTRmmyqKEtUB=w122-h92-k-no"
+    },
+    {
+      "name": "The MAINE Land Brasserie Restaurant, Business Bay Dubai",
+      "rating": 4.8,
+      "reviews": 2015,
+      "price": "$$$",
+      "type": "Restaurant",
+      "address": "The Opus by Omniyat, Ground Floor - Al A'amal St, Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweogeufRLZtW0VetibuX8RByqO343oQgDuZMwKTn336jWeebiRQbDup4nNigdsHHBQaNe3PF038oKvFc8dGHuyYDZwkOGZvUSHOChRac97ZjIPgaxvAAjtsRZrfQs6n9FQwE0Of9=w138-h92-k-no"
+    },
+    {
+      "name": "Carnival by Trèsind Restaurant & Bar | DIFC, Dubai",
+      "rating": 4.6,
+      "reviews": 3101,
+      "price": "$$$",
+      "type": "Restaurant",
+      "address": "The Buildings by Daman, 312 Al Sa'ada Street, Zaa'beel Second - DIFC - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerLD1qc3m_ya3ysf3jyEHOZ6Uz1dPiLST8kN2fXuCGq1Gkktz7iom1B7ds6l9Umj33ZfuPNngl0_jPOjFFfyx5I-a95cdclFPwUHwfnuvVa0yvMYbJiFMngGbZtigGOD9igxLLWfw=w128-h92-k-no"
+    },
+    {
+      "name": "Le Petit Chef - Dubai",
+      "rating": 4.7,
+      "reviews": 1064,
+      "price": "AED 500+",
+      "type": "Restaurant",
+      "address": "Andaz Dubai The Palm, Palm Jumeirah - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweodp8iOsxy20Zf8p7cqzyfJkx6FNRiTrVSbGmErgC9ggIsYMAr_xW-Bc91GBVXoSn4ruUctKbHEfI2ePTxTvcFKyxU-VJPG19NbLvQxS7PZaBz2W98TEHFjPiCvtuAoDTwmSlk3qrBgGwr7=w138-h92-k-no"
+    },
+    {
+      "name": "Romeo Lane Dubai",
+      "rating": 4.9,
+      "reviews": 611,
+      "type": "Restaurant",
+      "address": "Pullman Hotel Dubai, Floor 2 - Marasi Dr, Business Bay - Dubai, United Arab Emirates",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoc-MRgBgjgJ21epDq2OwduX9pwCBGf1U48jFkRIhgGbGfT0SaGoINCr44vm1gQ8yULkgvFIFOk4HAqNrli_WJJ1C23sGAeId-PbPvg6gjeL62P2nQYwxG-x7505gT_7E6SNPJWyIUzEdFd=w141-h92-k-no"
+    }
+  ]
+}

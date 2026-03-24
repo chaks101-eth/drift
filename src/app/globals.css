@@ -4,6 +4,31 @@
 @theme inline {
   --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
+
+  /* ─── Drift Design Tokens ─── */
+  --color-drift-bg: #08080c;
+  --color-drift-card: #0e0e14;
+  --color-drift-card2: #14141e;
+  --color-drift-gold: #c8a44e;
+  --color-drift-gold2: #e8cc6e;
+  --color-drift-gold-dim: #8B7845;
+  --color-drift-text: #f0efe8;
+  --color-drift-text2: #7a7a85;
+  --color-drift-text3: #4a4a55;
+  --color-drift-text4: #5a5a65;
+  --color-drift-ok: #4ecdc4;
+  --color-drift-warn: #f0a500;
+  --color-drift-err: #e74c3c;
+  --color-drift-border: rgba(255, 255, 255, 0.06);
+  --color-drift-border2: rgba(255, 255, 255, 0.08);
+  --color-drift-surface: rgba(255, 255, 255, 0.03);
+  --color-drift-surface2: rgba(255, 255, 255, 0.05);
+  --color-drift-gold-bg: rgba(200, 164, 78, 0.08);
+  --color-drift-gold-border: rgba(200, 164, 78, 0.2);
+
+  /* ─── Easings ─── */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.15, 1);
 }
 
 * { -webkit-font-smoothing: antialiased; }
@@ -82,10 +107,28 @@ body {
   30% { opacity: 1; transform: translateY(-4px); }
 }
 
+@keyframes slideDown {
+  from { opacity: 0; transform: translate(-50%, -12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes celebrate {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(60px) rotate(720deg); }
+}
+
 /* ─── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 ::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
 /* ─── Date input styling ─────────────────────────────────────── */
 input[type="date"]::-webkit-calendar-picker-indicator {

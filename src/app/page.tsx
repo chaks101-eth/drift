@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -9,6 +11,11 @@ export default function Landing() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    // On mobile, redirect to React mobile app
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      window.location.href = '/m'
+      return
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.push('/vibes')
       else setReady(true)
@@ -84,7 +91,7 @@ export default function Landing() {
           A flowchart, not a <em className="text-[#c8a44e] italic">spreadsheet</em>
         </h2>
         <p className="text-[15px] text-[#7a7a85] leading-[1.7] max-w-[520px] mb-9 max-md:text-[13px]">
-          Every flight, hotel, activity, and meal — connected in a visual board. Drag to reorder. Tap to swap. Ask AI to adjust. Your trip is alive, not static.
+          Every flight, hotel, activity, and meal — connected in a visual board. Tap to swap. Ask AI to adjust. Your trip is alive, not static.
         </p>
         <ProductMockup />
       </section>
@@ -167,7 +174,15 @@ export default function Landing() {
 
       {/* ─── FOOTER ─── */}
       <footer className="relative z-[2] text-center px-8 py-6 border-t border-[rgba(255,255,255,0.06)] text-[11px] text-[#4a4a55]">
-        Drift &middot; Privacy &middot; Terms &middot; Built with taste.
+        Drift &middot;{' '}
+        <Link href="/about" className="hover:text-[#c8a44e] transition-colors">About</Link>
+        {' '}&middot;{' '}
+        <Link href="/faq" className="hover:text-[#c8a44e] transition-colors">FAQ</Link>
+        {' '}&middot;{' '}
+        <Link href="/privacy" className="hover:text-[#c8a44e] transition-colors">Privacy</Link>
+        {' '}&middot;{' '}
+        <Link href="/terms" className="hover:text-[#c8a44e] transition-colors">Terms</Link>
+        {' '}&middot; Built with taste.
       </footer>
     </div>
   )
@@ -219,7 +234,9 @@ function ProductMockup() {
         {cards.map((c, i) => (
           <div key={i} className="flex items-center gap-0 flex-shrink-0">
             <div className="w-40 rounded-xl overflow-hidden border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] max-md:w-[140px]">
-              <img src={c.img} alt={c.name} className="w-full h-[90px] object-cover block max-md:h-[72px]" />
+              <div className="relative w-full h-[90px] max-md:h-[72px]">
+                <Image src={c.img} alt={c.name} fill className="object-cover" sizes="(max-width: 768px) 140px, 160px" />
+              </div>
               <div className="p-2.5">
                 <span className={`text-[7px] px-1.5 py-0.5 rounded ${c.tagClass} uppercase tracking-wide font-semibold inline-block mb-1`}>{c.tag}</span>
                 <div className="text-[11px] font-semibold mb-0.5">{c.name}</div>

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /trip/
+
+Sitemap: https://drift.travel/sitemap.xml

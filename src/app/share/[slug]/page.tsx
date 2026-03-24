@@ -34,17 +34,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { trip } = data
   return {
-    title: `${trip.destination}, ${trip.country} — Drift Trip`,
+    title: `${trip.destination}${trip.country && trip.country.toLowerCase() !== trip.destination?.toLowerCase() ? `, ${trip.country}` : ''} — Drift Trip`,
     description: `Check out this ${trip.vibes?.join(', ')} trip to ${trip.destination}! ${trip.travelers} travelers, ${trip.start_date} to ${trip.end_date}.`,
     openGraph: {
       title: `${trip.destination} Trip — Drift`,
-      description: `A ${trip.vibes?.join(' & ')} trip to ${trip.destination}, ${trip.country}. Plan yours at drift.travel`,
+      description: `A ${trip.vibes?.join(' & ')} trip to ${trip.destination}${trip.country && trip.country.toLowerCase() !== trip.destination?.toLowerCase() ? `, ${trip.country}` : ''}. Plan yours at drift.travel`,
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title: `${trip.destination} Trip — Drift`,
-      description: `A ${trip.vibes?.join(' & ')} trip to ${trip.destination}, ${trip.country}`,
+      description: `A ${trip.vibes?.join(' & ')} trip to ${trip.destination}${trip.country && trip.country.toLowerCase() !== trip.destination?.toLowerCase() ? `, ${trip.country}` : ''}`,
     },
   }
 }

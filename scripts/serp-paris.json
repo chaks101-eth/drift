@@ -1,0 +1,527 @@
+{
+  "city": "Paris",
+  "country": "France",
+  "hotels": [
+    {
+      "name": "Hôtel La Comtesse Tour Eiffel",
+      "rating": 4.6,
+      "reviews": 1189,
+      "price": "$261",
+      "type": "Hotel",
+      "address": "29 Av. de Tourville, 75007 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweotteW4DMtWO7PqQQhUzx1MA2er15C5I_3k40cFHVLhL3faVe-TdsvGYKk8FTz6QVP95Hk3cCXH-utrAurgm3xHRSGNm-BkmkXvsUI1KFb3Mo7dVNR0z1u404gGLo0mfudgv6l1DntE0395=w80-h106-k-no"
+    },
+    {
+      "name": "Four Seasons Hotel George V, Paris",
+      "rating": 4.8,
+      "reviews": 7225,
+      "price": "$2,181",
+      "type": "Hotel",
+      "address": "31 Av. George V, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepBamRWHyBHgjbllokW6QO66Pzk_Qr_YboaxrW4cDGi8YGNshC3C-qdxJMS74rg2lMLtw-_boXrd1az-DJkFTyXsoBxk8pB8uq937lmawlENvuWhUUIbvoIswTNigtSvQi_Hzzc8XqHztaP=w115-h92-k-no"
+    },
+    {
+      "name": "Ritz Paris",
+      "rating": 4.7,
+      "reviews": 4419,
+      "price": "$2,658",
+      "type": "Hotel",
+      "address": "15 Pl. Vendôme, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwergw1abtjG_0mHu8r406czIW-iudF-r_AzugBcLUNv6X5_DPJLvi2Dw429caL0Vk8goLlGG4zbCmbrsby1m82klKoSxyq_hnV2MKkBZid20TZWLVvLBibRNfbxSaMSKdcBbE0c9hA=w137-h92-k-no"
+    },
+    {
+      "name": "Pullman Paris Tour Eiffel",
+      "rating": 4.6,
+      "reviews": 15146,
+      "price": "$400",
+      "type": "Hotel",
+      "address": "18 Avenue De Suffren, 22 Rue Jean Rey Entrée Au, 75015 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepW5aeSBM2YPP0J3PFmEklxTG4VwcQtCchMRSbN8SNFzUKJfe63OC0dcCqNEh_PKfTL38YwxVUN5WlG7PEogp_Lsr5jXE5oVtrjUCLmvaYhLOHqZK62U1Gw9IWtBNReVNs_SBXnNw=w122-h92-k-no"
+    },
+    {
+      "name": "Hôtel de NELL",
+      "rating": 4.6,
+      "reviews": 542,
+      "price": "$264",
+      "type": "Hotel",
+      "address": "9 Rue du Conservatoire, 75009 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweok2RsHwx48b7twNX-ZI23iVACn1fyqKaZpl2_Tom4zdBATemPzjL7N3NHxil6UZ-JOJjmUy1sGtfKvhYu8DlQop_EiGtBEzt4HRNft9SkYsZy-o17Cv7yCfBrBHCgZ8_KUE0g3Z4LKjU6-=w80-h119-k-no"
+    },
+    {
+      "name": "Hôtel Particulier",
+      "rating": 4.3,
+      "reviews": 2782,
+      "price": "$421",
+      "type": "Hotel",
+      "address": "23 Av. Junot, 75018 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweryrknjCFL1kkZ6bxiHhx_C6Qj7UTwY52benQOAcxdpOrrgg0arqUXkiyVbkMDd9LWWI4juGZgCVRV1FMOt6foVlcx7MvIG4WxkDcG2wz6cZEen0RWcYSd_x1YFKHpHZOgqfQF3=w80-h106-k-no"
+    },
+    {
+      "name": "Saint James Paris",
+      "rating": 4.7,
+      "reviews": 1383,
+      "price": "$666",
+      "type": "Hotel",
+      "address": "5 Pl. du Chancelier Adenauer, 75116 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoNR2_DGGYPQWMuYpmtQN2VHn7WDTu9KDVlvMiaETDLQoNITRizJxm0Bm4a6q5jDnA-g75aEK4yuesZ7qmfqLSUGMRy6SdEcimptS1_FLjLGSK0v8wbD18X5ojK9BYBNwMR-1sTsA=w137-h92-k-no"
+    },
+    {
+      "name": "San Régis",
+      "rating": 4.8,
+      "reviews": 1224,
+      "price": "$721",
+      "type": "Hotel",
+      "address": "12 Rue Jean Goujon, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerk2nXmG9opECE4E8pKV8EfPYXoTDFJALQCuBM7dlN5OUKFLxKQH5czdJdtFw9Pn4LTNfJKx-hmJVXycDO9QKl6AX_zQcabPv88m0f2ldWmMrrSDniRL6ocvV9SdF5rK_-eIerG6cn33LwR=w80-h119-k-no"
+    },
+    {
+      "name": "Hôtel Georgette",
+      "rating": 4.4,
+      "reviews": 581,
+      "price": "$103",
+      "type": "Hotel",
+      "address": "36 Rue du Grenier-Saint-Lazare, 75003 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepdJTJDiXftawOWG7H0HUQ3AGO-R2pElDcO8B0W7ePyMzS2oOKDFOlB2glCCtMNcGE0PB6a0YtLuRVZFZGiB8xcWDTQKGTVXz-kbrOBBUmtll3wr36LpYxlrqSAtf2PUT30XJAbiQ=w163-h92-k-no"
+    },
+    {
+      "name": "Shangri-La Paris",
+      "rating": 4.7,
+      "reviews": 3373,
+      "price": "$1,716",
+      "type": "Hotel",
+      "address": "10 Av. d'Iéna, 75116 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqRF7anFFmWAOR8JIQMN5vwGB9s-ECStq_BrNcIU3bcdGXN0e8VYrL1kqwo2wMLUaaxXrlq5tGyIfNIHpvSpeJZ0YsgiMrRRLv57Ehma4r1RdLfdvVLAgAsPwvWCPiQ-fTAgm5bsw=w138-h92-k-no"
+    },
+    {
+      "name": "Hôtel Villa d'Estrées - Saint-Germain-des-Prés",
+      "rating": 4.6,
+      "reviews": 120,
+      "price": "$220",
+      "type": "Hotel",
+      "address": "17 Rue Gît-le-Cœur, 75006 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqUWtQnI2DkWkc0kP-46oUUjiwV1wuyUEm4QAFDZS9Pxc5XxOWlYbgsC6zBA4kCLi8djGLc6v7rWxXeozUVukfi4605qocHwhEE1EPchRfxU-Dp2lkWTa2EAiBfhw7tLeG1rGOu=w139-h92-k-no"
+    },
+    {
+      "name": "Castille Paris",
+      "rating": 4.6,
+      "reviews": 1343,
+      "price": "$365",
+      "type": "Hotel",
+      "address": "33-37 Rue Cambon, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqHV33llAdiNG-2-Hs5QkBBjT_WQaBGNz10rrA8tjfFSUVtAmhS88CZzZl_hcHeYiFyQhBAR9v-fyEGx6mCEdPQzPFhzV8IkobJPj9ZzsMdZqMu3PRaFtnDW6wgzbnnGYomiOBLXP_lIwHD=w137-h92-k-no"
+    },
+    {
+      "name": "Hôtel Plaza Athénée",
+      "rating": 4.6,
+      "reviews": 2811,
+      "price": "$2,279",
+      "type": "Hotel",
+      "address": "25 Av. Montaigne, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerRooDCAN29cO36qo79jbQZibA8DhXLB-HNzmNcsmlgSPy5II-42SnBWn1DLpi3irjxWhoyEJ1k9_t0Zo3wTZxRQpjYY2cIQ--I9pQNC_1II4DtGVPym-vOuC8_dF0vhbaXb0l4kQ=w163-h92-k-no"
+    },
+    {
+      "name": "Relais Christine",
+      "rating": 4.8,
+      "reviews": 516,
+      "price": "$542",
+      "type": "Hotel",
+      "address": "3 Rue Christine, 75006 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqNbwZLLdVKXfMB-4qa-2lvHIgmq2RkH74eYdWPVq9FUvNgPf4KYtTvIg4pVozOABSG2VbR2R0Y3x2jpwFJQDDdVztwGVyTew_MTc9khZ7tqf74XpJ93S5kidzLNWow_ovXTJkC=w80-h100-k-no"
+    },
+    {
+      "name": "La Bourdonnais",
+      "rating": 4.6,
+      "reviews": 940,
+      "price": "$217",
+      "type": "Hotel",
+      "address": "111-113 Av. de la Bourdonnais, 75007 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqqbltGsQyvkoPoGUctgsTge9y_fvjoyEoOnQEx4_yT4XO9_hR33rLRpmJi6s9zXCaF_tKljnWQNFNavSmljYCIFwAhX4KFQ2WeNwbUW3hwua6UWNdWaujZMIrMEsmDdvv6sdlNXQ=w138-h92-k-no"
+    },
+    {
+      "name": "Hotel Saint-Germain",
+      "rating": 4.2,
+      "reviews": 246,
+      "price": "$162",
+      "type": "Hotel",
+      "address": "88 Rue du Bac, 75007 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepev5RsFu6abYA2HSMPscBjAU-9vgMDPDb3udb9Ntneq7WXqkJETldMZ4SF3boy9ensQbzXRkaoWKvJ91KiWJh-waNvaMcD_Xp36EUX122EznXvVF4dDIbEFhZFpmKRsV7CLGAoIg=w80-h104-k-no"
+    },
+    {
+      "name": "Hôtel de Crillon, A Rosewood Hotel",
+      "rating": 4.7,
+      "reviews": 3410,
+      "price": "$2,057",
+      "type": "Hotel",
+      "address": "10 Pl. de la Concorde, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerZDIsUgoshpPaov9Va4c0reriucndz22XIDShqplAxoEr8JeY5DwJdWDDPp0UqFXT-oii8dyh7BE8AYWllcJ4kur97EoH28BIP838gJZYxMHO3LlLmZ9F-IBtJLQ91K5Tptkmp=w148-h92-k-no"
+    },
+    {
+      "name": "Hotel La Lanterne & Spa by Timhotel",
+      "rating": 4.5,
+      "reviews": 990,
+      "price": "$196",
+      "type": "Hotel",
+      "address": "12 Rue de la Montagne Ste Geneviève, 75005 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoiVUrzPjdSD54G5KG11Cwt5Jjq86HT8X-TqOcfjdhCMRrox32Ya1oIJLkwZxnDOtaoRwFywYcyagkGI1dMTsWqaoOHPr-vSBf_Dy8GC82ae_HsGPLd5hvdZTXs9HfdIVX5XJDAQA=w80-h106-k-no"
+    },
+    {
+      "name": "Hôtel Malte - Astotel",
+      "rating": 4.8,
+      "reviews": 1512,
+      "price": "$158",
+      "type": "Hotel",
+      "address": "63 Rue de Richelieu, 75002 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep2M4G64WqQyktqfkBjCuMaq_vledhMPaalLV__XC2Pd3wNKQ_AJelvzB1k3ea0iuAXTPlw_TnOdCF7TsdnFiQgFaIDHfafTnPrjjjeLp8Su2E_bSo34aD1rMFDmwPYsyYWLZGXCA=w112-h92-k-no"
+    },
+    {
+      "name": "Sofitel Paris le Faubourg",
+      "rating": 4.6,
+      "reviews": 1700,
+      "price": "$671",
+      "type": "Hotel",
+      "address": "15 Rue Boissy d'Anglas, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweorRUT8Ns0YEdfZVdL1gc_gZVBRvT-tbDyo7v84WLc0s4U6jbkwNK-teguj8pnRtjXCXgr-ZDnI00tTgWIZ70P4qOjjMVi6wQBErxkPg97e669U3vpKqOSoR32w5CTGLP2UXoE=w138-h92-k-no"
+    }
+  ],
+  "attractions": [
+    {
+      "name": "Arc de Triomphe",
+      "rating": 4.7,
+      "reviews": 286657,
+      "type": "Tourist attraction",
+      "address": "Pl. Charles de Gaulle, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoBzTOAV9LWmFchP-F1XBOOfziVyDwZdz9lz2FWp2Hg8SVfgRvRXoegutomLEWIFwkDtxRvMVUpXBRvLH0qgt62TiZ1IpoobU0UR3eG3vznUTBdUPIYY-1NO8qTn2pbpiXT6seb2g=w122-h92-k-no"
+    },
+    {
+      "name": "Eiffel Tower",
+      "rating": 4.7,
+      "reviews": 482236,
+      "type": "Tourist attraction",
+      "address": "Av. Gustave Eiffel, 75007 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq9JnckX3D8u8i9SdK3kzTejXxEoTiwhGI-hQeKqFp5vBdtRfUbMJ04_9zgEVlO5KFOj_Ogen41u0bAsbqpjSvEWWXJl3AaX-adMxa3VgKMWE9iSa6lNG-c4K3lXHwpbl6LF6c=w80-h99-k-no"
+    },
+    {
+      "name": "Notre-Dame Cathedral of Paris",
+      "rating": 4.7,
+      "reviews": 87720,
+      "type": "Tourist attraction",
+      "address": "6 Parvis Notre-Dame - Pl. Jean-Paul II, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep-rg_vm2KsFWtzhz8zEzI-Tn9Ltkq9a59ZqoVyqlgOuWLCnYiK6PydgXWOxHCxqkMY2uwLJeWQdafyKF-1kY72p1MvKJ5vRgVPPhCuiOD8MH5mjh_a44S-VObJgUDq4HuDV17gaQ=w163-h92-k-no"
+    },
+    {
+      "name": "Louvre Museum",
+      "rating": 4.7,
+      "reviews": 362079,
+      "type": "Tourist attraction",
+      "address": "75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq9ijIdqyvT8RoCJ1Xbi8MblcwRMbRBOKFFY8B8jmiiFP61YXR54snB8q4-2if6lCmmht1QuE_vn2B7xSX1wS1kMqgXhQ0E-dWCE_B_ycGFAC35nX5DUcYYvpHLNuX6Dx6WQL6Q=w147-h92-k-no"
+    },
+    {
+      "name": "Conciergerie",
+      "rating": 4.4,
+      "reviews": 11182,
+      "type": "Tourist attraction",
+      "address": "2 Bd du Palais, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep5TDKBc5kEMynINvgeEPzh3plduzSAcsfmDNNh2NZOsO3jb3aVbyI9dwbw3eaRBpQSJ78urHJqrj674USf4p0OmFjMeNu5wHt7wNsZ5UE2jomjnmzIBsAf_Js5wVmXYHxAuzey=w141-h92-k-no"
+    },
+    {
+      "name": "Louvre Pyramid",
+      "rating": 4.7,
+      "reviews": 84570,
+      "type": "Tourist attraction",
+      "address": "75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerDTDJwhIZdDo10Qv4T0H_ip9yCYemNCvaJwOPnQ_txUyejviz9RG-3U68VOgKMH6-lmX_M-F633kyanZ_d6SvjjGVRr1zxYzdehCxmSPvPVGYgUUDFwfZhCgPr76rjIIvOWei0=w136-h92-k-no"
+    },
+    {
+      "name": "Domaine National du Palais-Royal",
+      "rating": 4.6,
+      "reviews": 21132,
+      "type": "Tourist attraction",
+      "address": "75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqDYjN0fd5vq3tmejXQxRikTPY2Duv7TxdxpaHNBIiSpvTJkUCT50UnHPg7DbJMKYN46y7LnsvhcAQdfU3_gIGLpIqbpaUzp1Buwzut8sYXHT0mXac17nAAVkkByPJeQd7gPuI9ww=w122-h92-k-no"
+    },
+    {
+      "name": "Sainte-Chapelle",
+      "rating": 4.6,
+      "reviews": 48039,
+      "type": "Tourist attraction",
+      "address": "10 Bd du Palais, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerToenIwNli9cu_aJjKKZzviaJzDcv08StUI6a_fcqumpOG5L70VJKXzQGTUa8Xe4uuBDXRbkL1KmWsyz2DqugJAOHHtoiuTKwkzCZURfQhFYtfGj1kuEigBqIR01JTeWI5YXE=w122-h92-k-no"
+    },
+    {
+      "name": "Palais de Chaillot",
+      "rating": 4.6,
+      "reviews": 6323,
+      "type": "Tourist attraction",
+      "address": "1 Pl. du Trocadéro et du 11 Novembre, 75016 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepfoJeosiFB3ZsGybT0nhGNUqJlZ24gPrhKOfFpRwzwwHcSPUMGxUQY1exOWgfvEoSqvbDHl1JxrphZye_Hbj5jq_eskslCicLUe27O0Z0vR89uRsybaXHWlEp8nBZr77-xu3sc=w122-h92-k-no"
+    },
+    {
+      "name": "Basilique du Sacré-Cœur de Montmartre",
+      "rating": 4.7,
+      "reviews": 160335,
+      "type": "Tourist attraction",
+      "address": "35 Rue du Chevalier de la Barre, 75018 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepnWlKUsqeQZ-789m-mDTK-PAEdwir6FpEtQmZ0LRN0Cr8EPbpnMNceEhIjFjYBBx2LyxoWrWOWwJNUY1f6Pfnw3dXw_wk2CC25zmis6izRilTaWE5mgXsLwI0QAxT5aKXJKrYW5g=w122-h92-k-no"
+    },
+    {
+      "name": "Place du Trocadero",
+      "rating": 4.7,
+      "reviews": 12489,
+      "type": "Plaza",
+      "address": "Pl. du Trocadéro et du 11 Novembre, 75016 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweorbAH5GqX3cBCnsX-5PT81oMJ_9vM5ScZo03olxwV_k0mZmrm5tGrCPWawESuXKx3jgqPKbFqiJa6HU68SJUBdyWfBvzexF18Z6zCJsNz44PvwjZjYB__bIPSPyDl5Si8c6Rxx=w122-h92-k-no"
+    },
+    {
+      "name": "Place des Vosges",
+      "rating": 4.6,
+      "reviews": 31933,
+      "type": "Tourist attraction",
+      "address": "Pl. des Vosges, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerGCO1XbhTx2owji12t3We5nuMny2pUYf2jun4nF7UefQLK2gUS32lpG28-56k2hQd6KQw8EXXqkzvWcwaDqcuFVJWrRRYUS60VDMVSgPiIZxI6M-84ocd8jyiIZCkSz0FzFVw5Ow=w163-h92-k-no"
+    },
+    {
+      "name": "Overlook of Paris",
+      "rating": 4.6,
+      "reviews": 717,
+      "type": "Tourist attraction",
+      "address": "5 Rue du Cardinal Dubois, 75018 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepOH-hIMUaLDiQ6znaU2ZDbx07Db21nZMsLebYDTCBjz7GwdYItPZrObW17B_QF_8RXah_3x74vdyklvHPDLR0j6PIP2UkdS8u5elwbeYUWrM8IwD6vdcufQo92X_sJo5XYWRbNt_6InPWo=w122-h92-k-no"
+    },
+    {
+      "name": "Square de l'Île-de-France",
+      "rating": 4.5,
+      "reviews": 337,
+      "type": "Plaza",
+      "address": "1 Quai de l'Archevêché, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerck9thd---JGjxZ85gMcMLl1edRlDCeRiaS6maG-Wy571CBOMXTGWvMkvkxu-ZkeqIWC1P_MynLtbu5yhMGR3FiaNqbIDox-U_f06w3_-IAiY9mNOQIHRL62QOa8nYTXj0IVxOnw=w137-h92-k-no"
+    },
+    {
+      "name": "The Wall of \"I love you\"",
+      "rating": 4.3,
+      "reviews": 19621,
+      "type": "Tourist attraction",
+      "address": "Square Jehan Rictus, 14 Pl. des Abbesses, 75018 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep7hyehGyEN5glDqRL-X1rMPg6ngV9D99NAx9a_akNJIcz3f2rJiPEsvSRaerImsTWJFqTs24a51Cy7aqbeS6WKVGMg5j9I-B3dS81qLf99u4_A9sYLtE9avLHLWOKOHViWkZh_7WnUAKh5=w122-h92-k-no"
+    },
+    {
+      "name": "Jardin du Luxembourg",
+      "rating": 4.7,
+      "reviews": 123548,
+      "type": "Tourist attraction",
+      "address": "75006 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweofALO0Fi03utAGq3pwefvVzmF2AplZasg_f1OX-H1C5ocO9d4ljtpdIDDD-udSV0c6WdtvtJC3scRYGxGl4vIcCnJ1t9mFrJoQap8YkKxbHGhaVTWV9hemgBoZWpzS_uivW5pA=w166-h92-k-no"
+    },
+    {
+      "name": "Paris Tour of Montmartre",
+      "rating": 4.5,
+      "reviews": 2,
+      "type": "Tourist attraction",
+      "address": "Rue Saint-Georges, 75009 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqf7qIW0UWsY-IKmrOTVkQW4NUTT_bPWURRVUmw8-C4buKm6QFwWKEqSX4nLN_N4fgR6H9A7IZPxtMVCamvYqLwjOm_4VAcIUegX21YJhihShOVDRlTloNbOjOK_HBHz95cbO1xUk09V0eG=w80-h177-k-no"
+    },
+    {
+      "name": "Square Louise Michel",
+      "rating": 4.5,
+      "reviews": 8143,
+      "type": "Tourist attraction",
+      "address": "6 Pl. Saint-Pierre, 75018 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepcQydekuTIab-XstpncdnZ9JFT4FKAp_2KZQZwAXJ0xhXFu5TPGF3XxrvHiCd63aqw3hRntQUVYGp-0cHfs0xJ6A0VLlBcE3b7BNAY_Tt9P0loGrnSCCEIw0Te2f5yAiKP5rw7WQ=w122-h92-k-no"
+    },
+    {
+      "name": "Eiffel Tower viewpoint",
+      "rating": 4.8,
+      "reviews": 213,
+      "type": "Tourist attraction",
+      "address": "Port Debilly, 75016 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoYLSvTspabqf-GVoNiOLrEqyH-dly3HUck7cGW96PmQhApHlIKh2pcefEpk_dOAyVCB4aa5jxafsoLmHeQ17mPn2rYUO5RUPYkPoZXpw9UWCIVlOYrEcd-eAMn0-CIgZ-s8SZHq94GDZdI=w80-h106-k-no"
+    },
+    {
+      "name": "Oasis d'Aboukir",
+      "rating": 4.5,
+      "reviews": 79,
+      "type": "Tourist attraction",
+      "address": "83 Rue d'Aboukir, 75002 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqKf8ifG5Vc382VeGtvHYxK7CVws9GOuaIfQ_Go1WMo12yZHf_17lH48Zii30cGh0zpb0jJVN8OW_QIsRSf6M-FvgcKjZcduvOWTxa7QBuQO8cnyY22_ayv207kXMRk4OFhOPUV=w163-h92-k-no"
+    }
+  ],
+  "restaurants": [
+    {
+      "name": "Epicure",
+      "rating": 4.7,
+      "reviews": 1716,
+      "price": "€100+",
+      "type": "Haute French restaurant",
+      "address": "112 Rue du Faubourg Saint-Honoré, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep2a4uSxw5wbRosfHd4wdysvbdnrFVm-6B1DbTTaMrS4kUBfS29Pun5zpr5Yy0G5kKB_hTTzZOChuzktmk7Wdw5KMyiCvcVuf6n-Ifo1-H3tHpMD9iQyyjswcS43q3BgHEC6k21=w142-h92-k-no"
+    },
+    {
+      "name": "Le Colimaçon",
+      "rating": 4.7,
+      "reviews": 2892,
+      "price": "$$",
+      "type": "French restaurant",
+      "address": "44 Rue Vieille du Temple, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerX4G-ihL2y2gJKNXVnSOe_TeZzy2nJaGg-r6vSKRCHvCYqGaBNHJmtiMJyg4-oPnixpJP9dje8nmTkdF34kwL8HLd_ueciylSlzLuHpy5qkOE8vqtrMpBuaWBUtPhTdvkXW4co=w138-h92-k-no"
+    },
+    {
+      "name": "Restaurant Guy Savoy",
+      "rating": 4.7,
+      "reviews": 1721,
+      "price": "€100+",
+      "type": "Haute French restaurant",
+      "address": "11 Quai de Conti, 75006 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep-J8ODDqm0vz0qFRPuMt4RzKin2j1dl12tDBebUwSbMNacnR8ttHnHhmrSSmoMRqfJwQw5dX1kRVPGpwUHoLacV20dBn3SuczbtOaG6sOMPR1ZBNWmxfgzJkcq0tYk-dIwLXpzSA=w122-h92-k-no"
+    },
+    {
+      "name": "La Table de Colette",
+      "rating": 4.7,
+      "reviews": 1350,
+      "price": "€100+",
+      "type": "Haute French restaurant",
+      "address": "17 Rue Laplace, 75005 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq1FPH5E0owajg4VOKpxtrQYsPk-LcjKg6u9g72ULYeNTwr8u_mtdkh1BDE9QvcCHtwiW1wL9gKNCWCpeuEzw0wy28DoA94JwpcNgSdKwuV_jqm0PrFs5WOdygXmIJoYzPYWfTv=w122-h92-k-no"
+    },
+    {
+      "name": "Le Cinq",
+      "rating": 4.6,
+      "reviews": 1565,
+      "price": "€100+",
+      "type": "French restaurant",
+      "address": "31 Av. George V, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweojS-i1WIN4r6s_xEkFxjKBaBiTQcZQ8Gk7Agc-b7XocnwlHkjuwAPuxrIENr8ektUlt6jvPxtCIdtw8QwcVSNm_VFGL_EpnNNtJIy_7LIrFwNrGWnuOuRbxlHcGilihIuoHgrr=w138-h92-k-no"
+    },
+    {
+      "name": "Le Vieux Bistrot Paris 75005",
+      "rating": 4.7,
+      "reviews": 2265,
+      "price": "$$",
+      "type": "French restaurant",
+      "address": "54 Rue Mouffetard, 75005 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepohZyG6dS0ZoJtM16ZIKleZJpiR3m1jQZIQTiQGT0l3oj5m2qb_fUZyaY0ZE83QhnSrii3tTbzM7ujeSxfVUo-uf8Ngdp-5PkMVExM7Kkqz7S9h_F3IMuUi3_eL7LuMoKOHtI-=w125-h92-k-no"
+    },
+    {
+      "name": "Le Tout-Paris",
+      "rating": 4.6,
+      "reviews": 2016,
+      "price": "€100+",
+      "type": "French restaurant",
+      "address": "8 Quai du Louvre, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqjnNlbHbHvB0HInNuW-GJVYTv0TF2iCgxUVwTKr434-Eq3IAvlTFHg6AZDnMD75XspLf3Zh-6gRfxE9FEB83Mw9F6tL1LqfJy12R4uXHBsUlTVo-2oEfES63tWSC_ZhCOjC6uo=w163-h92-k-no"
+    },
+    {
+      "name": "Pur' - Jean-François Rouquette",
+      "rating": 4.7,
+      "reviews": 557,
+      "price": "€100+",
+      "type": "French restaurant",
+      "address": "5 Rue de la Paix, 75002 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo6kiSgIPno3Rjgzt9PiwPU180RzAViqfpmSBtU_f9g7EjSBdvQMZOdZTViur6tYcDDiIntKmGmheXF_x4-1GAE0ACMktvVvWdcHds9SjnkKE5khFRuxBJ9m6en64mp2wZZu24=w133-h92-k-no"
+    },
+    {
+      "name": "Francette",
+      "rating": 4.5,
+      "reviews": 7651,
+      "type": "French restaurant",
+      "address": "1 Port de Suffren, 75007 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepy3Wj__9wdLVuNmsv3UdGBDAPCcYi4J_wiFgVJLnTQVhAQtO13Y6WOqppidiI30ALyLGPIrS3ObWOC6LM9sw54ZDMl7TOynLQzr90GuM4wK_lPgpMLXycwCYFrCXK7nKD7ttU=w80-h106-k-no"
+    },
+    {
+      "name": "Alliance",
+      "rating": 4.8,
+      "reviews": 777,
+      "price": "€100+",
+      "type": "Haute French restaurant",
+      "address": "5 Rue de Poissy, 75005 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq2ncndkS6TSGhu9RtQ5RelW0zVBvu-JZtnW6jNRZYTjW6Ia8wLZkDT0hSfOpWPZdA9KBJdh__aj8LTEd8oY8OsI3r3fWN2dULjJsKm5uZHtTpaVqgFVwiUb5SKDZ2fLYhcBuskzg=w138-h92-k-no"
+    },
+    {
+      "name": "Bistrot Des Tournelles",
+      "rating": 4.6,
+      "reviews": 1078,
+      "type": "French restaurant",
+      "address": "6 Rue des Tournelles, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqmDR14SpLJQDd4-6TnL9uRIrUEXjJbg0sAP_75ya6QkHz957PoGzhy4oRmdcY1UHSc7RgecZ29ifaFHQJTDAYIb34rw9sf50aGTIeTsB9hH9sBfTzyH6So56_PShgyQh4_XAp_Dw=w194-h92-k-no"
+    },
+    {
+      "name": "Chouchou",
+      "rating": 4.7,
+      "reviews": 23310,
+      "price": "$$",
+      "type": "French restaurant",
+      "address": "23 Bd de Sébastopol, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepNGk5U3wMUk4o7SK0IqwrfgeI7VioS0Dy8ORRnRlAJCzZdE4UkBJl3lxAKo0VtUzjt51wC3wtmRCnS_LtJ4v_HWohEJLm1qy_D4A9XZNrrIa2vwD1JKD9_tRt0AnKBoU85fN5bcA=w184-h92-k-no"
+    },
+    {
+      "name": "Les Baux de Paris",
+      "rating": 4.7,
+      "reviews": 1831,
+      "price": "€20–30",
+      "type": "Restaurant",
+      "address": "71 Rue Mouffetard, 75005 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep9Sj6JQybYjkvbIUoQ19_mEIkg28i8XUq0GzhWZqsHrSwHxh2c_Lg9yxF8dewMlg0Q6r9aJFCQpxT9Hk4dX2d-AMXVbD88qHa7VTf-RV1_MWK7-2VosG6JzwnLBLEa5gLjJBw57A=w138-h92-k-no"
+    },
+    {
+      "name": "Alfred",
+      "rating": 4.5,
+      "reviews": 641,
+      "type": "French restaurant",
+      "address": "8 Rue du Mont Thabor, 75001 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerLioRCcMzlst_-p5MVUptdQ2-dE7SjhS1x9smJd7yB4WaQfXhmNz483Ocm4kb-iGfnXdPqBIK_imjpqCjQ02uzkCCaZ2smhhEvKCHAAoHAzBjhlvTcthCAS2tS4qsRo3xBGIlD=w138-h92-k-no"
+    },
+    {
+      "name": "Restaurant L'Ange 20",
+      "rating": 4.7,
+      "reviews": 1526,
+      "price": "$$",
+      "type": "French restaurant",
+      "address": "44 Rue des Tournelles, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhGjlPt2Lz3WyrwzusNqjft-N8lilRYQHMl7DWnuT7Qz4_S6nCsvb2vQWClkgQv9Y01iAMXR3fQu-r5ZuBf2EyhtaeaTRtOxQ80mD_g9QOreUFLTGXe1kamA1vYCV1nuLdAtrhthZVM9uLDeVnkT0ycFatSZbmPLB_fr1Lf8iV6uWzb2NFmUPl8s9g=w150-h92-k-no"
+    },
+    {
+      "name": "C’est Comme À La Maison - CCALM",
+      "rating": 4.9,
+      "reviews": 415,
+      "price": "€20–30",
+      "type": "French restaurant",
+      "address": "6 Rue Geoffroy l'Angevin, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerlmQxMIG1McKtX_rP1SyUJ4PZUDTvGaNPLLU69-JF8BAxsoAoIwsC2wahsEWY4e6hMstLojKHfD0vYMCFlHjMmMKleiosXhBMXs--ezr3uWxcwWa-ifrr9rvoZWiTuqT2vbvuG=w80-h106-k-no"
+    },
+    {
+      "name": "114 Faubourg",
+      "rating": 4.7,
+      "reviews": 453,
+      "price": "€100+",
+      "type": "Haute French restaurant",
+      "address": "114 Rue du Faubourg Saint-Honoré, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqiKcrBAOL0qNRkZ6vy2aVCWBg-fW7CFTh5flyu102b2tTHVGweqky4DOf0U7mdHnYRzA-Yuq7LssZBJlQfDarpYaxLwjD1bWC598e9tYImVlyLe2R0z-AUd7pGp6yNMlWhb0lp=w165-h92-k-no"
+    },
+    {
+      "name": "L'Orangerie",
+      "rating": 4.8,
+      "reviews": 393,
+      "price": "€100+",
+      "type": "French restaurant",
+      "address": "31 Av. George V, 75008 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoWjjD5V5SAY8A_BxTRGDQ2nb51VISielWKD_zcj8rtOhZC9BUJhNkQ5sYyB-r1t75sihWZxqPyqOVmZ8th2kZZP2Zbv5UhJCa8Vvgrv9S_e_3m8HYlesf-vIpMYztG3xPCFfEIEA=w138-h92-k-no"
+    },
+    {
+      "name": "Au Bourguignon du Marais",
+      "rating": 4.6,
+      "reviews": 4059,
+      "price": "$$",
+      "type": "French restaurant",
+      "address": "52 Rue François Miron, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepZY2kuRERH2BQ4prUbyv4iNtFXo_9wQ_lDoz0RmZ33oWdXXkJBDRSqRSlBTqVnc2qI0aLKB8ILV7vsCYPPPpHeFhm7V4kmnLQ8M0tJjHFSxKh9zNhlgQxxdNx9VlUSygxl5G6h=w138-h92-k-no"
+    },
+    {
+      "name": "Benoît",
+      "rating": 4.3,
+      "reviews": 2804,
+      "price": "€100+",
+      "type": "French restaurant",
+      "address": "20 Rue Saint-Martin, 75004 Paris, France",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerh-1l58VlRziygrIrLSLMhhbJZTb1cCcqL5YCYVme64vbyI74ZLJGaXVZW0wxrRczHQrK9Nw2Rmwn-E9S44s-2-TBxmoYZfpnB2X6358SITT7HHyDWEEaoorN-8__3Yvs24Esu8w=w137-h92-k-no"
+    }
+  ]
+}

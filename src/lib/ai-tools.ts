@@ -6,6 +6,8 @@ import type OpenAI from 'openai'
 import { searchCatalog } from './ai-context'
 import { createClient } from '@supabase/supabase-js'
 import { upsizeGoogleImage } from './images'
+import { analyzeTrip, type TripAnalysis } from './ai-intelligence'
+import type { ItineraryItem } from './database.types'
 
 function getDb() {
   return createClient(
@@ -176,6 +178,24 @@ export const TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'validate_trip',
+      description: 'Run a smart analysis of the trip using real GPS, timing, and pacing data. Use when user asks "is my trip good?", "any issues?", "optimize my trip", or proactively after making changes. Returns specific spatial/temporal issues with fix suggestions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fix_type: {
+            type: 'string',
+            enum: ['analyze', 'proximity', 'timing', 'pacing'],
+            description: '"analyze" for full trip scan, or focus on a specific area',
+          },
+        },
+        required: ['fix_type'],
+      },
+    },
+  },
 ]
 
 // ─── Tool Result Types ───────────────────────────────────────
@@ -200,7 +220,10 @@ export async function executeTool(
   context: {
     tripId: string
     destination: string
+    vibes?: string[]
+    startDate?: string
     items: Array<{ id: string; category: string; name: string; price: string; position: number; status: string; metadata: Record<string, unknown> | null }>
+    fullItems?: ItineraryItem[]
   },
 ): Promise<ToolResult> {
   switch (toolName) {
@@ -216,6 +239,8 @@ export async function executeTool(
       return executeSearchFlights(args)
     case 'add_item':
       return executeAddItem(args, context)
+    case 'validate_trip':
+      return executeValidateTrip(args, context)
     default:
       return { success: false, data: { error: `Unknown tool: ${toolName}` } }
   }
@@ -416,22 +441,15 @@ async function executeAdjustBudget(
 
 async function executeGetTripInsights(
   args: Record<string, unknown>,
-  context: { items: Array<{ id: string; category: string; name: string; price: string; position: number; metadata: Record<string, unknown> | null }> },
+  context: {
+    items: Array<{ id: string; category: string; name: string; price: string; position: number; metadata: Record<string, unknown> | null }>
+    vibes?: string[]
+    startDate?: string
+    fullItems?: ItineraryItem[]
+  },
 ): Promise<ToolResult> {
   const focus = args.focus as string
   const real = context.items.filter(i => i.category !== 'day' && i.category !== 'transfer')
-
-  // Pacing analysis
-  const days: Record<number, number> = {}
-  let currentDay = 0
-  for (const item of context.items) {
-    if (item.category === 'day') { currentDay++; continue }
-    if (item.category === 'transfer') continue
-    days[currentDay] = (days[currentDay] || 0) + 1
-  }
-
-  const packedDays = Object.entries(days).filter(([, count]) => count > 5).map(([day]) => parseInt(day))
-  const lightDays = Object.entries(days).filter(([, count]) => count < 3).map(([day]) => parseInt(day))
 
   // Budget analysis
   let totalSpend = 0
@@ -442,20 +460,65 @@ async function executeGetTripInsights(
     byCategory[item.category] = (byCategory[item.category] || 0) + price
   }
 
-  // Vibe coverage
-  const vibesPresent = new Set<string>()
-  for (const item of real) {
-    const meta = item.metadata || {}
-    const itemVibes = (meta.vibes || meta.features || []) as string[]
-    itemVibes.forEach(v => vibesPresent.add(v))
+  // Run real trip intelligence analysis if we have full items
+  let analysis: TripAnalysis | null = null
+  if (context.fullItems?.length) {
+    analysis = analyzeTrip(context.fullItems, {
+      vibes: context.vibes,
+      startDate: context.startDate,
+    })
   }
 
   const insights: string[] = []
 
-  if (focus === 'overall' || focus === 'pacing') {
-    if (packedDays.length) insights.push(`Days ${packedDays.join(', ')} are packed (${days[packedDays[0]]}+ items). Consider moving activities to lighter days.`)
-    if (lightDays.length) insights.push(`Days ${lightDays.join(', ')} have room for more. Good for spontaneous exploration or rest.`)
-    if (!packedDays.length && !lightDays.length) insights.push('Pacing looks balanced across all days.')
+  if (analysis) {
+    // Use real intelligence data
+    if (focus === 'overall' || focus === 'pacing') {
+      for (const day of analysis.dayBreakdown) {
+        if (day.pacing === 'exhausting') {
+          insights.push(`${day.theme} is exhausting (${day.itemCount} activities, ~${day.totalHours}h). Move 1-2 items to a lighter day.`)
+        } else if (day.pacing === 'light') {
+          insights.push(`${day.theme} is light (${day.itemCount} items). Room for a spontaneous activity or rest.`)
+        }
+        if (day.totalDistance > 20) {
+          insights.push(`${day.theme} covers ${day.totalDistance}km — you'll spend a lot of time in transit.`)
+        }
+      }
+    }
+
+    // Surface specific issues
+    const errors = analysis.issues.filter(i => i.severity === 'error')
+    const warns = analysis.issues.filter(i => i.severity === 'warn')
+    const infos = analysis.issues.filter(i => i.severity === 'info')
+
+    if (focus === 'overall') {
+      for (const e of errors) insights.push(`⚠ ${e.message}${e.suggestion ? ` ${e.suggestion}` : ''}`)
+      for (const w of warns.slice(0, 3)) insights.push(`${w.message}${w.suggestion ? ` ${w.suggestion}` : ''}`)
+      for (const i of infos.slice(0, 2)) insights.push(`${i.message}${i.suggestion ? ` ${i.suggestion}` : ''}`)
+    } else {
+      // Focus-specific issues
+      const relevant = analysis.issues.filter(i =>
+        focus === 'pacing' ? (i.type === 'pacing' || i.type === 'gap') :
+        focus === 'vibes' ? i.type === 'vibe' :
+        true
+      )
+      for (const r of relevant.slice(0, 5)) insights.push(`${r.message}${r.suggestion ? ` ${r.suggestion}` : ''}`)
+    }
+
+    insights.push(`Trip quality score: ${analysis.score}/100`)
+  } else {
+    // Fallback: basic counting (no full items available)
+    const days: Record<number, number> = {}
+    let currentDay = 0
+    for (const item of context.items) {
+      if (item.category === 'day') { currentDay++; continue }
+      if (item.category === 'transfer') continue
+      days[currentDay] = (days[currentDay] || 0) + 1
+    }
+    const packedDays = Object.entries(days).filter(([, count]) => count > 5).map(([day]) => parseInt(day))
+    const lightDays = Object.entries(days).filter(([, count]) => count < 3).map(([day]) => parseInt(day))
+    if (packedDays.length) insights.push(`Days ${packedDays.join(', ')} are packed. Consider redistributing.`)
+    if (lightDays.length) insights.push(`Days ${lightDays.join(', ')} have room for more.`)
   }
 
   if (focus === 'overall' || focus === 'budget') {
@@ -470,12 +533,15 @@ async function executeGetTripInsights(
       totalItems: real.length,
       totalSpend: Math.round(totalSpend),
       byCategory,
-      packedDays,
-      lightDays,
-      vibesPresent: Array.from(vibesPresent),
+      score: analysis?.score ?? null,
+      dayBreakdown: analysis?.dayBreakdown.map(d => ({
+        day: d.day, theme: d.theme, pacing: d.pacing,
+        items: d.itemCount, hours: d.totalHours, distance: d.totalDistance,
+      })) ?? null,
+      issues: analysis?.issues.length ?? 0,
       insights,
     },
-    actions: [{ type: 'show_insight', payload: { insights } }],
+    actions: [{ type: 'show_insight', payload: { insights, score: analysis?.score } }],
   }
 }
 
@@ -525,10 +591,11 @@ async function executeSearchFlights(args: Record<string, unknown>): Promise<Tool
 
 async function executeAddItem(
   args: Record<string, unknown>,
-  context: { tripId: string; destination: string; items: Array<{ position: number }> },
+  context: { tripId: string; destination: string; items: Array<{ position: number; category: string }> },
 ): Promise<ToolResult> {
   const name = args.name as string
   const category = args.category as 'hotel' | 'activity' | 'food'
+  const targetDay = args.day as number | undefined
 
   // Look up in catalog
   const catalogResults = await searchCatalog(context.destination, category, { query: name })
@@ -541,8 +608,41 @@ async function executeAddItem(
     return { success: false, data: { error: `"${name}" not found in the catalog for this destination.` } }
   }
 
-  // Insert at end
+  // Calculate insert position — after the last item of the target day, or at end
+  let insertPos: number
+  const sorted = [...context.items].sort((a, b) => a.position - b.position)
   const maxPos = Math.max(...context.items.map(i => i.position), 0)
+
+  if (targetDay && targetDay > 0) {
+    // Find the last item position in the target day
+    let dayCount = 0
+    let lastPosInDay = -1
+    let nextDayPos = -1
+    for (const item of sorted) {
+      if (item.category === 'day') {
+        dayCount++
+        if (dayCount > targetDay && nextDayPos < 0) {
+          nextDayPos = item.position
+          break
+        }
+      }
+      if (dayCount === targetDay) {
+        lastPosInDay = item.position
+      }
+    }
+    if (lastPosInDay >= 0 && nextDayPos > 0) {
+      // Insert between last item and next day marker using fractional position
+      insertPos = lastPosInDay + 0.5
+    } else if (lastPosInDay >= 0) {
+      // Last day — insert after last item
+      insertPos = maxPos + 1
+    } else {
+      insertPos = maxPos + 1
+    }
+  } else {
+    insertPos = maxPos + 1
+  }
+
   const db = getDb()
 
   const newItem = {
@@ -554,7 +654,7 @@ async function executeAddItem(
     price: match.price,
     image_url: match.imageUrl ? upsizeGoogleImage(match.imageUrl) : null,
     time: (args.time as string) || null,
-    position: maxPos + 1,
+    position: insertPos,
     status: 'none' as const,
     metadata: {
       reason: `Added via chat — matches your ${match.vibes[0] || 'travel'} vibe`,
@@ -577,5 +677,69 @@ async function executeAddItem(
     success: true,
     data: { added: match.name, price: match.price, position: maxPos + 1 },
     actions: [{ type: 'add_item', payload: { item: inserted } }],
+  }
+}
+
+// ─── validate_trip ──────────────────────────────────────────
+
+function executeValidateTrip(
+  args: Record<string, unknown>,
+  context: {
+    vibes?: string[]
+    startDate?: string
+    fullItems?: ItineraryItem[]
+  },
+): ToolResult {
+  if (!context.fullItems?.length) {
+    return { success: false, data: { error: 'No itinerary items to validate' } }
+  }
+
+  const analysis = analyzeTrip(context.fullItems, {
+    vibes: context.vibes,
+    startDate: context.startDate,
+  })
+
+  const fixType = args.fix_type as string
+
+  // Filter issues by focus area
+  let relevantIssues = analysis.issues
+  if (fixType !== 'analyze') {
+    relevantIssues = analysis.issues.filter(i => {
+      if (fixType === 'proximity') return i.type === 'proximity'
+      if (fixType === 'timing') return i.type === 'timing' || i.type === 'scheduling'
+      if (fixType === 'pacing') return i.type === 'pacing' || i.type === 'gap'
+      return true
+    })
+  }
+
+  return {
+    success: true,
+    data: {
+      score: analysis.score,
+      summary: analysis.summary,
+      issueCount: relevantIssues.length,
+      issues: relevantIssues.map(i => ({
+        type: i.type,
+        severity: i.severity,
+        day: i.day,
+        message: i.message,
+        suggestion: i.suggestion,
+      })),
+      dayBreakdown: analysis.dayBreakdown.map(d => ({
+        day: d.day,
+        theme: d.theme,
+        pacing: d.pacing,
+        items: d.itemCount,
+        hours: d.totalHours,
+        distanceKm: d.totalDistance,
+      })),
+    },
+    actions: [{
+      type: 'show_insight',
+      payload: {
+        insights: relevantIssues.map(i => i.message),
+        score: analysis.score,
+      },
+    }],
   }
 }

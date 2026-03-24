@@ -270,13 +270,17 @@ export function templateToItineraryItems(
         features: hotel.amenities?.slice(0, 6) || [],
         honest_take: hm.honest_take,
         practical_tips: hm.practical_tips,
-        best_for: hm.best_for,
+        best_for: hm.best_for || hotel.vibes || [],
         pairs_with: hm.pairs_with,
         review_synthesis: hm.review_synthesis,
         reviewCount: hm.reviewCount,
         mapsUrl: hm.mapsUrl,
         placeId: hm.placeId,
         dataId: hm.dataId,
+        photos: (hm.photos as string[] || []).slice(0, 6),
+        lat: hm.lat, lng: hm.lng,
+        hours: hm.hours,
+        checkInOut: hm.checkInOut,
       }
     } else if (item.category === 'activity' && activity) {
       imageUrl = upsizeGoogleImage(activity.image_url || '')
@@ -286,7 +290,7 @@ export function templateToItineraryItems(
       catalogMeta = {
         honest_take: am.honest_take,
         practical_tips: am.practical_tips,
-        best_for: am.best_for,
+        best_for: am.best_for || activity.vibes || [],
         pairs_with: am.pairs_with,
         review_synthesis: am.review_synthesis,
         features: am.features,
@@ -294,6 +298,11 @@ export function templateToItineraryItems(
         mapsUrl: am.mapsUrl,
         placeId: am.placeId,
         dataId: am.dataId,
+        photos: (am.photos as string[] || []).slice(0, 6),
+        lat: am.lat, lng: am.lng,
+        hours: am.hours,
+        best_time: activity.best_time,
+        duration: activity.duration,
       }
     } else if (item.category === 'food' && restaurant) {
       imageUrl = upsizeGoogleImage(restaurant.image_url || '')
@@ -304,13 +313,16 @@ export function templateToItineraryItems(
         features: restaurant.must_try?.slice(0, 6) || [],
         honest_take: rm.honest_take,
         practical_tips: rm.practical_tips,
-        best_for: rm.best_for,
+        best_for: rm.best_for || restaurant.vibes || [],
         pairs_with: rm.pairs_with,
         review_synthesis: rm.review_synthesis,
         reviewCount: rm.reviewCount,
         mapsUrl: rm.mapsUrl,
         placeId: rm.placeId,
         dataId: rm.dataId,
+        photos: (rm.photos as string[] || []).slice(0, 6),
+        lat: rm.lat, lng: rm.lng,
+        hours: rm.hours,
       }
     }
 

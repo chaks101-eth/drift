@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 
-const SECRET = 'drift-admin-2026'
-const headers = { 'Content-Type': 'application/json', 'x-admin-secret': SECRET }
+let _adminSecret = ''
+function getSecret() { return _adminSecret }
+function setAdminSecret(s: string) { _adminSecret = s }
+const buildHeaders = () => ({ 'Content-Type': 'application/json', 'x-admin-secret': getSecret() })
 const api = (path: string, params?: Record<string, string>) => {
   const url = new URL(path, window.location.origin)
-  url.searchParams.set('secret', SECRET)
+  url.searchParams.set('secret', getSecret())
   if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
   return url.toString()
 }
@@ -41,10 +44,59 @@ type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add'
 // ─── Dashboard Shell ────────────────────────────────────────
 
 export default function AdminDashboard() {
+  const [authed, setAuthed] = useState(false)
+  const [secretInput, setSecretInput] = useState('')
+  const [authError, setAuthError] = useState(false)
   const [tab, setTab] = useState<Tab>('overview')
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [counts, setCounts] = useState({ hotels: 0, activities: 0, restaurants: 0, templates: 0 })
   const [loading, setLoading] = useState(true)
+
+  // Auth gate — prompt for admin secret
+  async function handleAuth() {
+    setAdminSecret(secretInput)
+    try {
+      const res = await fetch(api('/api/admin/pipeline'))
+      const data = await res.json()
+      if (res.ok && data.destinations) {
+        setAuthed(true)
+        setAuthError(false)
+      } else {
+        setAuthError(true)
+        setAdminSecret('')
+      }
+    } catch {
+      setAuthError(true)
+      setAdminSecret('')
+    }
+  }
+
+  if (!authed) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#08080c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#0e0e14', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 32, width: 340, textAlign: 'center' }}>
+          <h2 style={{ color: '#f0efe8', fontSize: 18, marginBottom: 8 }}>Admin Access</h2>
+          <p style={{ color: '#7a7a85', fontSize: 13, marginBottom: 20 }}>Enter the admin secret to continue</p>
+          <input
+            type="password"
+            value={secretInput}
+            onChange={e => { setSecretInput(e.target.value); setAuthError(false) }}
+            onKeyDown={e => e.key === 'Enter' && handleAuth()}
+            placeholder="Admin secret"
+            style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${authError ? '#e74c3c' : 'rgba(255,255,255,0.1)'}`, background: 'rgba(255,255,255,0.04)', color: '#f0efe8', fontSize: 14, marginBottom: 12, outline: 'none' }}
+            autoFocus
+          />
+          {authError && <p style={{ color: '#e74c3c', fontSize: 12, marginBottom: 8 }}>Invalid secret</p>}
+          <button
+            onClick={handleAuth}
+            style={{ width: '100%', padding: '10px 0', borderRadius: 8, background: '#c8a44e', color: '#0a0a0f', fontWeight: 600, fontSize: 14, cursor: 'pointer', border: 'none' }}
+          >
+            Unlock
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -215,7 +267,9 @@ function DestinationCard({ dest }: { dest: Destination }) {
   return (
     <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
       {dest.cover_image ? (
-        <img src={dest.cover_image} alt={dest.city} className="w-full h-[120px] object-cover" />
+        <div className="relative w-full h-[120px]">
+          <Image src={dest.cover_image} alt={dest.city} fill className="object-cover" sizes="300px" unoptimized />
+        </div>
       ) : (
         <div className="w-full h-[120px] bg-[rgba(255,255,255,0.02)] flex items-center justify-center text-[#4a4a55] text-sm">No image</div>
       )}
@@ -460,7 +514,7 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
     }
     try {
       const res = await fetch('/api/admin/catalog', {
-        method: 'PUT', headers,
+        method: 'PUT', headers: buildHeaders(),
         body: JSON.stringify({ type, id: item.id, updates }),
       })
       if (res.ok) {
@@ -477,7 +531,7 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
     setDeleting(true)
     try {
       await fetch('/api/admin/catalog', {
-        method: 'DELETE', headers,
+        method: 'DELETE', headers: buildHeaders(),
         body: JSON.stringify({ type, id: item.id }),
       })
       onUpdate?.(({ ...item, id: '__deleted__' }) as CatalogItem)
@@ -488,9 +542,9 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
   return (
     <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
       <div className="flex items-center cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors" onClick={onToggle}>
-        <div className="w-[80px] h-[60px] flex-shrink-0">
+        <div className="relative w-[80px] h-[60px] flex-shrink-0">
           {item.image_url ? (
-            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+            <Image src={item.image_url} alt={item.name} fill className="object-cover" sizes="80px" unoptimized />
           ) : (
             <div className="w-full h-full bg-[rgba(255,255,255,0.02)] flex items-center justify-center text-[#4a4a55] text-[9px]">No img</div>
           )}
@@ -634,7 +688,7 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
                   <div>
                     <div className="text-[10px] text-[#7a7a85] mb-1">Photos ({(meta.photos as string[]).length})</div>
                     <div className="flex gap-1 overflow-x-auto">
-                      {(meta.photos as string[]).map((p, i) => <img key={i} src={p} alt="" className="w-[60px] h-[45px] object-cover rounded flex-shrink-0" />)}
+                      {(meta.photos as string[]).map((p, i) => <div key={i} className="relative w-[60px] h-[45px] flex-shrink-0"><Image src={p} alt="" fill className="object-cover rounded" sizes="60px" unoptimized /></div>)}
                     </div>
                   </div>
                 ) : null}
@@ -919,7 +973,7 @@ function PipelineTab({ destinations, onRefresh }: { destinations: Destination[];
     setRunningStep(step)
     try {
       const res = await fetch('/api/admin/pipeline', {
-        method: 'POST', headers,
+        method: 'POST', headers: buildHeaders(),
         body: JSON.stringify({
           step,
           destinationId: selectedDest.id,
@@ -947,7 +1001,7 @@ function PipelineTab({ destinations, onRefresh }: { destinations: Destination[];
     setResults({})
     try {
       const res = await fetch('/api/admin/pipeline', {
-        method: 'POST', headers,
+        method: 'POST', headers: buildHeaders(),
         body: JSON.stringify({
           city: selectedDest.city,
           country: selectedDest.country,
@@ -1003,7 +1057,7 @@ function PipelineTab({ destinations, onRefresh }: { destinations: Destination[];
           <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 mb-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-serif text-lg capitalize">{selectedDest.city}, {selectedDest.country}</div>
+                <div className="font-serif text-lg capitalize">{selectedDest.city}{selectedDest.country && selectedDest.country.toLowerCase() !== selectedDest.city.toLowerCase() ? `, ${selectedDest.country}` : ''}</div>
                 <div className="text-xs text-[#7a7a85] mt-0.5">
                   Runs all 5 steps sequentially: Hotels → Activities → Restaurants → Template → Enrich
                 </div>
@@ -1093,7 +1147,7 @@ function PipelineRunRow({ run }: { run: PipelineRun }) {
         <StatusBadge status={run.status} />
         <div className="flex-1 min-w-0">
           <div className="text-sm capitalize">
-            {run.catalog_destinations?.city || 'Unknown'}, {run.catalog_destinations?.country || ''}
+            {run.catalog_destinations?.city || 'Unknown'}{run.catalog_destinations?.country && run.catalog_destinations.country.toLowerCase() !== run.catalog_destinations.city?.toLowerCase() ? `, ${run.catalog_destinations.country}` : ''}
           </div>
           <div className="text-[10px] text-[#4a4a55]">
             {new Date(run.created_at).toLocaleString()}
@@ -1211,7 +1265,7 @@ function AddDestinationTab({ onComplete }: { onComplete: () => void }) {
 
     try {
       const res = await fetch('/api/admin/pipeline', {
-        method: 'POST', headers,
+        method: 'POST', headers: buildHeaders(),
         body: JSON.stringify({ city, country, vibes: selectedVibes, language, timezone }),
       })
       const data = await res.json()

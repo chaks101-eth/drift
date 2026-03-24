@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateItinerary } from '@/lib/ai-agent'
+import { generateItinerary, personalizeItinerary } from '@/lib/ai-agent'
 import { createServerClient } from '@/lib/supabase'
 import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
 import { searchFlights, flightToItineraryItem, cityToIATA } from '@/lib/amadeus'
 import { findCatalogDestination, getCatalogData, templateToItineraryItems } from '@/lib/catalog'
+import { enrichUrlHighlights } from '@/lib/url-enrichment'
+import { rateLimit } from '@/lib/rate-limit'
+import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
 
 // POST /api/ai/generate — generate itinerary or destinations
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+  const { allowed } = rateLimit(ip, { limit: 20, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -16,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const reqStart = Date.now()
-  console.log(`\n[Generate] Request: type=${body.type}, destination=${body.destination || '-'}, vibes=${(body.vibes || []).join(',')}`)
+  console.log(`\n[Generate] Request: type=${body.type}, destination=${body.destination || '-'}, vibes=${(body.vibes || []).join(',')}${body.urlHighlights?.length ? `, urlHighlights: ${body.urlHighlights.length}` : ''}`)
 
   try {
     if (body.type === 'destinations') {
@@ -47,7 +54,7 @@ export async function POST(req: NextRequest) {
             name: d.city.charAt(0).toUpperCase() + d.city.slice(1),
             country: d.country.charAt(0).toUpperCase() + d.country.slice(1),
             match: Math.min(matchPct + 15, 99), // boost catalog destinations
-            price: `$${dailyCost * 5}`,
+            price_usd: dailyCost * 5,
             tags: (d.vibes || []).slice(0, 3),
             description: d.description || `Explore ${d.city}`,
             image_url: d.cover_image || getDestinationImage(d.city),
@@ -121,14 +128,68 @@ export async function POST(req: NextRequest) {
         metadata: Record<string, unknown>
       }>
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let enrichedHighlights: any[] | undefined = undefined
+
       if (useCatalog) {
-        // Use pre-built template with real catalog data — no LLM needed
+        // Use pre-built template with real catalog data
         const [outboundFlights, returnFlights] = await Promise.all(flightPromises)
         items = templateToItineraryItems(catalogData!, body.start_date, body.vibes)
 
         // Merge flights
         items = mergeFlights(items, outboundFlights, returnFlights)
+
+        // ─── Personalization pass — make catalog trips feel hand-crafted ──
+        items = await personalizeItinerary(items, {
+          destination: body.destination,
+          country: body.country,
+          vibes: body.vibes || [],
+          budget,
+          budgetAmount: body.budgetAmount,
+          travelers,
+          occasion: body.occasion,
+          startDate: body.start_date,
+        })
       } else {
+        // ─── Enrich URL highlights with real data (mini-pipeline) ──
+        enrichedHighlights = body.urlHighlights || undefined
+        if (body.urlHighlights?.length && body.destination) {
+          try {
+            console.log(`[Generate] Running mini-pipeline for ${body.urlHighlights.length} URL highlights`)
+            enrichedHighlights = await enrichUrlHighlights(
+              body.urlHighlights,
+              body.destination,
+              body.country || '',
+            )
+            const matched = enrichedHighlights.filter((h: { source: string }) => h.source === 'serpapi').length
+            console.log(`[Generate] Mini-pipeline: ${matched}/${body.urlHighlights.length} enriched with real data`)
+          } catch (e) {
+            console.warn(`[Generate] Mini-pipeline failed, using raw highlights: ${e}`)
+          }
+        }
+
+        // Generate planning intelligence from any enriched data
+        let planningNotesText = ''
+        if (enrichedHighlights?.length) {
+          const planningItems = enrichedHighlights
+            .filter((h: { source: string }) => h.source === 'serpapi')
+            .map((h: Record<string, unknown>) => ({
+              name: h.name as string,
+              category: h.category as string,
+              metadata: {
+                lat: h.lat || (h as Record<string, unknown>).latitude,
+                lng: h.lng || (h as Record<string, unknown>).longitude,
+                best_time: h.bestTime,
+                duration: h.duration,
+                pairs_with: h.pairsWith,
+              } as Record<string, unknown>,
+            }))
+          if (planningItems.length > 1) {
+            const notes = generatePlanningNotes(planningItems)
+            planningNotesText = formatPlanningNotes(notes)
+          }
+        }
+
         // Fall back to LLM generation + real flights
         const [llmItems, outboundFlights, returnFlights] = await Promise.all([
           generateItinerary({
@@ -142,6 +203,9 @@ export async function POST(req: NextRequest) {
             budgetAmount: body.budgetAmount || undefined,
             originCity: origin,
             occasion: body.occasion || undefined,
+            urlHighlights: enrichedHighlights,
+            urlSummary: body.urlSummary || undefined,
+            planningNotes: planningNotesText || undefined,
           }),
           ...flightPromises,
         ])
@@ -183,15 +247,48 @@ export async function POST(req: NextRequest) {
       }
       console.log(`[Generate] Trip created: ${trip.id}`)
 
+      // ─── Build enrichment lookup for URL trips ─────────────────
+      const enrichmentMap = new Map<string, { photoUrls?: string[]; photos?: string[]; rating?: number; reviewCount?: number; bookingUrl?: string; mapsUrl?: string; address?: string }>()
+      if (enrichedHighlights?.length) {
+        for (const eh of enrichedHighlights) {
+          if (eh.source === 'serpapi') {
+            enrichmentMap.set(eh.name.toLowerCase(), eh)
+          }
+        }
+      }
+
       // ─── Apply images and insert ──────────────────────────────
       resetImageCounter()
       const itemsToInsert = items.map((item, idx) => {
         const cat = mapCategory(item.category)
-        // Prefer catalog image, fall back to curated Unsplash
+
+        // Check if this item matches an enriched highlight (real SerpAPI data)
+        const enriched = enrichmentMap.get(item.name.toLowerCase())
+          || [...enrichmentMap.entries()].find(([k]) =>
+            item.name.toLowerCase().includes(k) || k.includes(item.name.toLowerCase())
+          )?.[1]
+
+        // Image priority: enriched SerpAPI photos > catalog image > curated Unsplash
+        const enrichedPhoto = enriched?.photos?.[0] || enriched?.photoUrls?.[0]
         const hasRealImage = item.image_url && !item.image_url.startsWith('https://images.unsplash')
-        const imageUrl = hasRealImage
-          ? upsizeGoogleImage(item.image_url)
-          : getItemImage(cat, item.name, body.destination)
+        const imageUrl = enrichedPhoto
+          ? upsizeGoogleImage(enrichedPhoto)
+          : hasRealImage
+            ? upsizeGoogleImage(item.image_url)
+            : getItemImage(cat, item.name, body.destination)
+
+        // Merge enrichment metadata (ratings, booking, photos, maps)
+        const meta = { ...(item.metadata || {}) }
+        if (enriched) {
+          if (enriched.rating) meta.rating = enriched.rating
+          if (enriched.reviewCount) meta.reviewCount = enriched.reviewCount
+          if (enriched.bookingUrl) meta.bookingUrl = enriched.bookingUrl
+          if (enriched.mapsUrl) meta.mapsUrl = enriched.mapsUrl
+          if (enriched.address) meta.address = enriched.address
+          if (enriched.photos?.length) meta.photos = enriched.photos.map(u => upsizeGoogleImage(u))
+          else if (enriched.photoUrls?.length) meta.photos = enriched.photoUrls.map(u => upsizeGoogleImage(u))
+          meta.source = 'url_import_enriched'
+        }
 
         return {
           trip_id: trip.id,
@@ -204,7 +301,7 @@ export async function POST(req: NextRequest) {
           time: item.time || null,
           position: idx,
           status: 'none' as const,
-          metadata: item.metadata || null,
+          metadata: meta,
         }
       })
 
@@ -217,7 +314,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: itemsError.message }, { status: 500 })
       }
 
-      const dataSource = useCatalog ? 'catalog' : 'ai'
+      const dataSource = useCatalog ? 'catalog' : enrichmentMap.size > 0 ? 'ai+serpapi' : 'ai'
       const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
       console.log(`[Generate] SUCCESS — trip=${trip.id}, items=${items.length}, source=${dataSource}, time=${elapsed}s`)
       const categoryCounts = items.reduce((acc, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc }, {} as Record<string, number>)

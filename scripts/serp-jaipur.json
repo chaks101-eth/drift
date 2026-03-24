@@ -1,0 +1,526 @@
+{
+  "city": "Jaipur",
+  "country": "India",
+  "hotels": [
+    {
+      "name": "Rambagh Palace, Jaipur",
+      "rating": 4.7,
+      "reviews": 8678,
+      "price": "$778",
+      "type": "Resort hotel",
+      "address": "Bhawani Singh Rd, Rambagh, Jaipur, Rajasthan 302005, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer7aEY8H30BbAnP3i2S51J28DUYdLInbQh--0wXuwx6d0ugf28N0oJnA4jn_EIAEZtaUdUfGzhabYtLaMILyoWZ8j7m5j9DiIsot99b9_wYDTLcG8b7yH6FhR3hNnZV_hkMWS-0=w189-h92-k-no"
+    },
+    {
+      "name": "Jai Mahal Palace, Jaipur",
+      "rating": 4.7,
+      "reviews": 7699,
+      "price": "$219",
+      "type": "Hotel",
+      "address": "Gound Floor, Jacob Rd, near Bharat Petroleum, Civil Lines, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoHvQTkmGGVAEbzWh4hovBp5xMsytDIYPhXj8wixKi28ZzgmXBsE1LQTpuMw8ry4WCoouLXKdogXXbv5AYO0Ljb83OvGEKU955M9Mzso8sglideAC5SD3b8N1-vynT_EAO7ChtiiokCt_Cd=w163-h92-k-no"
+    },
+    {
+      "name": "The Oberoi Rajvilas, Jaipur",
+      "rating": 4.7,
+      "reviews": 4099,
+      "price": "$802",
+      "type": "Hotel",
+      "address": "Babaji Ka Modh, Goner Rd, Jagdish Colony, Prem Nagar, Jaipur, Rajasthan 302031, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqTahrK4OZt0ihSr8UJTJFtGLWh8yMFQ8cFl_ZCc4carkaQhUnlarqjxNRc0UGj8ZkDhuA0LvIXKASnJcs2Jy5XWoOIh4OZhNUBOCYTVkPoVG9puJZmklBUwWnNvFLUI7OMkJPtcg=w152-h92-k-no"
+    },
+    {
+      "name": "ITC Rajputana, a Luxury Collection Hotel, Jaipur",
+      "rating": 4.7,
+      "reviews": 18772,
+      "price": "$132",
+      "type": "Hotel",
+      "address": "Palace Road, Gopalbari, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoxS1T0CyMNpfguxM6EYw7kxgb1x_e_VSLuyi5PPu0R-wEtPTvyn3sXuac0ca7EV5T_4gKtCOnO8Ni23LcjM5iXpmiXrMPHmD397vo1Mbhxef94GCbMca9NVmGYeKd-5bb-BgH0sB2ZZos=w138-h92-k-no"
+    },
+    {
+      "name": "Jaipur Marriott Hotel",
+      "rating": 4.5,
+      "reviews": 18649,
+      "price": "$97",
+      "type": "Hotel",
+      "address": "Ashram Marg, near Jawahar Circle, Jai Jawan-2, Choti Chopad, Chandrakala Colony, Durgapura, Jaipur, Rajasthan 302015, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoM6wksGGAxQwBKjdIRELXlanrCuqsRT9INlZIZQUWFMTNWISto9Qxd0NaFMH8zYsA0ly0fjL-dpyljrIosP3zDax7vndCKx0dwC-ZABNL2mPwRq1manK_3Cey67NiwHKWWHYOP8XAxn7F7=w138-h92-k-no"
+    },
+    {
+      "name": "Hyatt Regency Jaipur Mansarovar",
+      "rating": 4.5,
+      "reviews": 2665,
+      "price": "$118",
+      "type": "Hotel",
+      "address": "Iskcon Rd, Mansarovar, Jaipur, Rajasthan 302020, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweopHChNQyqIyVAH7uamPlSUpsdDSDCnLvQZiQPMxQrC4hFVjLHu3jkCac3I8LRmVrIcHT_XZOrQnAL1C737C_hWyQ6ssiXz8aUDwFVootnB0rj8LpN-0NGnCAmFTNHGEJe06LUYRx20m53w=w138-h92-k-no"
+    },
+    {
+      "name": "Rajmahal Palace RAAS Jaipur",
+      "rating": 4.7,
+      "reviews": 3055,
+      "price": "$375",
+      "type": "Hotel",
+      "address": "Sardar Patel Marg, Shivaji Nagar, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepQppANkRcfSqXVaJ1RUmunBzjd06dMSLy8xDve3RdrExYVqMd07_HTZAhnA2STaONOK68D6noRb5Lf05fohZVXTC7f3wSR0tAH9G2O6t07pstmQuwB2DswaHzwAjXVNGymRje8=w138-h92-k-no"
+    },
+    {
+      "name": "The Lalit Jaipur",
+      "rating": 4.3,
+      "reviews": 11203,
+      "price": "$58",
+      "type": "Hotel",
+      "address": "Jawahar Circle 2B & 2C, near Jagatpura Road, Malviya Nagar, Jaipur, Rajasthan 302017, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepjQcvsVcpSU3Y3KuatRibt3l7GvJs5R1HBAhskyqWtMMPPQXHlOpLOmOW-jgDDma7u9vsqoU_Des4kb5LsIKjZhSoY2j_rLi7HYXKOTlLBeG7fpO76Dz9IG1cngm0Gz_MN7sm7Ig=w138-h92-k-no"
+    },
+    {
+      "name": "Radisson Hotel Jaipur City Center",
+      "rating": 4.6,
+      "reviews": 16370,
+      "price": "$78",
+      "type": "Hotel",
+      "address": "Khasa Kothi Circle, Mirza Ismail Rd, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerTlBjoO9HPvfnkOr1iwwN6x-HwMPxwgNgbR7hdAWf_S0Ma8kK3U6a-I4dMvXyU57tXidmPGDBhXb0j5dLMthj9pCd628KqIYpq-1rIxxrEc4PoYCOMw-1PwU5D6oOGy4JnKzBTwltPT-xm=w163-h92-k-no"
+    },
+    {
+      "name": "Umaid Bhawan-A Royal Heritage Style Boutique Hotel",
+      "rating": 4.3,
+      "reviews": 2378,
+      "price": "$68",
+      "type": "Hotel",
+      "address": "D1-2A, Via Bank Road, behind Collectorate, Meera Marg, Bani Park, Jaipur, Rajasthan 302016, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqZZv6H2a7PRIBuQru5Flml51cUrPi0je6ks3u4mP1_6spd-69En28GAQr08JjaihYj05w05b6uuqx1FiEsJevmrZ4XN3AFY6LIhDeYMcB3BQwUOAl9fWlGUqXYsdBl-w0FqqmnV4vc_Ca5=w138-h92-k-no"
+    },
+    {
+      "name": "The Johri Jaipur",
+      "rating": 4.5,
+      "reviews": 846,
+      "price": "$390",
+      "type": "Hotel",
+      "address": "3950, MSB Ka Rasta, Johri Bazar, Ghat Darwaza, Jaipur, Rajasthan 302003, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq5YbMPcUFbypuwIKfr6qawbpcFU0XJ6POLTF76xba1QcPtJDQ32P2e6f_3TiW7kc_uVGbM3dDSJuxMzpapipD2NI6ykcEXETrXeWlL8vfUzXwIV-MvJrlAFPLqPDfyd6xlV8WI=w138-h92-k-no"
+    },
+    {
+      "name": "Taj Devi Ratn Resort & Spa, Jaipur",
+      "rating": 4.5,
+      "reviews": 3691,
+      "price": "$128",
+      "type": "Resort hotel",
+      "address": "Ballupura Farms, No. 8 & 9, Agra Road, Jamdoli, Balloopura, Jaipur, Rajasthan 302031, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepT8mJpPqgtz2SXzc9jjSF75s1kxORcPHy4Ec4WQFho_rKjBkWbhgQEbmM-8BtVlC2egToB-3Fpo6FgKMAF0wFU5Lmsh6bR_oEIbd9RmH40ohZs8RXlqcdYrdku3N7223UqPLIjaw=w138-h92-k-no"
+    },
+    {
+      "name": "Hilton Jaipur",
+      "rating": 4.4,
+      "reviews": 11272,
+      "price": "$80",
+      "type": "Hotel",
+      "address": "Geejgarh House, 42, Hawa Sadak, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqJHWSaynlDi_0uI_gEUPn9OsA16JvV0yH69CkZaiccElJtyfrM_Z6aAh8k0of_V4gXnezd62-sU8PYGeI4BsmPer0nquU-39j8ihTTXKlOkvobz9wvn6lRdvem7E_sjILmGh1e=w80-h120-k-no"
+    },
+    {
+      "name": "The Raj Palace by Small Luxury Hotels of The World",
+      "rating": 4.5,
+      "reviews": 1581,
+      "price": "$333",
+      "type": "Hotel",
+      "address": "The Raj Palace, Jorawar Singh Gate, Amer Rd, Chokdi Gangapol, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerw1mroE_LcLFdlky6nPF74N30LIjvSo-4TUIX9fYx8VFDd2nyOYvdrvXceaxTRuPdRO6gA4I8eeLXDqNnOHjDxdQsUWMgrLauhUgJE4EoVy5NigDkwwFRZ9NxoRToaTonFnbloUg=w137-h92-k-no"
+    },
+    {
+      "name": "Samode Haveli",
+      "rating": 4.5,
+      "reviews": 1934,
+      "price": "$246",
+      "type": "Hotel",
+      "address": "Jorawar Singh Gate, Gangapole Road Near, Gangapole, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFogzFYkg_16zdaiffhSpngh2SuNJNf0k-Z-EB3VeQHAAVKWqpffCmTiM10EiDMDPTfUeHU9QO9VFRRkcpus3gRWlgPUK72fdgXSQNPt-dZvWeBLZJgpwnQ0J9ZnqVR89mLBdsH7Bg9AfEC-J4QFHp1rz-LVoIrsD5cUV4znI_UB39bCRJsX1ldrA=w164-h92-k-no"
+    },
+    {
+      "name": "Holiday Inn Jaipur City Centre, an IHG Hotel",
+      "rating": 4.6,
+      "reviews": 16941,
+      "price": "$57",
+      "type": "Hotel",
+      "address": "Commercial Plot, No 1, Sardar Patel Marg, Shivaji Nagar, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerfSEn7NbL57YHR0C8ouWmVPsQQw9M1kgY0B5Pc0ieOIop6-aHbhFomfu5aDHhusa4yOO6EE2IOa3xGUsHnmGiCWEaWYrUgzrnGe78vxXM42XXGIp-kRT_laOZLYK-0qLcYTxlZZg=w138-h92-k-no"
+    },
+    {
+      "name": "Ramada by Wyndham Jaipur",
+      "rating": 4.1,
+      "reviews": 13139,
+      "price": "$48",
+      "type": "Hotel",
+      "address": "Govind Marg, Raja Park, Jaipur, Rajasthan 302004, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFR8fOYyfGUCh_kR2zoTRYxmB6zBpKQQU3FwPpiNjfbonfcJkU8F88qTPgY3dBJ9wV0tftUUnafnOozz3Kk6reMgmbYobO0DsLcGz3ncZgUuHH5Wzq6YkoKxAkLtHxIy5Rmd4_E9lpPXYj2HeUrfunMMsPmDBeD8bYVKq8ek13T8xbDwY6zEnmcYg=w138-h92-k-no"
+    },
+    {
+      "name": "InterContinental Jaipur Tonk Road by IHG",
+      "rating": 4.5,
+      "reviews": 8733,
+      "price": "$110",
+      "type": "Hotel",
+      "address": "Tonk Rd, Sitapura Industrial Area, Sitapura, Jaipur, Rajasthan 302022, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoyrl8Z7aWzi6qN7HiDUQMalGm-6iq-xDUAC_eY9b2NM9WQSG0SMcDFE21ygVCe0lQ3GNUjjmgv_m1zde-1vLXT7uCa-05Fr-PmbRGQT7CX5yuUvXYcVNnLDd0tww7kraY8xaRe5A=w163-h92-k-no"
+    },
+    {
+      "name": "Rosé Amer",
+      "rating": 4.5,
+      "reviews": 207,
+      "price": "$300",
+      "type": "Hotel",
+      "address": "7, Sawai Pratapsingh Rd, Madrampur, Civil Lines, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweroegryeDo3GfjOmGvqprQyqnG99eY2WMOMeaMi6UfN0E1zW3B3qOgIVxPTRhL-_mXum1XDVW-ZMvWGUIdtSTDM2Cb3-pSlylsI9RZuI9fFgum7v-qL60GmqKJhKhxfYOmBok-r=w138-h92-k-no"
+    },
+    {
+      "name": "Sawai Man Mahal, Jaipur",
+      "rating": 4.7,
+      "reviews": 324,
+      "price": "$267",
+      "type": "Hotel",
+      "address": "Bhawani Singh Rd, near Hyundai Showroom, Rambagh, Jaipur, Rajasthan 302015, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepe5Cp2tGF-hv81cE0iermpnG1LMXDHODmoaLe7wvO1tKSDFgl0a-1cDx9b4SjHDd1u_qi6K8ucsN6RRX8tasq-1yYaUZH8rs0iUlp72uaXYINhVl-6WqoV-uDUMvuo4i5b2GYQ=w150-h92-k-no"
+    }
+  ],
+  "attractions": [
+    {
+      "name": "The City Palace",
+      "rating": 4.4,
+      "reviews": 58514,
+      "type": "Tourist attraction",
+      "address": "Gangori Bazaar, J.D.A. Market, Pink City, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqZlAPpnLJFHaxtXZKwUW8aibn7m7eHyEiZ0kFHPSsHhmEFJkI4P9Dsv8SygmCwCjSLISEqdX4ma0TRNXpNkgq7UZgyGZq__-eMpf1m1AFLlhToxb51pZpBZr0KAGhoXXtgy2ak8w=w163-h92-k-no"
+    },
+    {
+      "name": "Hawa Mahal",
+      "rating": 4.5,
+      "reviews": 163610,
+      "type": "Tourist attraction",
+      "address": "Hawa Mahal Rd, Badi Choupad, J.D.A. Market, Pink City, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqipw2QMFLqvrUvcjE3Bvb98-rXb86RTWKvACSsMtHgXNHGcn2QbPeJHpPylbQsTrveUJ4KOh_ZLNXyeKhjdNSzS69LUWCaCPqgKlV3pA6M8x93ctn7EFsGS1_L1LQMdGcmBiaQ9g=w122-h92-k-no"
+    },
+    {
+      "name": "Jantar Mantar",
+      "rating": 4.5,
+      "reviews": 42506,
+      "type": "Tourist attraction",
+      "address": "Malve Nagar, J.D.A. Market, Pink City, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo_hjiq9X1THuhuwEN1oQBdKVlvV9jbtMdnOU3ocT9McYos5QxjV4srzd-q3TmKdmLFFB618PREZ2yMO5z8YJDyqYx5t6vO7fvGxs9r9HgAOgdBqxMaB6UH5EMVM2u47RO2yde7tw=w138-h92-k-no"
+    },
+    {
+      "name": "Jaigarh Fort",
+      "rating": 4.5,
+      "reviews": 31751,
+      "type": "Tourist attraction",
+      "address": "Devisinghpura, Amer, Jaipur, Rajasthan 302028, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepjMAG-Ycmk4kBMXqpokU_v1dvyZKOycMRMttdTC57BXx2AzK0EHqZNaxB-Dn-bo5awuc7OIsCGRaU_eDOtRC7CHuDIE9LHRAhVDhuipoYR1m4y7WYWJOS9l7zbgzmS7tPgGIzR=w122-h92-k-no"
+    },
+    {
+      "name": "Amber Palace",
+      "rating": 4.6,
+      "reviews": 170956,
+      "type": "Tourist attraction",
+      "address": "Devisinghpura, Amer, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer5gZN7G_ZFudGrsNC1gDBc3OAJZpiBUGdbyQvQ6mYo78V7YzVhzAl0ZU3cBJsa9RyugUtFE_dsiUei-qmWtSZrl21IhTZrxcsawjppCs-PcqDITgXYgJvEXI8cBKluAEpf0PSleQ=w147-h92-k-no"
+    },
+    {
+      "name": "Amar Jawan Jyoti",
+      "rating": 4.7,
+      "reviews": 11635,
+      "type": "Tourist attraction",
+      "address": "VQWX+6XW, Jan Path, Jaipur Nagar Nigam, Lalkothi, Jaipur, Rajasthan 302015, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweq48R_HGQ8576cs5UNbpZZgdlwVZ1jOAy1B-DdJuIDxQq8DKF4M2_DOC_6GvqSnBJh7aNnl5Rwbh43-GAPwXQlOMwSx5Bc8qJ76IWT_0bYR8LVmqJxYf4AXwGQF0dcDy0ghAxQ=w122-h92-k-no"
+    },
+    {
+      "name": "Sisodia Rani ka Bagh",
+      "rating": 4.4,
+      "reviews": 6315,
+      "type": "Tourist attraction",
+      "address": "VVX5+QF9, Agra Rd, Ghat Ki Guni, Jaipur, Rajasthan 302003, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerB8BDOl-zuARRuCfwZnC3QVXCHpj_aAopFbHRK_l5s-o7vo44q8CoKxopmowkLJD5w-UnLSyUMnGzmB3kldHZYepyWXRCA3R6KDgQPRfpfzvPV1kmsDFiTEAswcOaFcv75kChf3w=w122-h92-k-no"
+    },
+    {
+      "name": "Jal Mahal",
+      "rating": 4.2,
+      "reviews": 39256,
+      "type": "Tourist attraction",
+      "address": "Amer, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerSl-ov1e6ug3fElGQwo2bl2OHq-inDzKtGxEuRhdep3zuIXU8ldjuxgYEZ23v-OR68N9H6ciN7BprdWoaTNUMVUUvHPs97pbwgdmHpRIP6eaiyeM-5V9U0324GHfH6CSZwXg8P=w122-h92-k-no"
+    },
+    {
+      "name": "Albert Hall Museum",
+      "rating": 4.5,
+      "reviews": 72046,
+      "type": "Museum",
+      "address": "Ram Niwas Garden, Ashok Nagar, Jaipur, Rajasthan 302004, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepr87LXdnFkuEeyRGeeode1E6R4r11odeOpl0TLQUCUaxTdhQFHrc1-nx6ECHcNaKrjXtRXnRTYwLrYPXoiHO2-DhHhom0Cx2A6EiOYHf3g_YFc_F7FXWYTVm7otY6vJeWUbJGl=w105-h92-k-no"
+    },
+    {
+      "name": "Sheesh Mahal, Amber Fort",
+      "rating": 4.6,
+      "reviews": 6062,
+      "type": "Tourist attraction",
+      "address": "JAIGARH FORT, Devisinghpura, Amer, Jaipur, Rajasthan 302028, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweos_Ny7x7BvLUr8ZkNR8Lhzk35tAe7WTH3efmnMqPt7myDJtVoXbLarO05oAl6TQGeD9NLM-Vy5qQrm739IN3ylGXcgSS7vd5wjQYSOLJIBjWf1yoVtSvQ1YmYExKctCWatTAGR=w122-h92-k-no"
+    },
+    {
+      "name": "Vidyadhar Bagh",
+      "rating": 4.3,
+      "reviews": 1058,
+      "type": "Park",
+      "address": "VVX3+WC9, Ghat Ki Guni, Jaipur, Rajasthan 302003, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerP2q1_muWIyJb1RBrQ8FGUOKtDILRK_a6_Ile_d_cIqRNZu_Em7PHvGXFm9IasTHAnBOHiQCf2d4-WC1WzL0QbrEJ4N_wjtLztXSGxnJlBesCeoHvtY4V3OyXjtF0wZIvmfZnU=w122-h92-k-no"
+    },
+    {
+      "name": "Kanak Vrindavan Mahal",
+      "rating": 4.3,
+      "reviews": 6035,
+      "type": "Tourist attraction",
+      "address": "Jal Mahal, Amer, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweork1icKYQdxETsULsS4cqWxpy4bYDDQGO_Wa24tc7HeAJF3fXqVOhu86GPvJgZczeiEwTGpAciSQjc734hV10aasLXny_mU2MlkLx8twH8gkjkiw4gluLGLISQiYJdxdjhOmVc=w163-h92-k-no"
+    },
+    {
+      "name": "Ajmeri Gate",
+      "rating": 4.4,
+      "reviews": 14956,
+      "type": "Tourist attraction",
+      "address": "99, Nehru Bazar Rd, Jayanti Market, Modikhana, Jaipur, Rajasthan 302003, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerWDZNtg4_LMCcDiDJ9kYJ0vRlrtlPobuDVBQ5mF1b8nlTixTrBZusDCIQiBDHWVvTsXaEUGNIzaznayGMIsFiDMA9SpN9_xrzpt6hm2YISEl8zaqLJU-UPlPSSbAJPGT4K9kRNew=w163-h92-k-no"
+    },
+    {
+      "name": "Tripolia Gate",
+      "rating": 4.4,
+      "reviews": 6752,
+      "type": "Tourist attraction",
+      "address": "Tripolia Bazar, Badi Choupad, J.D.A. Market, Pink City, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep8TysMdDO43EnnFZD_Ogmb3uenpOtOojXc_pcdpO2tknz8_cZwjVxttHAxqwu-hskeWZ1PBahn1KqLA-dz_r1jMjVeZs-RTwW3HXM0b6JcHPwTWFhVqxIWSu7DE6Sw4BxY_Xhk-g=w122-h92-k-no"
+    },
+    {
+      "name": "Jai Niwas Garden",
+      "rating": 4.4,
+      "reviews": 26408,
+      "type": "Tourist attraction",
+      "address": "B-91, Rajamal Ka Talab Rd, Gangori Bazaar, J.D.A. Market, Kanwar Nagar, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoj9-u_zJVKcKQNKUCK9L0B51oW_dSN1YTQO85hWDP_-l-NQHpDFYU3Wr8ZE1WvXwbp94S_ELGLeQPnVS4VaUPTklOxOXDDPLIzpYZWnqNq7jTO59p5d4fDy0WTT7xthwr6In137WJoV-Un=w163-h92-k-no"
+    },
+    {
+      "name": "Chand Pol (Moon Gate)",
+      "rating": 4.4,
+      "reviews": 171,
+      "type": "Tourist attraction",
+      "address": "Amer Palace and Fort, Amer Rd, Devisinghpura, Amer, Jaipur, Rajasthan 302028, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer6PU7DJXrTL5BB-574odZfk3MZS7F5OXrKyBKuo7G8hdg5R0wgRDgOqQZJGp1qbY7ZDKNdH_aezRSE-ZZxPzSZGkxlRl2AwZIr-J3fH4Hv_NsO4vHrkblnyl2UXB0ZpYvD_DeT=w122-h92-k-no"
+    },
+    {
+      "name": "Elephant Fun Park | Elephant Sanctuary Office",
+      "rating": 4.7,
+      "reviews": 330,
+      "type": "Tourist attraction",
+      "address": "chowkri ramchandra, 3370, kumharo ka churaha, silwato ka rashta, Radha Damodar Ji Ki Gali, Jaipur, Rajasthan 302003, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepLr3QaLBrWXyQd70JSrMcrQwH-uFd_9sGlSbo8dtd3cukePmSqILM_5a64WG3nyJOJcEgdgP_mIvWyE_LPrlb0Qqe37l2DVb9FsMOAmpIbUvGU-3vWTpnbp6CjNB-qUDih42fP=w163-h92-k-no"
+    },
+    {
+      "name": "Tal Katora Lake",
+      "rating": 4.1,
+      "reviews": 1304,
+      "type": "Tourist attraction",
+      "address": "388, Talkatora Rd, Rajhans Colony, Tripolia Bazar, Kanwar Nagar, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwep4qqDbFYHAxSEJpY9KUSXfGQL0xXsrNOnGnZtHQUx276ILMPOJtbPQokuMhOiYiaJEVdmG1wSvqZ4g0hjY_d-teT_EnhokW_fqhDKYNBSbrJx5qg1o7OAehIj7jtWqnsOMeYscsA=w122-h92-k-no"
+    },
+    {
+      "name": "Gaitor Ki Chhatriyan",
+      "rating": 4.6,
+      "reviews": 6002,
+      "type": "Tourist attraction",
+      "address": "309B, Mangala Rd, Bada Akhada, Krishna Nagar, Brahampuri, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqVubFKVHj3ERfA-uGeLJ3ZI-N89vnTa-gqIR547grG8LYFvVTXSXZkEPIHJCeOUoH_nz4g8mqwnb0LbQ6o5wPV7AejOoOygUjY9kZ_h1YhmIpCaCdwxoxLcmot9h8sTB76FwJr=w122-h92-k-no"
+    },
+    {
+      "name": "Jaipur Pink City",
+      "rating": 4.3,
+      "reviews": 26,
+      "type": "Tourist attraction",
+      "address": "WRF9+WC6, Badi Chaupar, Badi Choupad, J.D.A. Market, Kanwar Nagar, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepcod7JncAvwK0s04n5WzxuvFZXs4yctNjvNShXbmRETn2PRP4Gk-iSJ45jZuVxNQ51daomcU-i_dtT3Rxt3efksRqk7Q4myCCLQxIEVFHUC2KrD9ZQj9IC_bFtRPAf7ObY-BZr=w122-h92-k-no"
+    }
+  ],
+  "restaurants": [
+    {
+      "name": "Suvarna Mahal",
+      "rating": 4.7,
+      "reviews": 3610,
+      "price": "$$",
+      "type": "North Indian restaurant",
+      "address": "RAMBAGH PALACE, Bhawani Singh Rd, Rambagh, Jaipur, Rajasthan 302015, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoUdiBpTeq10ldPYirUwFnw5_GBYjKr6inFyXEJnRTy9XxITT8SnBaTsAWfnsFAyfHxLyRFh2HW7F0d5MuAni5EoVEBrj1OLf9-TNxozbLyuCdn1Y-6xd9ZSIVJfsJOjY-X6cej=w138-h92-k-no"
+    },
+    {
+      "name": "Peacock Restaurant",
+      "rating": 4.4,
+      "reviews": 3578,
+      "price": "$$",
+      "type": "North Indian restaurant",
+      "address": "51, Hathroi Fort, Hari Kishan Somani Marg, near Native Cocktail bar, Ajmer Rd, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFIv8IHwToRe-14UiGU8yQFVUpL8pkL0PpkNT2qrCFJGne7LaEBqtgKobITaiw62R_XtosZh6RZB13CgXafPdygZoRL5QY6idfoXyROA0wUjrg72am7PbevG9rniwhPeT6TQeIEMMT-m9OqJ6dZkC24CZoc99JmoVYhPDzKr35GdERXb6o-xk4=w138-h92-k-no"
+    },
+    {
+      "name": "Govindam Retreat",
+      "rating": 4.4,
+      "reviews": 7822,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "First Floor, All Rajasthan Shilp Gram Udyog, Rajamal Ka Talab Rd, near Govind Dev Ji Temple, above All Rajasthan Shilp Gram Udyog, Gangori Bazaar, Brahampuri, Kanwar Nagar, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo1az55nL72WErASMZsstaWg1WsnIuxW4LVwcO1YCTGJtyOxD1J3ZQbpXtNnjTUm146xoP3CjcqX1vU21A2A-ibCWgDLZB-Go8qQ0a6kfOam_YumrlsMzHD5kc3rutS5JmppnQUYg=w137-h92-k-no"
+    },
+    {
+      "name": "Kalyan Restaurant & Bar",
+      "rating": 4.5,
+      "reviews": 4386,
+      "price": "$$",
+      "type": "Restaurant",
+      "address": "59 Hathroi Fort Hari Kishan Somani Marg, Ajmer Rd, near Vidhayakpuri Police Station, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoPxrve_TnqbE-8NR3niK6AyHhceu1UBoY7x7iQCphB52JGWXFoiaycNRynwUAYe_XSSWMr-5Y5QmBUwrdMSFX7JVl90h2pZxLyXKrPDFcX6MlLXzE7Z1PTKdZarFDSmYyKKz-HRw=w138-h92-k-no"
+    },
+    {
+      "name": "Daniel's Oriental Kitchen",
+      "rating": 4.8,
+      "reviews": 1413,
+      "price": "$$",
+      "type": "Chinese restaurant",
+      "address": "36 Sanjay Marg , Gopal Bari, Hathroi, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweonF5quujZgilmdTQ8Oy4wy1goQPIre4o-eq6M-FjA2_2FGAHOc1wBgLawp_-FqAj574xPgGkmDqhkkQ86SVs-czBgWifiy8GwFB7yGzRQLyuF94Koq4Kgld3gz80dGj1fN=w138-h92-k-no"
+    },
+    {
+      "name": "Rustic - Inspired Kitchen",
+      "rating": 4.8,
+      "reviews": 1130,
+      "type": "North Indian restaurant",
+      "address": "G-3, Ground Floor, UKMS, AURUM, Tilak Marg, near CBI office, C Scheme, Ashok Nagar, Jaipur, Rajasthan 302005, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqAgl7OYLkJW1tKs8F5mVNEgaUCDbAUGmaFBsCEspXgK_6vKqazoEzTH9Sf7oTMI-LhZw7teryr8ROGFsIjmvc1Q_whnvanmuSg-yTqgQqnaPg1CUPGxMm82cTGXN4rYPWrGMHL=w183-h92-k-no"
+    },
+    {
+      "name": "Monarch Restaurant",
+      "rating": 4.5,
+      "reviews": 578,
+      "type": "Indian restaurant",
+      "address": "Holiday Inn, Sardar Patel Marg, Shivaji Nagar, Bais Godam, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweryhNRNIvQ5g1IM16cSqATQ2s4hx-8thXfywqU0Zfwjulap8hpxg_c7u32CXWKf4KhzYOByi4jZq7KVxKFoM3F4rBQP2rOVrGgpP0vA8DL_pqZ2ee79f1K422MxzVDsdA5mmnLO5w=w137-h92-k-no"
+    },
+    {
+      "name": "Skyfall Restaurant",
+      "rating": 4.3,
+      "reviews": 6491,
+      "price": "$$$",
+      "type": "Restaurant",
+      "address": "5th Floor, Ridhi Tower, SB 57, Tonk Rd, opposite Sawai Mansingh Stadium, Bapu Nagar, Jaipur, Rajasthan 302015, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer7sshzCM177mS8dagWnTonWILIPoJMoV85-_Wr9QWpVhYayTcjutnLFX3YSrm9tnH1L-axd32rI3kw1tsjQ49YaydxT7MF5gkNiX5worwBtEzTdjc-vemMHKkzkkdE72HKhED-Hg=w138-h92-k-no"
+    },
+    {
+      "name": "The Forresta Kitchen & Bar",
+      "rating": 4.2,
+      "reviews": 4911,
+      "price": "₹2,000+",
+      "type": "Brewpub",
+      "address": "Devraj Niwas, Mirza Ismail Rd, near Shri Amarapur Setu, Bani Park, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqHuFSfwMJZgAmsXI3HWrAUa-aP0an191mfSWir5NIf6Iz5olhZp4PwxFNf7ku7xSmdpzW1Dkox5-HcFcg5OaQOYEdriqes9ngOWzNDcePK_4sSk9mOpJWmZPI-VzpnrKoZfbk7=w122-h92-k-no"
+    },
+    {
+      "name": "Pakwaan Candlelight Dinner Restaurant",
+      "rating": 4.8,
+      "reviews": 3555,
+      "price": "₹2,000+",
+      "type": "North Indian restaurant",
+      "address": "A- 40, near Peetal factory, Subash Nagar, Shastri Nagar, Jaipur, Rajasthan 302016, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoARc5-HLJbqcmDENedZkftKzFygQRprXyRKqu9NkF45t6ffMvJFYyDVqw3Y3r0o5_qomSf5AFtnJqRPrPWh8WSxs0YpsxaGDEeXbNPX_7LX6wjz5jkbyENwqthEbmnCxtUF7fW=w138-h92-k-no"
+    },
+    {
+      "name": "Saffron ( Zaika ) By Vinn Signature Prime (Best Veg Restaurant Best Banquet Hall | Top Family Restaurant in Jaipur",
+      "rating": 4.7,
+      "reviews": 312,
+      "price": "₹200–400",
+      "type": "Vegetarian restaurant",
+      "address": "Puliya, 197/198, near Chitrakoot Marg, Dhawas, Heera Nagar, Vaishali Nagar, Jaipur, Rajasthan 302021, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer1KvV0W0gWPaGH7_gY-4QeY0QKy78Wa2Qc1_3G0zQ_drk-uetaGngqIIgCubxadlELXCaiqzTRJ91J9PX2itcH2O8yffrWzJW7a053KOPEtoFAM8a1S3CkmQjwQESZy_gEPpjxtA=w204-h92-k-no"
+    },
+    {
+      "name": "Hawk View Restaurant & Bar",
+      "rating": 4.3,
+      "reviews": 1294,
+      "type": "Biryani restaurant",
+      "address": "76, Raja Mal Ka Talab, behind Kale Hanuman Ji Temple, Chandi Ki Taksal, J.D.A. Market, Pink City, Jaipur, Rajasthan 302002, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweqLq6POBqjKUvJAavN0NhUSBCUqUG_iH5o1mmXf4k0adb49fG-Z3T9aty7no44Y1NthEgwQGUhhx3WGh91miD4CeWcwWFCWaHhJrVkt_AqsEz-i8sJNaP9t-LmnN4cmtReVVWZl4A=w122-h92-k-no"
+    },
+    {
+      "name": "Spice Court",
+      "rating": 4.2,
+      "reviews": 3436,
+      "price": "$$$",
+      "type": "Indian restaurant",
+      "address": "Jacob Rd, Mysore House/Achrol House Colony, Madrampur, Civil Lines, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweo6fpaEvEvs1bv-6D-AtqkSRUtKhpIAP2hnZtQHKuc-uTnZSLLugxKTLSujuZRX5PFhjlO5b3uOJ-mQrZ1XhX5e_zX4YWbQIDptWywGn1SGgSPbAl03q62mV1hdb-vjdmbqiqKVOQ=w138-h92-k-no"
+    },
+    {
+      "name": "Thali And More",
+      "rating": 4.4,
+      "reviews": 8234,
+      "price": "$$",
+      "type": "North Indian restaurant",
+      "address": "1st floor plot no, C 46, Sarojini Marg, C Scheme, Ashok Nagar, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwer54Sp-QF7lOm1wttDhQqQUMJ2UUSvpKcDZJxcWd3BwP64UnB87NO_HCFMs3KbD7EiuUQiIxc49hqZHFherZd1Rs5eVkxh2h5UoVQa0l0eYZ3rNy-dxnaUNqrcuCAyHA4Efe2Kv=w122-h92-k-no"
+    },
+    {
+      "name": "1135 AD",
+      "rating": 4.3,
+      "reviews": 1796,
+      "price": "$$$",
+      "type": "Fine dining restaurant",
+      "address": "Amber Palace, 1135 AD, Jaleb Chowk, Devisinghpura, Jaipur, Rajasthan 302028, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepSiyp4CNqOhkRNwUDVAPE7HsCoTey2ateUipnA9MTFKXpiHeZIrrECfdIGHgNnmwVPS8gInHCYamhp5OvRJgq0AuPRZjMmUflHKeJ1SJ7vOqEdPfcOjhDVUr5ERC3acO6Nl7o=w122-h92-k-no"
+    },
+    {
+      "name": "Rajput Room",
+      "rating": 4.4,
+      "reviews": 179,
+      "price": "₹2,000+",
+      "type": "North Indian restaurant",
+      "address": "RAMBAGH PALACE, Bhawani Singh Rd, Rambagh, Jaipur, Rajasthan 302015, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoaIwhKu552uc5P12ckLl93XmnvuwLvqkEeNuEvNL6BdNJJjpNz2Hpyu-52HTk-nLO-NOzFO8ZXJ8sTolMEaK-Tugs_EZmpxNdTguDp4UtRQPdQvfg-TuWMAcsRUzrwEkQUf4vo=w138-h92-k-no"
+    },
+    {
+      "name": "Jeypore Cafe and Restaurant Vaishali Nagar",
+      "rating": 4.8,
+      "reviews": 3016,
+      "price": "$$",
+      "type": "North Indian restaurant",
+      "address": "D-4, Vaishali Marg, near Crossland Hyundai, D - Block, Vaishali Nagar, Jaipur, Rajasthan 302021, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerHBsbcFmW2QJTfFzA7Mp0FTeR-NPLFFJRFFrfZkVUEbrkZg7AjlylxntCcYKXDF-5ayAkfakBem_MFRz6ygkoq0h2mw6hzDl2zpIE7F2p2HRtsy6S93ZYTcV93PvR3jsERag_keAa5WlMB=w138-h92-k-no"
+    },
+    {
+      "name": "Marble Arch",
+      "rating": 4.6,
+      "reviews": 224,
+      "price": "₹2,000+",
+      "type": "North Indian restaurant",
+      "address": "JAI MAHAL PALACE, Jacob Rd, near Science Park, Civil Lines, Jaipur, Rajasthan 302006, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwepci8-9K9fC4naPYfXcqjUSIgzYQELg1VsmZ7zQ7E8CoGBqoLYsX6Hjo3dCYs4ZcLNlZbro5n54_DcwLv8T9bBUklXUOY0aevOafY7p9LsArPGNU1KJHXxofUAa5l2CYs6CehsEWA=w122-h92-k-no"
+    },
+    {
+      "name": "Ratnika - A Vegetarian Restaurant",
+      "rating": 4.7,
+      "reviews": 605,
+      "type": "Indian restaurant",
+      "address": "Ratnawali - A Vegetarian Heritage Hotel, B-12, Mirza Ismail Rd, near Paanch Batti, Jayanti Market, New Colony, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerJHlCdgCdJ2gRIyI7YKKRXkdkU3SixVVMJ19uWqPV1hIqrEDjimsZVYBEIVZXTXIbvXjB5_zbG-wstXBSA9DP7Bf_i1K3fAXUsMklvE5rbFE7LBVI4_gfMqoRkT56V0b8DfAc=w122-h92-k-no"
+    },
+    {
+      "name": "Jaipur Modern - Store & Kitchen",
+      "rating": 4.4,
+      "reviews": 1541,
+      "price": "$$",
+      "type": "Continental restaurant",
+      "address": "51, Dhuleshwar Garden, Sardar Patel Marg, near Kotak Bank, C Scheme, Jaipur, Rajasthan 302001, India",
+      "thumbnail": "https://lh3.googleusercontent.com/gps-cs-s/AHVAweoj8tHeweSLDI5LxXyxjsmm0xsdAARRLM3ZMbTGrGKPRZRruVc9YEXq0HYvaIG-Y-Vp5g9fc9mbnvCnAOBwEfslp7nP_FKBCOM59eg964_7XaOucm1wLz95p80SasNWw5aBvxA=w138-h92-k-no"
+    }
+  ]
+}

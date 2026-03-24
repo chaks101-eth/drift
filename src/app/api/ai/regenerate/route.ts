@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { findCatalogDestination, getCatalogData, templateToItineraryItems } from '@/lib/catalog'
 import { getItemImage, resetImageCounter } from '@/lib/images'
+import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/ai/regenerate — regenerate itinerary items with new params
 // Supports: budget switch, vibe remix, lock+regenerate, day regenerate
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+  const { allowed } = rateLimit(ip, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -138,9 +143,9 @@ export async function POST(req: NextRequest) {
           )
         : []
     } else {
-      // Full / budget / vibes: replace all non-locked, non-flight items
+      // Full / budget / vibes: replace all non-locked, non-flight items (including day markers)
       itemsToReplace = currentItems.filter(i =>
-        !lockedSet.has(i.id) && i.category !== 'flight' && i.category !== 'day'
+        !lockedSet.has(i.id) && i.category !== 'flight'
       )
       newItems = newTemplateItems.filter(i => i.category !== 'flight')
     }

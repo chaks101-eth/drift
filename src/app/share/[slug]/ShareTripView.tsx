@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 type Trip = {
   destination: string; country: string; vibes: string[];
@@ -61,7 +62,7 @@ export default function ShareTripView({ trip, items }: { trip: Trip; items: Item
       <div className="relative z-[1] px-8 pt-16 pb-12 text-center border-b border-[rgba(255,255,255,0.06)] max-md:px-4 max-md:pt-10 max-md:pb-8">
         <p className="text-[11px] tracking-[4px] uppercase text-[#c8a44e] mb-3 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.1s]">Shared Trip</p>
         <h1 className="font-serif text-[clamp(32px,5vw,56px)] font-normal mb-2 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.2s]">
-          {trip.destination}, <em className="text-[#c8a44e] italic">{trip.country}</em>
+          {trip.destination}{trip.country && trip.country.toLowerCase() !== trip.destination?.toLowerCase() ? <>, <em className="text-[#c8a44e] italic">{trip.country}</em></> : ''}
         </h1>
         <p className="text-[#7a7a85] text-sm mb-5 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.3s]">
           {trip.travelers} traveler{trip.travelers > 1 ? 's' : ''} &middot; {trip.start_date} to {trip.end_date} &middot; {trip.budget} budget
@@ -127,7 +128,9 @@ export default function ShareTripView({ trip, items }: { trip: Trip; items: Item
                 return (
                   <div key={item.id} className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden flex hover:border-[rgba(255,255,255,0.12)] transition-all">
                     {item.image_url && (
-                      <img src={item.image_url} alt={item.name} className="w-[120px] h-auto object-cover flex-shrink-0 max-md:w-[80px]" />
+                      <div className="relative w-[120px] min-h-[80px] flex-shrink-0 max-md:w-[80px]">
+                        <Image src={item.image_url} alt={item.name} fill className="object-cover" sizes="120px" unoptimized />
+                      </div>
                     )}
                     <div className="p-4 flex-1 min-w-0 max-md:p-3">
                       <div className="flex items-start justify-between gap-2 mb-1">
