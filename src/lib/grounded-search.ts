@@ -490,20 +490,6 @@ export function fixItemLinks(
   }
 }
 
-// ─── Destination Image via Unsplash CDN ────────────────────────
-// Uses Unsplash's free CDN endpoint (no API key needed) to get
-// a relevant city/travel photo. Always loads, always looks good.
-
-/**
- * Get a high-quality city image URL via Unsplash CDN.
- * No API key required — uses the direct embed endpoint.
- */
-export function getCityImageUrl(city: string, country: string): string {
-  const query = encodeURIComponent(`${city} ${country} travel cityscape`)
-  // Unsplash CDN direct link — always works, no auth needed
-  return `https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&h=600&fit=crop&auto=format&q=80`
-}
-
 /**
  * Search for city-specific image via Unsplash API (if key available)
  * or return a reliable Unsplash CDN fallback.
