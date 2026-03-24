@@ -141,14 +141,17 @@ export default function VibesPage() {
       <div className="shrink-0 px-6 pt-[calc(env(safe-area-inset-top)+16px)]">
         <div className="mb-3 flex items-center justify-between">
           <BackButton href="/m/plan/budget" />
-          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums transition-colors ${
-            picked.length > 0 ? 'text-drift-gold' : 'text-drift-text3'
-          }`}>
-            {counterText}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums transition-colors ${
+              picked.length > 0 ? 'text-drift-gold' : 'text-drift-text3'
+            }`}>
+              {counterText}
+            </span>
+            <span className="text-[13px] font-medium tabular-nums text-drift-text4">04 / 05</span>
+          </div>
         </div>
         <h1 className="mb-1 font-serif text-3xl font-light">
-          What&apos;s your <em className="font-normal italic text-drift-gold">vibe?</em>
+          What&apos;s your travel <em className="font-normal italic text-drift-gold">vibe?</em>
         </h1>
         <p className="mb-3 text-xs text-drift-text3">Swipe right to pick, left to skip</p>
         {/* Progress dots */}
@@ -229,7 +232,7 @@ export default function VibesPage() {
                   YES
                 </div>
                 <div className="swipe-no pointer-events-none absolute right-6 top-6 rounded-xl border-2 border-red-400 px-4 py-2 text-lg font-extrabold text-red-400 opacity-0 rotate-[15deg]">
-                  PASS
+                  NOPE
                 </div>
                 {/* Info overlay */}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 pb-6 pt-20">
@@ -248,6 +251,24 @@ export default function VibesPage() {
           })
         )}
       </div>
+
+      {/* Skip / Pick buttons */}
+      {!done && currentIdx < moods.length && (
+        <div className="shrink-0 flex items-center justify-between px-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2">
+          <button
+            onClick={() => handleSwipe('left')}
+            className="text-[11px] font-bold uppercase tracking-[0.14em] text-drift-text3 active:text-drift-text2 transition-colors"
+          >
+            &lt; Skip
+          </button>
+          <button
+            onClick={() => handleSwipe('right')}
+            className="text-[11px] font-bold uppercase tracking-[0.14em] text-drift-gold active:text-drift-gold/70 transition-colors"
+          >
+            Pick &gt;
+          </button>
+        </div>
+      )}
     </div>
   )
 }

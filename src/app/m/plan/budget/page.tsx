@@ -29,7 +29,7 @@ export default function BudgetPage() {
 
   const handleSlider = (val: number) => {
     setAmount(val)
-    const newLevel = val <= 2000 ? 'budget' : val <= 5000 ? 'mid' : 'luxury'
+    const newLevel = val <= 2000 ? 'budget' : val <= 4500 ? 'mid' : 'luxury'
     setLevel(newLevel as 'budget' | 'mid' | 'luxury')
     setBudget(newLevel as 'budget' | 'mid' | 'luxury', val)
   }
@@ -40,16 +40,16 @@ export default function BudgetPage() {
     setTravelers(next)
   }
 
-  const sliderPct = ((amount - 500) / (15000 - 500)) * 100
+  const sliderPct = ((amount - 500) / (10000 - 500)) * 100
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
-      <StepHeader step={3} backHref="/m/plan/dates" />
+      <StepHeader step={3} totalSteps={5} backHref="/m/plan/dates" />
 
       <h1 className="mb-2 font-serif text-4xl font-light leading-tight">
         Who&apos;s going &amp; <em className="font-normal italic text-drift-gold">how much?</em>
       </h1>
-      <p className="mb-3 text-xs text-drift-text3">We&apos;ll tailor everything to your group</p>
+      <p className="mb-3 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">We&apos;ll tailor everything to your group</p>
 
       {/* Traveler count */}
       <div className="mb-6 mt-5">
@@ -115,7 +115,7 @@ export default function BudgetPage() {
         <input
           type="range"
           min={500}
-          max={15000}
+          max={10000}
           step={250}
           value={amount}
           onChange={(e) => handleSlider(Number(e.target.value))}
@@ -126,7 +126,7 @@ export default function BudgetPage() {
         />
         <div className="mt-1.5 flex justify-between">
           <span className="text-[8px] text-drift-text3">{formatBudget(500)}</span>
-          <span className="text-[8px] text-drift-text3">{formatBudget(15000)}</span>
+          <span className="text-[8px] text-drift-text3">{formatBudget(10000)}</span>
         </div>
         <div className="mt-2.5 flex items-center justify-between border-t border-drift-border2 pt-2.5">
           <span className="text-[10px] text-drift-text3">Est. total for group</span>

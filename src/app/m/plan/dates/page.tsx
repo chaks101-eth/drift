@@ -96,12 +96,12 @@ export default function DatesPage() {
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
-      <StepHeader step={2} backHref="/m/plan/origin" />
+      <StepHeader step={2} totalSteps={5} backHref="/m/plan/origin" />
 
       <h1 className="mb-2 font-serif text-4xl font-light leading-tight">
         When do you <em className="font-normal italic text-drift-gold">go?</em>
       </h1>
-      <p className="mb-7 text-xs text-drift-text3">Pick your travel dates</p>
+      <p className="mb-7 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">Pick your travel dates</p>
 
       {/* Date row */}
       <div className="mb-6 flex gap-3">

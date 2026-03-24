@@ -211,9 +211,9 @@ export default function DestinationsPage() {
           {/* Ask Drift button - placeholder */}
         </div>
         <h1 className="mb-1 font-serif text-3xl font-light text-drift-text">
-          We matched <em className="font-normal italic text-drift-gold">these</em> for you
+          Pick your <em className="font-normal italic text-drift-gold">destination</em>
         </h1>
-        <p className="mb-4 text-xs text-drift-text3">Swipe to explore &middot; Tap to select</p>
+        <p className="mb-4 text-xs text-drift-text3">Based on your vibes, we found these matches</p>
       </div>
 
       {/* Content area */}
@@ -377,7 +377,7 @@ export default function DestinationsPage() {
             </>
           ) : (
             <>
-              Build My Trip
+              Confirm Destination
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>

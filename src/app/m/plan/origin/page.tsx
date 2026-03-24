@@ -40,12 +40,13 @@ export default function OriginPage() {
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
-      <StepHeader step={1} backHref="/m" />
+      <StepHeader step={1} totalSteps={5} backHref="/m" />
 
       <h1 className="mb-2 font-serif text-4xl font-light leading-tight">
-        Where are you <em className="font-normal italic text-drift-gold">flying</em> from?
+        Where are you<br />
+        <em className="font-normal italic text-drift-gold">flying</em> from?
       </h1>
-      <p className="mb-7 text-xs text-drift-text3">Your home city</p>
+      <p className="mb-7 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">Your home city</p>
 
       {/* Input */}
       <div className="relative mb-7">
