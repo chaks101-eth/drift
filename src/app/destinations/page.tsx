@@ -8,14 +8,14 @@ import { ITINERARY_MESSAGES } from '@/lib/loading-messages'
 import NavBar from '@/app/NavBar'
 
 type Destination = {
-  name: string
+  city: string
   country: string
   match: number
   price?: string
   price_usd?: number
-  tags: string[]
+  vibes: string[]
   image_url: string
-  description: string
+  tagline: string
 }
 
 export default function DestinationsPage() {
@@ -111,7 +111,7 @@ function DestinationsContent() {
         },
         body: JSON.stringify({
           type: 'itinerary',
-          destination: dest.name,
+          destination: dest.city,
           country: dest.country,
           vibes: vibeData.vibes,
           start_date: vibeData.startDate || '2026-04-10',
@@ -275,18 +275,18 @@ function DestinationsContent() {
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
                 <div className="relative w-full h-[200px] max-md:h-[180px]">
-                  <Image src={d.image_url} alt={d.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                  <Image src={d.image_url} alt={d.city} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
                 </div>
                 <div className="p-[18px] max-md:p-3.5">
-                  <div className="font-serif text-[22px] mb-0.5 text-[#f0efe8] max-md:text-xl">{d.name}</div>
-                  {d.country && d.country.toLowerCase() !== d.name.toLowerCase() && (
+                  <div className="font-serif text-[22px] mb-0.5 text-[#f0efe8] max-md:text-xl">{d.city}</div>
+                  {d.country && d.country.toLowerCase() !== d.city.toLowerCase() && (
                     <div className="text-xs text-[#7a7a85] mb-2">{d.country}</div>
                   )}
-                  {d.description && (
-                    <p className="text-[11px] text-[#4a4a55] leading-relaxed mb-2.5 line-clamp-2">{d.description}</p>
+                  {d.tagline && (
+                    <p className="text-[11px] text-[#4a4a55] leading-relaxed mb-2.5 line-clamp-2">{d.tagline}</p>
                   )}
                   <div className="flex flex-wrap gap-1.5 mb-3">
-                    {d.tags.map(t => (
+                    {d.vibes.map(t => (
                       <span key={t} className="px-2.5 py-0.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-full text-[10px] text-[#7a7a85]">{t}</span>
                     ))}
                   </div>

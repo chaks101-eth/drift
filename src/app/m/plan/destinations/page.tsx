@@ -154,7 +154,7 @@ export default function DestinationsPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          type: 'generate',
+          type: 'itinerary',
           destination: dest.city,
           country: dest.country,
           vibes: pickedVibes,

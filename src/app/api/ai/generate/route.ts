@@ -51,12 +51,12 @@ export async function POST(req: NextRequest) {
           const budgetLevel = body.budget || 'mid'
           const dailyCost = budgetData[budgetLevel] || budgetData.mid || 120
           return {
-            name: d.city.charAt(0).toUpperCase() + d.city.slice(1),
+            city: d.city.charAt(0).toUpperCase() + d.city.slice(1),
             country: d.country.charAt(0).toUpperCase() + d.country.slice(1),
             match: Math.min(matchPct + 15, 99), // boost catalog destinations
             price_usd: dailyCost * 5,
-            tags: (d.vibes || []).slice(0, 3),
-            description: d.description || `Explore ${d.city}`,
+            vibes: (d.vibes || []).slice(0, 3),
+            tagline: d.description || `Explore ${d.city}`,
             image_url: d.cover_image || getDestinationImage(d.city),
             from_catalog: true,
           }
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         .filter(d => d.match > 20)
         .sort((a, b) => b.match - a.match)
 
-      console.log(`[Generate] Catalog matches (score>20): ${catalogMatches.map(d => `${d.name}(${d.match}%)`).join(', ') || 'none'}`)
+      console.log(`[Generate] Catalog matches (score>20): ${catalogMatches.map(d => `${d.city}(${d.match}%)`).join(', ') || 'none'}`)
 
       // Catalog-only — no LLM suggestions, no hardcoded fallbacks
       const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
