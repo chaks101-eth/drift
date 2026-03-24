@@ -84,7 +84,7 @@ function formatInline(text: string): React.ReactNode {
 
 export default function ChatOverlay() {
   const { showChat, chatInitMessage, chatContextItemId, closeChat } = useUIStore()
-  const { currentTrip, token, chatHistory, addChatMessage } = useTripStore()
+  const { currentTrip, token, chatHistory, addChatMessage, updateLastChatMessage } = useTripStore()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
@@ -127,18 +127,86 @@ export default function ChatOverlay() {
         body: JSON.stringify({
           tripId: currentTrip.id,
           message: text,
+          stream: true,
           contextItemId: chatContextItemId || undefined,
         }),
       })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      addChatMessage({ role: 'assistant', content: data.text, actions: data.actions })
-      if (data.actions?.some((a: { type: string }) => a.type === 'swap')) {
-        trackEvent('item_swapped', 'engagement')
+
+      // Check if streaming response (SSE)
+      if (res.headers.get('content-type')?.includes('text/event-stream')) {
+        // Add placeholder assistant message that we'll update
+        addChatMessage({ role: 'assistant', content: '' })
+        setLoading(false) // Hide bouncing dots, show streaming text
+
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let finalText = ''
+        let finalActions: Array<{ type: string; [key: string]: unknown }> = []
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+
+            // Parse SSE events from buffer
+            const lines = buffer.split('\n')
+            buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+            let eventType = ''
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                eventType = line.slice(7)
+              } else if (line.startsWith('data: ')) {
+                const data = line.slice(6)
+                try {
+                  const parsed = JSON.parse(data)
+                  if (eventType === 'text') {
+                    finalText = parsed.content || ''
+                    updateLastChatMessage({ content: finalText })
+                  } else if (eventType === 'tool') {
+                    // Show tool progress as temporary text
+                    updateLastChatMessage({ content: parsed.label || 'Thinking...' })
+                  } else if (eventType === 'actions') {
+                    finalActions = parsed.actions || []
+                    if (finalActions.length > 0) {
+                      updateLastChatMessage({ actions: finalActions })
+                    }
+                    if (finalActions.some((a) => a.type === 'swap')) {
+                      trackEvent('item_swapped', 'engagement')
+                    }
+                  }
+                } catch { /* skip malformed events */ }
+              }
+            }
+          }
+        }
+
+        // Save assistant message to DB
+        if (finalText && currentTrip.id) {
+          fetch('/api/ai/chat/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              tripId: currentTrip.id,
+              content: finalText,
+              contextItemId: chatContextItemId || undefined,
+            }),
+          }).catch(() => {})
+        }
+      } else {
+        // Non-streaming fallback
+        const data = await res.json()
+        if (data.error) throw new Error(data.error)
+        addChatMessage({ role: 'assistant', content: data.text, actions: data.actions })
+        if (data.actions?.some((a: { type: string }) => a.type === 'swap')) {
+          trackEvent('item_swapped', 'engagement')
+        }
+        setLoading(false)
       }
     } catch {
       addChatMessage({ role: 'assistant', content: 'Sorry, something went wrong. Try again?' })
-    } finally {
       setLoading(false)
     }
   }

@@ -139,6 +139,7 @@ interface TripStore {
   // Chat
   chatHistory: ChatMessage[]
   addChatMessage: (msg: ChatMessage) => void
+  updateLastChatMessage: (update: Partial<ChatMessage>) => void
   clearChat: () => void
 }
 
@@ -239,5 +240,14 @@ export const useTripStore = create<TripStore>((set, get) => ({
   chatHistory: [],
   addChatMessage: (msg) =>
     set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
+  updateLastChatMessage: (update) =>
+    set((s) => {
+      const history = [...s.chatHistory]
+      if (history.length > 0) {
+        const last = history[history.length - 1]
+        history[history.length - 1] = { ...last, ...update, content: update.content !== undefined ? update.content : last.content }
+      }
+      return { chatHistory: history }
+    }),
   clearChat: () => set({ chatHistory: [] }),
 }))

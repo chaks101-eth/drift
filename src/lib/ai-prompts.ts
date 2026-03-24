@@ -130,9 +130,10 @@ Your output is ONLY valid JSON — no markdown, no explanation, no text outside 
 5. Include 2-3 alternatives in metadata.alts for hotels and major activities.
 6. Do NOT include image_url — images are handled separately.
 7. Use realistic prices in USD. When a specific budget amount is given, calibrate all prices to fit within it.
-8. For short trips (1-3 days): Pack only highlights. Max 2-3 activities per day. Skip hotel alternatives. Focus on must-do experiences.
-9. For medium trips (4-5 days): Focused itinerary with key highlights and 1-2 chill periods.
-10. For long trips (6+ days): Full itinerary with variety, rest days, and deeper exploration.
+8. When catalog data is provided, PREFER those real places — use their EXACT names so the system can match them for photos, booking links, and GPS coordinates. You may suggest well-known alternatives if they're genuinely better matches for the traveler's vibes, but catalog items should be your primary source.
+9. For short trips (1-3 days): Pack only highlights. Max 2-3 activities per day. Skip hotel alternatives. Focus on must-do experiences.
+10. For medium trips (4-5 days): Focused itinerary with key highlights and 1-2 chill periods.
+11. For long trips (6+ days): Full itinerary with variety, rest days, and deeper exploration.
 </constraints>
 
 <output_format>

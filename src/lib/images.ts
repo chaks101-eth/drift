@@ -56,11 +56,64 @@ const DESTINATION_COVERS: Record<string, string> = {
   'cape town': u('photo-1580060839134-75a5edca2e99'),
   'marrakech': u('photo-1509003652919-9d7cc6d2f8f5'),
   'cairo': u('photo-1539768942893-daf53e736b68'),
+  'zanzibar': u('photo-1547471080-7cc2caa01a7e'),
+  'nairobi': u('photo-1611348524140-53c9a25263d6'),
 
   // Oceania
   'sydney': u('photo-1506973035872-a4ec16b8e8d9'),
   'queenstown': u('photo-1589871973318-9ca1258faa7d'),
   'fiji': u('photo-1518548419970-58e3b4079ab2'),
+  'melbourne': u('photo-1514395462725-fb4566210144'),
+
+  // Southeast Asia (expanded)
+  'ho chi minh': u('photo-1583417319070-4a69db38a482'),
+  'ho chi minh city': u('photo-1583417319070-4a69db38a482'),
+  'chiang mai': u('photo-1512553861092-d09b5c5f36d1'),
+  'siem reap': u('photo-1569242840510-9fe6f0112cee'),
+  'luang prabang': u('photo-1583417267826-aebc4d1542e1'),
+  'koh samui': u('photo-1537956965359-7573183d1f57'),
+  'langkawi': u('photo-1609946860441-a418e48f4731'),
+
+  // South Asia
+  'kathmandu': u('photo-1558799401-1dcba79834c2'),
+  'pokhara': u('photo-1544735716-392fe2489ffa'),
+  'colombo': u('photo-1586613835032-26f28d5d9b60'),
+
+  // Central Asia / Caucasus
+  'tbilisi': u('photo-1565008576549-57569a49371d'),
+  'bishkek': u('photo-1530841377377-3ff06c0ca713'),
+  'tashkent': u('photo-1596484552834-6a58f850e0a1'),
+  'yerevan': u('photo-1603622472128-60db72a0e785'),
+  'baku': u('photo-1603522829425-27961ff5a69c'),
+
+  // More Europe
+  'dubrovnik': u('photo-1555990538-1a0f4b2c32f5'),
+  'edinburgh': u('photo-1513635269975-59663e0ac1ad'),
+  'florence': u('photo-1541370976299-4d24ebbc9077'),
+  'budapest': u('photo-1549923746-c502d488b3ea'),
+  'copenhagen': u('photo-1513622470522-26c3c8a854bc'),
+  'reykjavik': u('photo-1504829857797-ddff29c27927'),
+  'sarajevo': u('photo-1590150736578-1b1e048d2c3e'),
+
+  // South America
+  'bogota': u('photo-1568226989693-79cd4baec54e'),
+  'cartagena': u('photo-1583353480235-4e54a5fb6113'),
+  'cusco': u('photo-1526392060635-9d6019884377'),
+  'santiago': u('photo-1510253687831-5b7e35082241'),
+  'medellin': u('photo-1599493758267-c6c884c7071f'),
+
+  // Winter destinations
+  'gudauri': u('photo-1551524559-8af4e6624178'),
+  'karakol': u('photo-1551524559-8af4e6624178'),
+  'niseko': u('photo-1551524559-8af4e6624178'),
+  'chamonix': u('photo-1551524559-8af4e6624178'),
+  'zermatt': u('photo-1551524559-8af4e6624178'),
+
+  // Caribbean / Islands
+  'mauritius': u('photo-1589979481223-deb893e50a70'),
+  'belle mare': u('photo-1589979481223-deb893e50a70'),
+  'paro': u('photo-1553856622-d1b352e9a211'),
+  'bhutan': u('photo-1553856622-d1b352e9a211'),
 }
 
 // ─── Category Fallback Pools ───────────────────────────────────

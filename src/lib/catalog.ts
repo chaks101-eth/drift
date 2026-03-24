@@ -411,6 +411,253 @@ export function templateToItineraryItems(
   })
 }
 
+// ─── Rich Catalog Context for LLM Generation ─────────────────
+// Builds a detailed text description of catalog items for the LLM to use
+// as context when generating itineraries. Includes ratings, features,
+// best times, GPS, pairs_with — not just names and prices.
+
+export function buildRichCatalogContext(catalog: CatalogData): string {
+  const sections: string[] = []
+
+  // Hotels
+  if (catalog.hotels.length > 0) {
+    const hotelLines = catalog.hotels.map(h => {
+      const hm = (h as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
+      const parts = [`  - ${h.name} (${h.price_per_night}/night, ${h.rating}★, ${h.price_level})`]
+      if (h.location) parts.push(`    Location: ${h.location}`)
+      if (h.amenities?.length) parts.push(`    Amenities: ${h.amenities.slice(0, 6).join(', ')}`)
+      if (hm.best_for) parts.push(`    Best for: ${(hm.best_for as string[]).join(', ')}`)
+      if (hm.honest_take) parts.push(`    Honest take: ${hm.honest_take}`)
+      if (hm.lat && hm.lng) parts.push(`    GPS: ${hm.lat}, ${hm.lng}`)
+      return parts.join('\n')
+    })
+    sections.push(`HOTELS (${catalog.hotels.length}):\n${hotelLines.join('\n')}`)
+  }
+
+  // Activities
+  if (catalog.activities.length > 0) {
+    const actLines = catalog.activities.map(a => {
+      const am = (a as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
+      const parts = [`  - ${a.name} (${a.price}, ${a.duration || '?'})`]
+      if (a.best_time) parts.push(`    Best time: ${a.best_time}`)
+      if (a.location) parts.push(`    Location: ${a.location}`)
+      if (am.best_for) parts.push(`    Best for: ${(am.best_for as string[]).join(', ')}`)
+      if (am.pairs_with) parts.push(`    Pairs with: ${(am.pairs_with as string[]).join(', ')}`)
+      if (am.honest_take) parts.push(`    Honest take: ${am.honest_take}`)
+      if (am.lat && am.lng) parts.push(`    GPS: ${am.lat}, ${am.lng}`)
+      return parts.join('\n')
+    })
+    sections.push(`ACTIVITIES (${catalog.activities.length}):\n${actLines.join('\n')}`)
+  }
+
+  // Restaurants
+  if (catalog.restaurants.length > 0) {
+    const restLines = catalog.restaurants.map(r => {
+      const rm = (r as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
+      const parts = [`  - ${r.name} (${r.avg_cost}, ${r.cuisine}, ${r.price_level})`]
+      if (r.location) parts.push(`    Location: ${r.location}`)
+      if (r.must_try?.length) parts.push(`    Must try: ${r.must_try.slice(0, 4).join(', ')}`)
+      if (rm.best_for) parts.push(`    Best for: ${(rm.best_for as string[]).join(', ')}`)
+      if (rm.honest_take) parts.push(`    Honest take: ${rm.honest_take}`)
+      if (rm.lat && rm.lng) parts.push(`    GPS: ${rm.lat}, ${rm.lng}`)
+      return parts.join('\n')
+    })
+    sections.push(`RESTAURANTS (${catalog.restaurants.length}):\n${restLines.join('\n')}`)
+  }
+
+  if (sections.length === 0) return ''
+
+  return `\n\nREAL PLACES FROM OUR CATALOG (verified data — ratings, GPS, hours are real):
+${sections.join('\n\n')}
+
+IMPORTANT: PREFER these real places when building the itinerary. They have verified data (ratings, photos, booking links, GPS coordinates) that will make the trip board much richer. You may suggest well-known alternatives if they're genuinely better matches for the traveler's vibes, but the catalog should be your primary source. When using catalog items, use the EXACT name as listed above.`
+}
+
+// ─── Post-Generation Catalog Enrichment ────────────────────────
+// After LLM generates items, match them against catalog to add
+// images, booking URLs, GPS, hours, alternatives, etc.
+
+export function enrichItemsWithCatalog(
+  items: Array<{
+    category: string; name: string; detail: string; description: string;
+    price: string; image_url: string; time: string; position: number;
+    metadata: Record<string, unknown>
+  }>,
+  catalog: CatalogData,
+  tripVibes?: string[],
+): Array<{
+  category: string; name: string; detail: string; description: string;
+  price: string; image_url: string; time: string; position: number;
+  metadata: Record<string, unknown>
+}> {
+  const hotelMap = new Map(catalog.hotels.map(h => [h.name.toLowerCase(), h]))
+  const activityMap = new Map(catalog.activities.map(a => [a.name.toLowerCase(), a]))
+  const restaurantMap = new Map(catalog.restaurants.map(r => [r.name.toLowerCase(), r]))
+  const vibes = tripVibes || []
+
+  return items.map(item => {
+    const nameLower = (item.name || '').toLowerCase()
+
+    // Fuzzy match: exact → first-word match
+    const hotel = item.category === 'hotel'
+      ? (hotelMap.get(nameLower) || [...hotelMap.values()].find(h =>
+          nameLower.includes(h.name.toLowerCase().split(' ')[0]) ||
+          h.name.toLowerCase().includes(nameLower.split(' ')[0])
+        ))
+      : undefined
+    const activity = item.category === 'activity'
+      ? (activityMap.get(nameLower) || [...activityMap.values()].find(a =>
+          nameLower.includes(a.name.toLowerCase().split(' ')[0]) ||
+          a.name.toLowerCase().includes(nameLower.split(' ')[0])
+        ))
+      : undefined
+    const restaurant = item.category === 'food'
+      ? (restaurantMap.get(nameLower) || [...restaurantMap.values()].find(r =>
+          nameLower.includes(r.name.toLowerCase().split(' ')[0]) ||
+          r.name.toLowerCase().includes(nameLower.split(' ')[0])
+        ))
+      : undefined
+
+    let imageUrl = item.image_url || ''
+    let bookingUrl: string | null = null
+    let source = item.metadata?.source as string || 'ai'
+    const catalogMeta: Record<string, unknown> = {}
+
+    if (item.category === 'hotel' && hotel) {
+      imageUrl = upsizeGoogleImage(hotel.image_url || '') || imageUrl
+      bookingUrl = hotel.booking_url
+      source = 'catalog'
+      const hm = (hotel as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
+      Object.assign(catalogMeta, {
+        features: hotel.amenities?.slice(0, 6),
+        honest_take: hm.honest_take,
+        practical_tips: hm.practical_tips,
+        best_for: hm.best_for || hotel.vibes,
+        pairs_with: hm.pairs_with,
+        review_synthesis: hm.review_synthesis,
+        reviewCount: hm.reviewCount,
+        mapsUrl: hm.mapsUrl,
+        photos: (hm.photos as string[] || []).slice(0, 6),
+        lat: hm.lat, lng: hm.lng,
+        hours: hm.hours,
+        rating: hotel.rating,
+      })
+    } else if (item.category === 'activity' && activity) {
+      imageUrl = upsizeGoogleImage(activity.image_url || '') || imageUrl
+      bookingUrl = activity.booking_url
+      source = 'catalog'
+      const am = (activity as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
+      Object.assign(catalogMeta, {
+        honest_take: am.honest_take,
+        practical_tips: am.practical_tips,
+        best_for: am.best_for || activity.vibes,
+        pairs_with: am.pairs_with,
+        review_synthesis: am.review_synthesis,
+        features: am.features,
+        reviewCount: am.reviewCount,
+        mapsUrl: am.mapsUrl,
+        photos: (am.photos as string[] || []).slice(0, 6),
+        lat: am.lat, lng: am.lng,
+        hours: am.hours,
+        best_time: activity.best_time,
+        duration: activity.duration,
+      })
+    } else if (item.category === 'food' && restaurant) {
+      imageUrl = upsizeGoogleImage(restaurant.image_url || '') || imageUrl
+      bookingUrl = restaurant.booking_url
+      source = 'catalog'
+      const rm = (restaurant as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}
+      Object.assign(catalogMeta, {
+        features: restaurant.must_try?.slice(0, 6),
+        honest_take: rm.honest_take,
+        practical_tips: rm.practical_tips,
+        best_for: rm.best_for || restaurant.vibes,
+        pairs_with: rm.pairs_with,
+        review_synthesis: rm.review_synthesis,
+        reviewCount: rm.reviewCount,
+        mapsUrl: rm.mapsUrl,
+        photos: (rm.photos as string[] || []).slice(0, 6),
+        lat: rm.lat, lng: rm.lng,
+        hours: rm.hours,
+      })
+    }
+
+    // Strip undefined values
+    Object.keys(catalogMeta).forEach(k => {
+      if (catalogMeta[k] === undefined || catalogMeta[k] === null) delete catalogMeta[k]
+    })
+
+    // Build alternatives from catalog
+    const alts = item.metadata?.alts
+    const metadata: Record<string, unknown> = {
+      ...item.metadata,
+      ...catalogMeta,
+      source,
+      ...(bookingUrl ? { bookingUrl } : {}),
+    }
+
+    // Only build alts if not already present from LLM
+    if (!alts) {
+      if (item.category === 'hotel' && hotel) {
+        const currentPrice = parsePrice(hotel.price_per_night)
+        const currentRating = hotel.rating
+        const others = catalog.hotels
+          .filter(h => h.name.toLowerCase() !== nameLower)
+          .map(h => ({ h, score: vibeScore(getItemVibes((h as unknown as Record<string, unknown>).metadata as Record<string, unknown> | null, h.vibes), vibes) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+        metadata.alts = others.map(({ h }) => ({
+          name: h.name,
+          detail: `${h.detail || h.category} · ${h.rating}★`,
+          price: h.price_per_night,
+          image_url: h.image_url,
+          bookingUrl: h.booking_url,
+          trust: buildTrustBadges(currentPrice, currentRating, parsePrice(h.price_per_night), h.rating),
+        }))
+      }
+      if (item.category === 'food' && restaurant) {
+        const currentPrice = parsePrice(restaurant.avg_cost)
+        const currentRating = (restaurant as unknown as Record<string, unknown>)?.rating as number | undefined
+        const others = catalog.restaurants
+          .filter(r => r.name.toLowerCase() !== nameLower)
+          .map(r => ({ r, score: vibeScore(getItemVibes((r as unknown as Record<string, unknown>).metadata as Record<string, unknown> | null, r.vibes), vibes) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+        metadata.alts = others.map(({ r }) => ({
+          name: r.name,
+          detail: `${r.cuisine} · ${r.price_level}`,
+          price: r.avg_cost,
+          image_url: r.image_url,
+          bookingUrl: r.booking_url,
+          trust: buildTrustBadges(currentPrice, currentRating, parsePrice(r.avg_cost), (r as unknown as Record<string, unknown>).rating as number | undefined),
+        }))
+      }
+      if (item.category === 'activity' && activity) {
+        const currentPrice = parsePrice(activity.price)
+        const others = catalog.activities
+          .filter(a => a.name.toLowerCase() !== nameLower)
+          .map(a => ({ a, score: vibeScore(getItemVibes((a as unknown as Record<string, unknown>).metadata as Record<string, unknown> | null, a.vibes), vibes) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+        metadata.alts = others.map(({ a }) => ({
+          name: a.name,
+          detail: `${a.category} · ${a.duration}`,
+          price: a.price,
+          image_url: a.image_url,
+          bookingUrl: a.booking_url,
+          trust: buildTrustBadges(currentPrice, undefined, parsePrice(a.price), undefined),
+        }))
+      }
+    }
+
+    return {
+      ...item,
+      image_url: imageUrl,
+      metadata,
+    }
+  })
+}
+
 // ─── Trust Badge Helpers ──────────────────────────────────────
 
 function parsePrice(price?: string | null): number | undefined {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { chatWithAgent } from '@/lib/ai-agent'
+import { chatWithAgent, chatWithAgentStream } from '@/lib/ai-agent'
 import { createServerClient } from '@/lib/supabase'
 import { rateLimit } from '@/lib/rate-limit'
 
@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
   // Support both formats: { message: "text" } (frontend) and { messages: [...] } (legacy)
   const tripId = body.tripId
   const contextItemId = body.contextItemId
+  const stream = body.stream !== false // Default to streaming
   const userMessage: string = body.message || (body.messages?.length ? body.messages[body.messages.length - 1].content : '')
 
   if (!userMessage) return NextResponse.json({ error: 'No message provided' }, { status: 400 })
@@ -98,18 +99,70 @@ export async function POST(req: NextRequest) {
   // Add the current user message
   fullMessages.push({ role: 'user', content: userMessage })
 
-  try {
-    const response = await chatWithAgent(fullMessages, {
-      tripId: tripId || '',
-      destination: trip?.destination || '',
-      country: trip?.country || '',
-      vibes: trip?.vibes || [],
-      budget: trip?.budget || 'mid',
-      travelers: trip?.travelers || 2,
-      startDate: trip?.start_date || undefined,
-      itinerary: itinerary ?? undefined,
-      contextItem,
+  const agentContext = {
+    tripId: tripId || '',
+    destination: trip?.destination || '',
+    country: trip?.country || '',
+    vibes: trip?.vibes || [],
+    budget: trip?.budget || 'mid',
+    travelers: trip?.travelers || 2,
+    startDate: trip?.start_date || undefined,
+    itinerary: itinerary ?? undefined,
+    contextItem,
+  }
+
+  // ─── Streaming path (default) ──────────────────────────────
+  if (stream) {
+    const { readable, writable } = new TransformStream<Uint8Array>()
+    const writer = writable.getWriter()
+
+    // Run agent in background, stream events to client
+    const streamPromise = (async () => {
+      try {
+        await chatWithAgentStream(fullMessages, agentContext, writer)
+      } catch (error) {
+        console.error('AI chat stream error:', error)
+        const encoder = new TextEncoder()
+        try {
+          writer.write(encoder.encode(`event: text\ndata: ${JSON.stringify({ content: "Sorry, something went wrong. Try again?" })}\n\n`))
+          writer.write(encoder.encode(`event: done\ndata: {}\n\n`))
+          await writer.close()
+        } catch { /* writer may already be closed */ }
+      }
+
+      // Save messages to DB after stream completes
+      // Re-read isn't needed — the last text event has the full response
+    })()
+
+    // Save user message immediately
+    if (tripId) {
+      supabase.from('chat_messages').insert({
+        trip_id: tripId,
+        user_id: user.id,
+        role: 'user',
+        content: userMessage,
+        context_item_id: contextItemId || null,
+      }).then(() => {})
+    }
+
+    // We need to save the assistant message after streaming is done
+    // The frontend will call a separate save endpoint, or we save from the last text event
+    streamPromise.then(async () => {
+      // Read back the stream result isn't possible here, so frontend saves via addMessage
     })
+
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    })
+  }
+
+  // ─── Non-streaming path (fallback) ─────────────────────────
+  try {
+    const response = await chatWithAgent(fullMessages, agentContext)
 
     // Sanitize the response — strip JSON leaks, markdown fences, tool artifacts
     const cleanText = sanitizeResponse(response.text)

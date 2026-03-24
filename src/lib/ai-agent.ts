@@ -302,6 +302,185 @@ export async function chatWithAgent(
   }
 }
 
+// ─── Streaming Chat Agent ─────────────────────────────────────
+// Same agentic loop but streams SSE events: tool progress, text tokens, actions
+
+export async function chatWithAgentStream(
+  messages: { role: 'user' | 'assistant'; content: string }[],
+  context: {
+    tripId: string
+    destination: string
+    country?: string
+    vibes: string[]
+    budget: string
+    travelers: number
+    startDate?: string
+    itinerary?: ItineraryItem[]
+    contextItem?: ItineraryItem | null
+  },
+  writer: WritableStreamDefaultWriter<Uint8Array>,
+): Promise<void> {
+  const encoder = new TextEncoder()
+  const send = (event: string, data: unknown) => {
+    writer.write(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+  }
+
+  const llm = getLlm()
+  const model = getModel()
+
+  // Build context (same as non-streaming)
+  const tripSummary = context.itinerary ? buildTripSummary(context.itinerary) : ''
+  const itemContext = context.contextItem ? buildItemContext(context.contextItem) : ''
+
+  let tripAnalysis = ''
+  if (context.itinerary?.length) {
+    try {
+      const analysis = analyzeTrip(context.itinerary, { vibes: context.vibes })
+      tripAnalysis = formatAnalysisForLLM(analysis)
+    } catch { /* best-effort */ }
+  }
+
+  let catalogContext = ''
+  if (context.destination) {
+    try {
+      catalogContext = await loadCatalogSummary(context.destination)
+    } catch { /* best-effort */ }
+  }
+
+  const systemPrompt = buildChatSystemPrompt({
+    destination: `${context.destination}${context.country ? `, ${context.country}` : ''}`,
+    vibes: context.vibes,
+    budget: context.budget,
+    travelers: context.travelers,
+    catalogContext,
+    itemContext,
+    tripSummary,
+    tripAnalysis,
+  })
+
+  const conversationMessages: OpenAI.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemPrompt },
+    ...messages.slice(-12).map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    })),
+  ]
+
+  const allActions: ChatAction[] = []
+  const toolsUsed: string[] = []
+
+  // Tool label map for user-friendly progress messages
+  const toolLabels: Record<string, string> = {
+    search_catalog: 'Searching catalog...',
+    swap_item: 'Swapping item...',
+    adjust_budget: 'Analyzing budget...',
+    get_trip_insights: 'Analyzing your trip...',
+    search_flights: 'Searching flights...',
+    add_item: 'Adding to your trip...',
+    validate_trip: 'Validating itinerary...',
+    update_trip: 'Updating trip...',
+  }
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    await throttleLlm()
+    const response = await withRetry(() => llm.chat.completions.create({
+      model,
+      max_tokens: 4096,
+      messages: conversationMessages,
+      tools: TOOL_DEFINITIONS,
+    }))
+
+    const choice = response.choices[0]
+    const message = choice.message
+
+    // No tool calls → stream the final text
+    if (!message.tool_calls?.length) {
+      const text = message.content || ''
+      // Stream text in chunks for smooth appearance
+      const words = text.split(/(\s+)/)
+      let streamed = ''
+      for (let i = 0; i < words.length; i += 3) {
+        const chunk = words.slice(i, i + 3).join('')
+        streamed += chunk
+        send('text', { content: streamed })
+        // Small delay for visual streaming effect
+        await new Promise(r => setTimeout(r, 30))
+      }
+      send('actions', { actions: allActions, toolsUsed })
+      send('done', {})
+      await writer.close()
+      return
+    }
+
+    // Execute tool calls
+    conversationMessages.push({
+      role: 'assistant',
+      content: message.content || null,
+      tool_calls: message.tool_calls,
+    } as OpenAI.ChatCompletionMessageParam)
+
+    for (const toolCall of message.tool_calls) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tc = toolCall as any
+      const toolName = tc.function.name as string
+      let args: Record<string, unknown>
+      try { args = JSON.parse(tc.function.arguments) } catch { args = {} }
+
+      toolsUsed.push(toolName)
+      send('tool', { name: toolName, label: toolLabels[toolName] || `Using ${toolName}...` })
+
+      const execContext = {
+        tripId: context.tripId,
+        destination: context.destination,
+        vibes: context.vibes,
+        startDate: context.startDate,
+        items: (context.itinerary || []).map(i => ({
+          id: i.id, category: i.category, name: i.name, price: i.price,
+          position: i.position, status: i.status,
+          metadata: i.metadata as Record<string, unknown> | null,
+        })),
+        fullItems: context.itinerary,
+      }
+
+      let result: ToolResult
+      try {
+        result = await executeTool(toolName, args, execContext)
+      } catch (e) {
+        result = { success: false, data: { error: e instanceof Error ? e.message : String(e) } }
+      }
+
+      if (result.actions) allActions.push(...result.actions)
+
+      conversationMessages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result.data),
+      } as OpenAI.ChatCompletionMessageParam)
+    }
+  }
+
+  // Max rounds exhausted — final call without tools, stream result
+  await throttleLlm()
+  const finalResponse = await withRetry(() => llm.chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages: conversationMessages,
+  }))
+
+  const text = finalResponse.choices[0].message.content || ''
+  const words = text.split(/(\s+)/)
+  let streamed = ''
+  for (let i = 0; i < words.length; i += 3) {
+    const chunk = words.slice(i, i + 3).join('')
+    streamed += chunk
+    send('text', { content: streamed })
+    await new Promise(r => setTimeout(r, 30))
+  }
+  send('actions', { actions: allActions, toolsUsed })
+  send('done', {})
+  await writer.close()
+}
+
 // ─── Itinerary Generation (non-agentic, single LLM call) ────
 
 export async function generateItinerary(params: {
