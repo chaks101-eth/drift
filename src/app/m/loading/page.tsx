@@ -74,10 +74,34 @@ export default function LoadingPage() {
         if (itemsRes.data) setCurrentItems(itemsRes.data)
 
         trackEvent('trip_generated', 'conversion', dest.city)
+        setActiveStep(steps.length - 2) // "Sequencing your days"
 
-        // Show all steps complete, then navigate
+        // Run personalization while user watches loading screen
+        try {
+          const persRes = await fetch('/api/ai/personalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ tripId: data.trip.id }),
+          })
+          const persData = await persRes.json()
+
+          if (persData.status === 'personalized' && persData.updated > 0) {
+            // Reload items with personalized metadata
+            const freshItems = await supabase
+              .from('itinerary_items')
+              .select('*')
+              .eq('trip_id', data.trip.id)
+              .order('position')
+            if (freshItems.data) setCurrentItems(freshItems.data)
+          }
+        } catch {
+          // Personalization failed — trip still works, just without insights
+          console.warn('[Loading] Personalization failed, continuing with base trip')
+        }
+
+        // Done — navigate to board
         setActiveStep(steps.length - 1)
-        setTimeout(() => router.replace(`/m/board/${data.trip.id}`), 1200)
+        setTimeout(() => router.replace(`/m/board/${data.trip.id}`), 800)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Trip generation failed')
       }

@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'already_personalized' })
   }
 
+  console.log(`[Personalize] Starting for trip ${tripId} — ${trip.destination}, vibes: ${trip.vibes?.join(',')}`)
+
   try {
     // Build items in the format personalizeItinerary expects
     const itemsForPersonalize = items.map(i => ({

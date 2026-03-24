@@ -35,18 +35,19 @@ export default function BoardPage() {
       setLoading(true)
       loadTrip(id).then(() => {
         setLoading(false)
-        // Trigger personalization in background — adds trip_brief, day insights, reasons
+        // Check if personalization is needed and trigger it
         fetch('/api/ai/personalize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ tripId: id }),
         }).then(async (res) => {
+          if (!res.ok) { console.warn('[Board] Personalization endpoint error:', res.status); return }
           const data = await res.json()
+          console.log('[Board] Personalize result:', data.status, data.updated || 0)
           if (data.status === 'personalized' && data.updated > 0) {
-            // Reload items to get personalized metadata
-            loadTrip(id)
+            loadTrip(id) // Refresh with personalized data
           }
-        }).catch(() => {}) // Silent — personalization is best-effort
+        }).catch((e) => console.warn('[Board] Personalization failed:', e))
       })
     }
   }, [id, token, loadTrip])
