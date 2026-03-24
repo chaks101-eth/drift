@@ -65,6 +65,8 @@ export default function VibesPage() {
       setDone(true)
       setVibes(newPicked)
       trackEvent('vibes_selected', 'onboarding', newPicked.join(','))
+      // Auto-navigate to destinations after a brief celebration
+      setTimeout(() => router.push('/m/plan/destinations'), 1200)
       return
     }
 
@@ -139,23 +141,20 @@ export default function VibesPage() {
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">
       {/* Header */}
       <div className="shrink-0 px-6 pt-[calc(env(safe-area-inset-top)+16px)]">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <BackButton href="/m/plan/budget" />
-          <div className="flex items-center gap-3">
-            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums transition-colors ${
-              picked.length > 0 ? 'text-drift-gold' : 'text-drift-text3'
-            }`}>
-              {counterText}
-            </span>
-            <span className="text-[13px] font-medium tabular-nums text-drift-text4">04 / 05</span>
-          </div>
+          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums transition-colors ${
+            picked.length > 0 ? 'text-drift-gold' : 'text-drift-text3'
+          }`}>
+            {counterText}
+          </span>
         </div>
         <h1 className="mb-1 font-serif text-3xl font-light">
           What&apos;s your travel <em className="font-normal italic text-drift-gold">vibe?</em>
         </h1>
-        <p className="mb-3 text-xs text-drift-text3">Swipe right to pick, left to skip</p>
+        <p className="text-xs text-drift-text3">Swipe right to pick, left to skip</p>
         {/* Progress dots */}
-        <div className="mb-4 flex gap-2">
+        <div className="mt-2 flex gap-2">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
@@ -188,12 +187,7 @@ export default function VibesPage() {
                 ) : null
               })}
             </div>
-            <button
-              onClick={handleContinue}
-              className="mt-4 w-full rounded-[14px] bg-drift-gold px-6 py-4 text-xs font-extrabold uppercase tracking-widest text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)] transition-transform active:scale-[0.97]"
-            >
-              Find destinations
-            </button>
+            <div className="mt-3 text-[10px] text-drift-text3">Finding your destinations...</div>
           </div>
         ) : (
           /* Cards */
@@ -252,23 +246,8 @@ export default function VibesPage() {
         )}
       </div>
 
-      {/* Skip / Pick buttons */}
-      {!done && currentIdx < moods.length && (
-        <div className="shrink-0 flex items-center justify-between px-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2">
-          <button
-            onClick={() => handleSwipe('left')}
-            className="text-[11px] font-bold uppercase tracking-[0.14em] text-drift-text3 active:text-drift-text2 transition-colors"
-          >
-            &lt; Skip
-          </button>
-          <button
-            onClick={() => handleSwipe('right')}
-            className="text-[11px] font-bold uppercase tracking-[0.14em] text-drift-gold active:text-drift-gold/70 transition-colors"
-          >
-            Pick &gt;
-          </button>
-        </div>
-      )}
+      {/* Bottom safe area */}
+      <div className="shrink-0 pb-[calc(env(safe-area-inset-bottom)+8px)]" />
     </div>
   )
 }

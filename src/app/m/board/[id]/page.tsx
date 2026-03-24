@@ -21,7 +21,14 @@ export default function BoardPage() {
   const { activeTab } = useUIStore()
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { if (token === null) router.replace('/m/login') }, [token, router])
+  // Don't redirect immediately — token may be loading from session
+  useEffect(() => {
+    // Give auth 2s to initialize before redirecting
+    const t = setTimeout(() => {
+      if (token === null) router.replace('/m/login')
+    }, 2000)
+    return () => clearTimeout(t)
+  }, [token, router])
 
   useEffect(() => {
     if (id && token) {

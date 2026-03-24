@@ -9,13 +9,10 @@ interface StepHeaderProps {
   onBack?: () => void
 }
 
-export default function StepHeader({ step, totalSteps = 4, backHref, onBack }: StepHeaderProps) {
+export default function StepHeader({ backHref, onBack }: StepHeaderProps) {
   return (
-    <div className="mb-12 flex items-center justify-between">
+    <div className="mb-8 flex items-center">
       <BackButton href={backHref} onClick={onBack} />
-      <span className="text-[13px] font-medium tabular-nums text-drift-text4">
-        {String(step).padStart(2, '0')} / {String(totalSteps).padStart(2, '0')}
-      </span>
     </div>
   )
 }
