@@ -95,8 +95,15 @@ export async function POST(req: NextRequest) {
         ? await getCatalogData(catalogDest.id, body.vibes, budget)
         : null
 
-      const useCatalog = catalogData?.template && catalogData.template.items.length > 0
-      console.log(`[Generate] ${body.destination}: ${useCatalog ? 'CATALOG (real data)' : 'LLM (fallback)'}`)
+      // Calculate trip duration
+      const tripDays = (body.start_date && body.end_date)
+        ? Math.max(1, Math.round((new Date(body.end_date).getTime() - new Date(body.start_date).getTime()) / (1000 * 60 * 60 * 24)))
+        : 5
+
+      // Use catalog template only if duration matches (±1 day). Otherwise use LLM with catalog context.
+      const templateFits = catalogData?.template && catalogData.template.items.length > 0 && Math.abs(tripDays - (catalogData.template.duration_days || 5)) <= 1
+      const useCatalog = !!templateFits
+      console.log(`[Generate] ${body.destination}: ${useCatalog ? 'CATALOG (real data)' : catalogData ? 'LLM + CATALOG CONTEXT' : 'LLM (fallback)'} — ${tripDays} days (template: ${catalogData?.template?.duration_days || '?'} days)`)
       if (catalogData) {
         console.log(`[Generate] Catalog data: ${catalogData.hotels.length} hotels, ${catalogData.activities.length} activities, ${catalogData.restaurants.length} restaurants, template: ${catalogData.template ? `${catalogData.template.items.length} items` : 'NONE'}`)
       } else {
@@ -165,6 +172,19 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Build catalog context for LLM when we have catalog data but wrong duration
+        let catalogContextText = ''
+        if (catalogData && !useCatalog) {
+          const hotelNames = catalogData.hotels.map(h => `${h.name} (${h.price_per_night}, ${h.rating}★)`).join(', ')
+          const actNames = catalogData.activities.map(a => `${a.name} (${a.price})`).join(', ')
+          const restNames = catalogData.restaurants.map(r => `${r.name} (${r.avg_cost})`).join(', ')
+          catalogContextText = `\n\nIMPORTANT — Use ONLY these real places from our catalog:
+Hotels: ${hotelNames}
+Activities: ${actNames}
+Restaurants: ${restNames}
+Pick from this list. Do NOT invent places.`
+        }
+
         // Generate planning intelligence from any enriched data
         let planningNotesText = ''
         if (enrichedHighlights?.length) {
@@ -202,7 +222,7 @@ export async function POST(req: NextRequest) {
             occasion: body.occasion || undefined,
             urlHighlights: enrichedHighlights,
             urlSummary: body.urlSummary || undefined,
-            planningNotes: planningNotesText || undefined,
+            planningNotes: (planningNotesText + catalogContextText) || undefined,
           }),
           ...flightPromises,
         ])
