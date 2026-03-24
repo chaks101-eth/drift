@@ -1,8 +1,14 @@
+const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
-const sb = createClient(
-  'https://jxnrppnlnztlyputztlw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4bnJwcG5sbnp0bHlwdXR6dGx3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mjc5ODcxMiwiZXhwIjoyMDg4Mzc0NzEyfQ.M_JZhW6fWL5x9RX_H-45HG8VYplSRDp_hN8PYCArzFw'
-);
+
+const envFile = fs.readFileSync('.env.local', 'utf8');
+const env = {};
+envFile.split('\n').forEach(line => {
+  const [k, ...v] = line.split('=');
+  if (k && !k.startsWith('#')) env[k.trim()] = v.join('=').trim();
+});
+
+const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function audit() {
   const { data: dests } = await sb.from('catalog_destinations').select('id, city, country, status');
