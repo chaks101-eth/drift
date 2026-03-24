@@ -4,6 +4,12 @@ import { useRouter } from 'next/navigation'
 import { useUIStore } from '@/stores/ui-store'
 import { useTripStore } from '@/stores/trip-store'
 
+const ChatIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+  </svg>
+)
+
 type Tab = 'board' | 'trips' | 'profile'
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
@@ -42,6 +48,7 @@ const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
 export default function BottomNav() {
   const activeTab = useUIStore((s) => s.activeTab)
   const setActiveTab = useUIStore((s) => s.setActiveTab)
+  const openChat = useUIStore((s) => s.openChat)
   const resetOnboarding = useTripStore((s) => s.resetOnboarding)
   const router = useRouter()
 
@@ -69,11 +76,20 @@ export default function BottomNav() {
           <span className={`text-[7px] font-bold uppercase tracking-wider transition-opacity duration-300 ${activeTab === 'board' ? 'opacity-100' : 'opacity-0'}`}>Board</span>
         </button>
 
+        {/* Chat */}
+        <button
+          aria-label="Chat with Drift"
+          onClick={() => openChat()}
+          className="flex h-11 w-12 flex-col items-center justify-center gap-0.5 rounded-[14px] text-drift-text3 transition-all duration-300"
+        >
+          <span className="h-[18px] w-[18px]"><ChatIcon /></span>
+        </button>
+
         {/* New Trip — center */}
         <button
           onClick={handleNewTrip}
           aria-label="New trip"
-          className="mx-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.25)] transition-transform duration-300 active:scale-90"
+          className="mx-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.25)] transition-transform duration-300 active:scale-90"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" />

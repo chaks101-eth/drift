@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
 import { useTripStore, type Destination } from '@/stores/trip-store'
-import { supabase } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
 export default function DestinationsPage() {
@@ -140,64 +139,13 @@ export default function DestinationsPage() {
     })()
   }
 
-  // Generate trip
-  const handleGenerate = async () => {
+  // Navigate to loading screen which handles generation
+  const handleGenerate = () => {
     if (selectedIdx === null) return
     const dest = destinations[selectedIdx]
+    setDestination(dest)
     setGenerating(true)
-
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          type: 'itinerary',
-          destination: dest.city,
-          country: dest.country,
-          vibes: pickedVibes,
-          start_date: startDate,
-          end_date: endDate,
-          travelers,
-          budget: budgetLevel,
-          budgetAmount,
-          origin,
-          occasion,
-        }),
-      })
-
-      if (!res.ok) throw new Error(`Generation failed (${res.status})`)
-
-      const data = await res.json()
-
-      if (!data.trip) {
-        throw new Error('No trip returned from API')
-      }
-
-      // Set the trip in store
-      setCurrentTrip(data.trip)
-
-      // Fetch full itinerary items
-      const itemsRes = await supabase
-        .from('itinerary_items')
-        .select('*')
-        .eq('trip_id', data.trip.id)
-        .order('position')
-
-      if (itemsRes.data) {
-        setCurrentItems(itemsRes.data)
-      }
-
-      trackEvent('trip_generated', 'conversion', dest.city)
-
-      // Navigate to the board
-      router.push(`/m/board/${data.trip.id}`)
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Trip generation failed. Please try again.')
-      setGenerating(false)
-    }
+    router.push('/m/loading')
   }
 
   const selectedDest = selectedIdx !== null ? destinations[selectedIdx] : null

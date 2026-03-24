@@ -1,178 +1,157 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { useTripStore } from '@/stores/trip-store'
+import { supabase } from '@/lib/supabase'
+import { trackEvent } from '@/lib/analytics'
 
 const steps = [
-  'Finding the best flights...',
-  'Curating activities for your vibe...',
-  'Matching hotels to your style...',
-  'Building your perfect itinerary...',
-];
+  { text: 'Searching real-time flights', key: 'flights' },
+  { text: 'Comparing hotels that match your vibes', key: 'hotels' },
+  { text: 'Curating experiences locals recommend', key: 'experiences' },
+  { text: 'Sequencing your days for best flow', key: 'sequence' },
+  { text: 'Adding the finishing touches', key: 'finish' },
+]
 
 export default function LoadingPage() {
-  const router = useRouter();
-  const [activeStep, setActiveStep] = useState(0);
+  const router = useRouter()
+  const { token, onboarding, setCurrentTrip, setCurrentItems } = useTripStore()
+  const [activeStep, setActiveStep] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const started = useRef(false)
 
+  // Step progression timer
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveStep((prev) => {
-        if (prev < steps.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
+      setActiveStep((prev) => Math.min(prev + 1, steps.length - 1))
+    }, 6000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Generate trip on mount
+  useEffect(() => {
+    if (started.current || !token || !onboarding.destination) return
+    started.current = true
+
+    const dest = onboarding.destination
+
+    async function generate() {
+      try {
+        const res = await fetch('/api/ai/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            type: 'itinerary',
+            destination: dest.city,
+            country: dest.country,
+            vibes: onboarding.pickedVibes,
+            start_date: onboarding.startDate,
+            end_date: onboarding.endDate,
+            travelers: onboarding.travelers,
+            budget: onboarding.budgetLevel,
+            budgetAmount: onboarding.budgetAmount,
+            origin: onboarding.origin,
+            occasion: onboarding.occasion,
+          }),
+        })
+
+        if (!res.ok) throw new Error(`Generation failed (${res.status})`)
+        const data = await res.json()
+        if (!data.trip) throw new Error('No trip returned')
+
+        setCurrentTrip(data.trip)
+
+        const itemsRes = await supabase
+          .from('itinerary_items')
+          .select('*')
+          .eq('trip_id', data.trip.id)
+          .order('position')
+
+        if (itemsRes.data) setCurrentItems(itemsRes.data)
+
+        trackEvent('trip_generated', 'conversion', dest.city)
+
+        // Show all steps complete, then navigate
+        setActiveStep(steps.length - 1)
+        setTimeout(() => router.replace(`/m/board/${data.trip.id}`), 1200)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Trip generation failed')
+      }
+    }
+
+    generate()
+  }, [token, onboarding, setCurrentTrip, setCurrentItems, router])
+
+  const destName = onboarding.destination?.city || ''
 
   return (
     <>
       <style>{`
-        @keyframes orb {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes orb-reverse {
-          to { transform: rotate(-360deg); }
-        }
-        @keyframes core-pulse {
-          0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.85); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-        }
-        @keyframes glow-pulse {
-          0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(0.9); }
-          50% { opacity: 0.35; transform: translate(-50%, -50%) scale(1.1); }
-        }
-        @keyframes fade-up {
-          from { opacity: 0; transform: translateY(6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes orb { to { transform: rotate(360deg); } }
+        @keyframes orb-rev { to { transform: rotate(-360deg); } }
+        @keyframes core-p { 0%,100% { opacity:.4; transform:translate(-50%,-50%) scale(.85); } 50% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } }
+        @keyframes glow-p { 0%,100% { opacity:.15; transform:translate(-50%,-50%) scale(.9); } 50% { opacity:.35; transform:translate(-50%,-50%) scale(1.1); } }
       `}</style>
 
-      <div className="flex flex-col items-center justify-center min-h-screen px-9 bg-[#08080c]">
-        {/* Subtitle */}
-        <div
-          className="text-[10px] uppercase tracking-[0.03em] text-[#4a4a55] mb-9"
-          style={{ animation: 'fade-up 0.6s ease-out 0.3s both' }}
-        >
+      <div className="flex h-full flex-col items-center justify-center px-9">
+        {/* Destination name */}
+        {destName && (
+          <div className="mb-1.5 font-serif text-[28px] font-light tracking-tight text-drift-text opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.2s_forwards]">
+            {destName}
+          </div>
+        )}
+        <div className="mb-9 text-[10px] uppercase tracking-[0.16em] text-drift-text3 opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.5s_forwards]">
           Building your trip
         </div>
 
         {/* Orbital animation */}
-        <div className="relative w-[120px] h-[120px] mb-11">
-          {/* Glow behind */}
-          <div
-            className="absolute top-1/2 left-1/2 w-[140px] h-[140px] rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(200,164,78,0.12), transparent 70%)',
-              animation: 'glow-pulse 2.5s ease-in-out infinite',
-              transform: 'translate(-50%, -50%)',
-            }}
-          />
-
-          {/* Outer ring */}
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'transparent',
-              borderTopColor: '#c8a44e',
-              animation: 'orb 3s linear infinite',
-            }}
-          />
-
-          {/* Middle ring */}
-          <div
-            className="absolute rounded-full"
-            style={{
-              inset: '14px',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'transparent',
-              borderRightColor: 'rgba(200,164,78,0.35)',
-              animation: 'orb-reverse 2s linear infinite',
-            }}
-          />
-
-          {/* Inner ring */}
-          <div
-            className="absolute rounded-full"
-            style={{
-              inset: '28px',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'transparent',
-              borderBottomColor: 'rgba(200,164,78,0.15)',
-              animation: 'orb 1.4s linear infinite',
-            }}
-          />
-
-          {/* Core pulse */}
-          <div
-            className="absolute top-1/2 left-1/2 w-[44px] h-[44px] rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(200,164,78,0.1), transparent)',
-              animation: 'core-pulse 2s ease-in-out infinite',
-            }}
-          />
-
-          {/* D logo */}
-          <div
-            className="absolute inset-0 flex items-center justify-center font-serif text-[24px] font-light text-[#c8a44e]"
-            style={{ letterSpacing: '-0.02em' }}
-          >
-            D
-          </div>
+        <div className="relative mb-11 h-[120px] w-[120px]">
+          <div className="absolute left-1/2 top-1/2 h-[140px] w-[140px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(200,164,78,0.12), transparent 70%)', animation: 'glow-p 2.5s ease-in-out infinite', transform: 'translate(-50%, -50%)' }} />
+          <div className="absolute inset-0 rounded-full" style={{ border: '1px solid transparent', borderTopColor: '#c8a44e', animation: 'orb 3s linear infinite' }} />
+          <div className="absolute rounded-full" style={{ inset: 14, border: '1px solid transparent', borderRightColor: 'rgba(200,164,78,0.35)', animation: 'orb-rev 2s linear infinite' }} />
+          <div className="absolute rounded-full" style={{ inset: 28, border: '1px solid transparent', borderBottomColor: 'rgba(200,164,78,0.15)', animation: 'orb 1.4s linear infinite' }} />
+          <div className="absolute left-1/2 top-1/2 h-[44px] w-[44px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(200,164,78,0.1), transparent)', animation: 'core-p 2s ease-in-out infinite' }} />
+          <div className="absolute inset-0 flex items-center justify-center font-serif text-2xl font-light text-drift-gold">D</div>
         </div>
 
         {/* Steps */}
-        <div className="w-full max-w-[250px]">
-          {steps.map((text, i) => {
-            const isActive = i === activeStep;
-            const isDone = i < activeStep;
-            const isVisible = i <= activeStep;
+        <div className="w-full max-w-[260px]">
+          {steps.map((step, i) => {
+            const isActive = i === activeStep
+            const isDone = i < activeStep
+            const isVisible = i <= activeStep
 
             return (
-              <div
-                key={i}
-                className="flex items-center gap-2.5 py-2 transition-all duration-500"
-                style={{
-                  opacity: isVisible ? (isDone ? 0.25 : 1) : 0,
-                  transform: isVisible ? 'translateY(0)' : 'translateY(6px)',
-                }}
-              >
-                <div
-                  className="w-2 h-2 rounded-full shrink-0 transition-all duration-400"
-                  style={{
-                    background: isActive ? '#c8a44e' : '#4a4a55',
-                    boxShadow: isActive ? '0 0 10px rgba(200,164,78,0.5)' : 'none',
-                  }}
-                />
-                <div
-                  className="text-[13px] leading-snug"
-                  style={{
-                    color: isActive ? '#c8a44e' : '#7a7a88',
-                    letterSpacing: '0.01em',
-                  }}
-                >
-                  {text}
+              <div key={step.key} className="flex items-center gap-2.5 py-2 transition-all duration-500" style={{ opacity: isVisible ? (isDone ? 0.25 : 1) : 0, transform: isVisible ? 'translateY(0)' : 'translateY(6px)' }}>
+                <div className="h-2 w-2 shrink-0 rounded-full transition-all duration-400" style={{ background: isActive ? '#c8a44e' : isDone ? '#c8a44e' : '#4a4a55', boxShadow: isActive ? '0 0 10px rgba(200,164,78,0.5)' : 'none' }} />
+                <div className="text-[13px] leading-snug" style={{ color: isActive ? '#c8a44e' : '#7a7a88' }}>
+                  {step.text}
                 </div>
               </div>
-            );
+            )
           })}
         </div>
 
+        {/* Error */}
+        {error && (
+          <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-center">
+            <p className="text-xs text-red-400">{error}</p>
+            <button onClick={() => router.back()} className="mt-2 text-xs font-semibold text-drift-gold">Go back</button>
+          </div>
+        )}
+
         {/* Cancel */}
-        <div className="mt-8 text-[12px] text-[#4a4a55] tracking-[0.02em]">
-          Taking longer than usual?{' '}
-          <button
-            onClick={() => router.push('/m/plan/destinations')}
-            aria-label="Cancel trip generation"
-            className="text-[#c8a44e] font-semibold"
-          >
-            Cancel
-          </button>
-        </div>
+        {!error && (
+          <div className="mt-8 text-[12px] text-drift-text3">
+            Taking longer than usual?{' '}
+            <button onClick={() => router.push('/m/plan/destinations')} className="font-semibold text-drift-gold">Cancel</button>
+          </div>
+        )}
       </div>
     </>
-  );
+  )
 }
