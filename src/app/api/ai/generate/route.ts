@@ -8,6 +8,8 @@ import { enrichUrlHighlights } from '@/lib/url-enrichment'
 import { rateLimit } from '@/lib/rate-limit'
 import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
 
+export const maxDuration = 60
+
 // POST /api/ai/generate — generate itinerary or destinations
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'

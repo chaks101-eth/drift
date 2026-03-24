@@ -3,6 +3,9 @@ import { chatWithAgent } from '@/lib/ai-agent'
 import { createServerClient } from '@/lib/supabase'
 import { rateLimit } from '@/lib/rate-limit'
 
+// Vercel Hobby = 10s default, Pro = 60s. Extend for agentic loop.
+export const maxDuration = 60
+
 /** Strip JSON fragments, markdown fences, and tool artifacts from LLM response */
 function sanitizeResponse(text: string): string {
   if (!text) return ''

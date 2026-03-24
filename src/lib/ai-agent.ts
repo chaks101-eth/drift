@@ -74,9 +74,9 @@ export function getModel() {
 
 let lastLlmCall = 0
 
-/** Enforce minimum gap between LLM calls (Gemini free tier: 15 RPM) */
+/** Enforce minimum gap between LLM calls (Gemini Tier 1: 2000 RPM) */
 export async function throttleLlm(): Promise<void> {
-  const gap = 4000 // 4s = safe for 15 RPM
+  const gap = 500 // 0.5s — safe for paid tier (2000 RPM)
   const elapsed = Date.now() - lastLlmCall
   if (elapsed < gap) {
     await new Promise(r => setTimeout(r, gap - elapsed))
