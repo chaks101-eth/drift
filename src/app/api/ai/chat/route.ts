@@ -149,6 +149,23 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('AI chat error:', error)
-    return NextResponse.json({ error: 'AI service error' }, { status: 500 })
+
+    // Fallback: try a simple non-tool LLM call if the agentic loop failed
+    try {
+      const { getLlm, getModel, throttleLlm } = await import('@/lib/ai-agent')
+      await throttleLlm()
+      const fallback = await getLlm().chat.completions.create({
+        model: getModel(),
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: `You are Drift, an AI travel assistant. The user is planning a trip to ${trip?.destination || 'a destination'}. Be helpful, concise, and conversational. You don't have access to tools right now, so answer from your general travel knowledge.` },
+          { role: 'user', content: userMessage },
+        ],
+      })
+      const fallbackText = fallback.choices[0].message.content || "I'm having trouble right now. Try again in a moment?"
+      return NextResponse.json({ text: fallbackText, actions: [], toolsUsed: [] })
+    } catch {
+      return NextResponse.json({ error: 'AI service error' }, { status: 500 })
+    }
   }
 }
