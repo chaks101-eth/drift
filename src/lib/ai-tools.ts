@@ -196,6 +196,31 @@ export const TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'update_trip',
+      description: 'Update trip details like dates, travelers count. Use when user says "change dates to...", "we are now 4 people", "extend trip by 2 days", etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          start_date: {
+            type: 'string',
+            description: 'New start date in YYYY-MM-DD format (optional)',
+          },
+          end_date: {
+            type: 'string',
+            description: 'New end date in YYYY-MM-DD format (optional)',
+          },
+          travelers: {
+            type: 'number',
+            description: 'New number of travelers (optional)',
+          },
+        },
+        required: [],
+      },
+    },
+  },
 ]
 
 // ─── Tool Result Types ───────────────────────────────────────
@@ -241,6 +266,8 @@ export async function executeTool(
       return executeAddItem(args, context)
     case 'validate_trip':
       return executeValidateTrip(args, context)
+    case 'update_trip':
+      return executeUpdateTrip(args, context)
     default:
       return { success: false, data: { error: `Unknown tool: ${toolName}` } }
   }
@@ -741,5 +768,37 @@ function executeValidateTrip(
         score: analysis.score,
       },
     }],
+  }
+}
+
+// ─── update_trip ────────────────────────────────────────────
+
+async function executeUpdateTrip(
+  args: Record<string, unknown>,
+  context: { tripId: string },
+): Promise<ToolResult> {
+  const db = getDb()
+
+  const updates: Record<string, unknown> = {}
+  if (args.start_date) updates.start_date = args.start_date as string
+  if (args.end_date) updates.end_date = args.end_date as string
+  if (args.travelers) updates.travelers = args.travelers as number
+
+  if (Object.keys(updates).length === 0) {
+    return { success: false, data: { error: 'No updates provided' } }
+  }
+
+  const { error } = await db
+    .from('trips')
+    .update(updates)
+    .eq('id', context.tripId)
+
+  if (error) {
+    return { success: false, data: { error: `Update failed: ${error.message}` } }
+  }
+
+  return {
+    success: true,
+    data: { updated: updates },
   }
 }

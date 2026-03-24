@@ -6,7 +6,7 @@ import { rateLimit } from '@/lib/rate-limit'
 // Vercel Hobby = 10s default, Pro = 60s. Extend for agentic loop.
 export const maxDuration = 60
 
-/** Strip JSON fragments, markdown fences, and tool artifacts from LLM response */
+/** Strip JSON fragments and markdown fences from LLM response */
 function sanitizeResponse(text: string): string {
   if (!text) return ''
 
@@ -15,29 +15,22 @@ function sanitizeResponse(text: string): string {
   // Strip markdown code fences (```json ... ``` or ``` ... ```)
   clean = clean.replace(/```(?:json)?\s*\n[\s\S]*?\n```/g, '').trim()
 
-  // If the entire response looks like JSON (starts with { or [), replace with a fallback
+  // If the ENTIRE response is a JSON object/array (no prose at all), replace with fallback
   const trimmed = clean.trim()
   if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
       (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
     try {
-      JSON.parse(trimmed) // If it parses, it's raw JSON leak
+      JSON.parse(trimmed)
       return "I've updated your trip. Let me know if you'd like any other changes!"
     } catch {
-      // Not valid JSON, probably fine
+      // Not valid JSON — leave it alone
     }
   }
 
-  // Strip inline JSON blobs that appear mid-text
-  const jsonBlobRegex = /\{(?:\s*"[^"]+"\s*:[^}]+)+\}/g
-  clean = clean.replace(jsonBlobRegex, '').trim()
-
-  // Remove leftover empty lines
+  // Remove leftover triple+ newlines
   clean = clean.replace(/\n{3,}/g, '\n\n').trim()
 
-  // If nothing left after sanitization, return a generic acknowledgment
-  if (!clean) return "Done! Let me know what else you'd like to change."
-
-  return clean
+  return clean || text // Never return empty — fall back to original
 }
 
 export async function POST(req: NextRequest) {
