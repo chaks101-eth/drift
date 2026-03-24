@@ -33,7 +33,21 @@ export default function BoardPage() {
   useEffect(() => {
     if (id && token) {
       setLoading(true)
-      loadTrip(id).finally(() => setLoading(false))
+      loadTrip(id).then(() => {
+        setLoading(false)
+        // Trigger personalization in background — adds trip_brief, day insights, reasons
+        fetch('/api/ai/personalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tripId: id }),
+        }).then(async (res) => {
+          const data = await res.json()
+          if (data.status === 'personalized' && data.updated > 0) {
+            // Reload items to get personalized metadata
+            loadTrip(id)
+          }
+        }).catch(() => {}) // Silent — personalization is best-effort
+      })
     }
   }, [id, token, loadTrip])
 

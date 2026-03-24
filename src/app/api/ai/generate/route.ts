@@ -145,17 +145,8 @@ export async function POST(req: NextRequest) {
         // Merge flights
         items = mergeFlights(items, outboundFlights, returnFlights)
 
-        // ─── Personalization pass — make catalog trips feel hand-crafted ──
-        items = await personalizeItinerary(items, {
-          destination: body.destination,
-          country: body.country,
-          vibes: body.vibes || [],
-          budget,
-          budgetAmount: body.budgetAmount,
-          travelers,
-          occasion: body.occasion,
-          startDate: body.start_date,
-        })
+        // Personalization runs as a separate endpoint after trip is saved
+        // (avoids Vercel 10s timeout on hobby plan)
       } else {
         // ─── Enrich URL highlights with real data (mini-pipeline) ──
         enrichedHighlights = body.urlHighlights || undefined
