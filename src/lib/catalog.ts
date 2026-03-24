@@ -415,7 +415,10 @@ export function templateToItineraryItems(
 
 function parsePrice(price?: string | null): number | undefined {
   if (!price) return undefined
-  const num = parseFloat(price.replace(/[^0-9.]/g, ''))
+  // Handle ranges like "$100-$180" or "$100–$180" — take the first number
+  const match = price.match(/[\d.]+/)
+  if (!match) return undefined
+  const num = parseFloat(match[0])
   return isNaN(num) ? undefined : num
 }
 

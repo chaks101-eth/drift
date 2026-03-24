@@ -84,7 +84,10 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               {item.detail || ''}
             </div>
             <div className="mt-1 text-xs font-bold text-drift-text">
-              {item.price ? formatBudget(parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0) : ''}
+              {(() => {
+                const num = parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) || 0
+                return num === 0 ? 'Free' : formatBudget(num)
+              })()}
             </div>
           </div>
         </div>
@@ -144,39 +147,40 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
       {showAlts && alts.length > 0 && (
         <div className="border-t border-drift-border2 px-3 py-2.5 animate-[fadeUp_0.2s_ease-out]">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
-            {alts.map((alt, i) => (
-              <div key={i} className="w-[150px] shrink-0 rounded-xl border border-drift-border2 bg-drift-surface overflow-hidden">
-                {alt.image_url && (
-                  <div className="relative h-[48px] w-full">
-                    <Image src={alt.image_url} alt={alt.name} fill className="object-cover" sizes="150px" unoptimized />
-                  </div>
-                )}
-                <div className="p-2.5">
-                  <div className="text-[11px] font-semibold text-drift-text line-clamp-1">{alt.name}</div>
-                  <div className="mt-0.5 text-[9px] text-drift-text3 line-clamp-1">{alt.detail}</div>
-                  {alt.trust && alt.trust.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {alt.trust.map((t, j) => (
-                        <span key={j} className={`rounded px-1.5 py-0.5 text-[7px] font-bold ${
-                          t.type === 'gold' ? 'bg-drift-gold/10 text-drift-gold' :
-                          t.type === 'success' ? 'bg-drift-ok/10 text-drift-ok' :
-                          'bg-drift-warn/10 text-drift-warn'
-                        }`}>{t.text}</span>
-                      ))}
+            {alts.map((alt, i) => {
+              const altNum = parseFloat((alt.price || '0').replace(/[^0-9.]/g, '')) || 0
+              const ratingBadge = alt.trust?.find(t => t.type === 'success')
+
+              return (
+                <div key={i} className="w-[150px] shrink-0 rounded-xl border border-drift-border2 bg-drift-surface overflow-hidden">
+                  {alt.image_url && (
+                    <div className="relative h-[48px] w-full">
+                      <Image src={alt.image_url} alt={alt.name} fill className="object-cover" sizes="150px" unoptimized />
                     </div>
                   )}
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-drift-text">{alt.price}</span>
-                    <button
-                      onClick={(e) => handleSwap(alt, e)}
-                      className="rounded-md bg-drift-gold px-2 py-0.5 text-[8px] font-bold text-drift-bg"
-                    >
-                      Swap
-                    </button>
+                  <div className="p-2.5">
+                    <div className="text-[11px] font-semibold text-drift-text line-clamp-1">{alt.name}</div>
+                    <div className="mt-0.5 text-[9px] text-drift-text3 line-clamp-1">{alt.detail}</div>
+                    {ratingBadge && (
+                      <span className="mt-1 inline-block rounded bg-drift-ok/10 px-1.5 py-0.5 text-[7px] font-bold text-drift-ok">
+                        {ratingBadge.text}
+                      </span>
+                    )}
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-drift-text">
+                        {altNum === 0 ? 'Free' : formatBudget(altNum)}
+                      </span>
+                      <button
+                        onClick={(e) => handleSwap(alt, e)}
+                        className="rounded-md bg-drift-gold px-2 py-0.5 text-[8px] font-bold text-drift-bg"
+                      >
+                        Swap
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
