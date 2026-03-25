@@ -548,30 +548,41 @@ export async function generateItinerary(params: {
   // ─── STEP 1: Generate trip outline ────────────────────────────
   console.log(`[Generate] Step 1: Outline for ${numDays}-day ${params.destination} trip`)
 
-  // Extract just place names from planning notes (not full metadata) for the outline
+  // Extract place names from planning notes for context
   let placeHints = ''
   if (params.planningNotes) {
-    // Pull just the place names from catalog/grounded context
     const nameMatches = params.planningNotes.match(/^\s*-\s+([^({\n]+)/gm)
     if (nameMatches?.length) {
-      placeHints = `\nAvailable real places: ${nameMatches.map(m => m.replace(/^\s*-\s+/, '').trim()).slice(0, 20).join(', ')}`
+      placeHints = `\nVerified places from our data: ${nameMatches.map(m => m.replace(/^\s*-\s+/, '').trim()).slice(0, 20).join(', ')}`
     }
   }
 
-  const outlinePrompt = `Plan a ${numDays}-day trip to ${params.destination}, ${params.country}.
-Vibes: ${params.vibes.join(', ')} | Budget: ${budgetLine} | Travelers: ${params.travelers}${occasionNote}${urlPlaces}${placeHints}
+  const vibeStr = params.vibes.join(', ')
+  const outlinePrompt = `You are planning the perfect ${numDays}-day ${params.destination}, ${params.country} trip for a traveler who wants: ${vibeStr}.
 
-Return a JSON object with:
-1. "hotel": { "name": "Hotel Name", "detail": "tagline", "price": "$X/night" }
-2. "days": array of EXACTLY ${numDays} objects, each with:
-   - "dayNum": 1-${numDays}
-   - "date": "${dayDates[0]}", "${dayDates[1] || ''}", etc.
-   - "theme": catchy 3-5 word theme
-   - "places": array of 3-5 specific real place names (activities + restaurants)
-   - "dayInsight": 1-2 sentence opinionated comment
-3. "tripBrief": 2-3 sentence strategy
+STEP 1 — Think about what's UNMISSABLE in ${params.destination} for someone who cares about ${vibeStr}:
+- What are the 3-5 landmarks/experiences that DEFINE ${params.destination} for these vibes?
+- What restaurants would a local ${vibeStr} enthusiast insist you visit?
+- What hotel neighborhood puts them closest to the ${vibeStr} action?
+- What's the one thing they'd regret skipping?
 
-Use REAL place names. Group nearby places on same day. Be opinionated.
+STEP 2 — Build the plan with these constraints:
+- Budget: ${budgetLine} | Travelers: ${params.travelers}${occasionNote}
+- Group nearby places on the same day for efficient routing
+- Alternate intensity: don't stack 4 activities back-to-back${urlPlaces}${placeHints}
+
+Return a JSON object:
+{
+  "hotel": { "name": "Specific Hotel Name", "detail": "why it fits ${vibeStr}", "price": "$X/night" },
+  "days": [EXACTLY ${numDays} objects, each with:
+    { "dayNum": N, "date": "${dayDates[0]}", "theme": "3-5 word theme",
+      "places": ["3-5 SPECIFIC real place names — mix activities + restaurants"],
+      "dayInsight": "1-2 sentence opinionated Drift comment" }
+  ],
+  "tripBrief": "2-3 sentence strategy explaining why THIS mix for THESE vibes"
+}
+
+CRITICAL: Do NOT skip the consensus must-see experiences for ${vibeStr} vibes in ${params.destination}. If ${params.destination} is famous for something that matches their vibes, it MUST be in the plan.
 JSON only. First char {, last char }.`
 
   const outlineRes = await withRetry(() => llm.chat.completions.create({
