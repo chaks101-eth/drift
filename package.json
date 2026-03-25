@@ -13,12 +13,15 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@remotion/cli": "^4.0.440",
+    "@remotion/renderer": "^4.0.440",
     "@sentry/nextjs": "^10.45.0",
     "@supabase/supabase-js": "^2.98.0",
     "next": "16.1.6",
     "openai": "^6.27.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "remotion": "^4.0.440",
     "youtube-transcript": "^1.3.0",
     "zustand": "^5.0.12"
   },
