@@ -9,6 +9,8 @@ import { enrichUrlHighlights } from '@/lib/url-enrichment'
 import { rateLimit } from '@/lib/rate-limit'
 import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
 import { batchGetPlaceData, applyPlaceData, getDestinationPhoto } from '@/lib/google-places-photos'
+import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
+import { buildItineraryMaps } from '@/lib/day-maps'
 
 export const maxDuration = 60
 
@@ -241,6 +243,35 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // ─── Fetch weather forecast for trip dates ──────────────────
+      let weatherContextText = ''
+      // Get destination GPS: from catalog or Google Places
+      let destLat = catalogData?.destination ? ((catalogData.destination as unknown as Record<string, unknown>).lat as number) : undefined
+      let destLng = catalogData?.destination ? ((catalogData.destination as unknown as Record<string, unknown>).lng as number) : undefined
+      // If no catalog GPS, try to get from first catalog hotel/activity
+      if (!destLat && catalogData?.hotels?.[0]) {
+        const hm = (catalogData.hotels[0] as unknown as Record<string, unknown>).metadata as Record<string, unknown> | undefined
+        destLat = hm?.lat as number; destLng = hm?.lng as number
+      }
+      // Fallback: use Google Places to find destination GPS
+      if (!destLat && body.destination) {
+        try {
+          const { getPlaceData } = await import('@/lib/google-places-photos')
+          const destData = await getPlaceData(body.destination, body.destination, body.country)
+          if (destData?.lat) { destLat = destData.lat; destLng = destData.lng }
+        } catch { /* best effort */ }
+      }
+      if (destLat && destLng && body.start_date && body.end_date) {
+        try {
+          const weather = await getTripWeather(destLat, destLng, body.start_date, body.end_date)
+          if (weather) {
+            weatherContextText = formatWeatherForLLM(weather)
+          }
+        } catch (e) {
+          console.warn(`[Generate] Weather fetch failed: ${e}`)
+        }
+      }
+
       // ─── Always use LLM generation + real flights ──────────────
       const [llmItems, outboundFlights, returnFlights] = await Promise.all([
         generateItinerary({
@@ -256,7 +287,7 @@ export async function POST(req: NextRequest) {
           occasion: body.occasion || undefined,
           urlHighlights: enrichedHighlights,
           urlSummary: body.urlSummary || undefined,
-          planningNotes: (planningNotesText + catalogContextText + groundedContextText) || undefined,
+          planningNotes: (planningNotesText + catalogContextText + groundedContextText + weatherContextText) || undefined,
         }),
         ...flightPromises,
       ])
@@ -282,7 +313,8 @@ export async function POST(req: NextRequest) {
       // Fix links: strip hallucinated URLs, add real Google Maps / Booking.com links
       fixItemLinks(nonFlightItems, body.destination, body.country)
 
-      // Enrich items with Google Places data: photos, GPS, ratings, hours, links
+      // Google Places enrichment: sync for non-catalog destinations (need photos),
+      // skip for catalog destinations (already have photos/GPS from catalog)
       const itemsNeedingEnrichment = nonFlightItems.filter(i =>
         ['hotel', 'activity', 'food'].includes(i.category) &&
         (!i.metadata.lat || !i.image_url || i.image_url.includes('unsplash.com'))
@@ -392,10 +424,41 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: itemsError.message }, { status: 500 })
       }
 
+      // ─── Generate day maps (non-blocking) ────────────────────
+      // Build map URLs for each day and update day separators
+      try {
+        const dayMaps = buildItineraryMaps(itemsToInsert.map(i => ({
+          category: i.category,
+          name: i.name,
+          metadata: i.metadata as Record<string, unknown>,
+          position: i.position,
+        })))
+        if (dayMaps.size > 0) {
+          // Update day separator items with map URLs
+          let dayNum = 0
+          for (const item of itemsToInsert) {
+            if (item.category === 'day') {
+              dayNum++
+              const mapUrl = dayMaps.get(dayNum)
+              if (mapUrl) {
+                await supabase
+                  .from('itinerary_items')
+                  .update({ metadata: { ...(item.metadata as Record<string, unknown>), dayMapUrl: mapUrl } })
+                  .eq('trip_id', trip.id)
+                  .eq('position', item.position)
+              }
+            }
+          }
+          console.log(`[Generate] Day maps: ${dayMaps.size} maps generated`)
+        }
+      } catch (e) {
+        console.warn(`[Generate] Day maps failed: ${e}`)
+      }
+
       const catalogMatchCount = itemsToInsert.filter(i => (i.metadata as Record<string, unknown>)?.source === 'catalog').length
       const dataSource = enrichmentMap.size > 0 ? 'ai+serpapi' : catalogMatchCount > 0 ? 'ai+catalog' : groundedContextText ? 'ai+grounded' : 'ai'
       const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
-      console.log(`[Generate] SUCCESS — trip=${trip.id}, items=${items.length}, source=${dataSource}, time=${elapsed}s`)
+      console.log(`[Generate] SUCCESS — trip=${trip.id}, items=${items.length}, source=${dataSource}${weatherContextText ? ', weather=yes' : ''}, time=${elapsed}s`)
       const categoryCounts = items.reduce((acc, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc }, {} as Record<string, number>)
       console.log(`[Generate] Item breakdown: ${Object.entries(categoryCounts).map(([k, v]) => `${k}:${v}`).join(', ')}`)
       return NextResponse.json({ trip, itemCount: items.length, dataSource })
