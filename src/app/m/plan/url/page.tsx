@@ -49,15 +49,22 @@ export default function UrlPage() {
     formatBudget,
   } = useTripStore()
 
-  // Wait 2s for auth to load before redirecting (token starts as null)
-  const [authChecked, setAuthChecked] = useState(false)
+  // Don't redirect — if user reached this page, they're either logged in
+  // or the layout auth listener will set the token shortly.
+  // Only redirect if we're sure there's no session after checking.
+  const [authResolved, setAuthResolved] = useState(false)
   useEffect(() => {
-    const t = setTimeout(() => setAuthChecked(true), 2000)
-    return () => clearTimeout(t)
-  }, [])
-  useEffect(() => {
-    if (authChecked && !token) router.replace('/m/login')
-  }, [authChecked, token, router])
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.replace('/m/login')
+      setAuthResolved(true)
+    })
+  }, [router])
+
+  if (!authResolved) return (
+    <div className="flex h-full items-center justify-center">
+      <div className="text-drift-text3 text-sm">Loading...</div>
+    </div>
+  )
 
   const [step, setStep] = useState<Step>('paste')
   const [url, setUrl] = useState('')
