@@ -52,6 +52,23 @@ export default function AdminDashboard() {
   const [counts, setCounts] = useState({ hotels: 0, activities: 0, restaurants: 0, templates: 0 })
   const [loading, setLoading] = useState(true)
 
+  // All hooks MUST be above any conditional return
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch(api('/api/admin/pipeline'))
+    const data = await res.json()
+    setDestinations(data.destinations || [])
+    setCounts({
+      hotels: data.hotelCount || 0,
+      activities: data.activityCount || 0,
+      restaurants: data.restaurantCount || 0,
+      templates: data.templateCount || 0,
+    })
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { if (authed) loadData() }, [authed, loadData])
+
   // Auth gate — prompt for admin secret
   async function handleAuth() {
     setAdminSecret(secretInput)
@@ -97,22 +114,6 @@ export default function AdminDashboard() {
       </div>
     )
   }
-
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    const res = await fetch(api('/api/admin/pipeline'))
-    const data = await res.json()
-    setDestinations(data.destinations || [])
-    setCounts({
-      hotels: data.hotelCount || 0,
-      activities: data.activityCount || 0,
-      restaurants: data.restaurantCount || 0,
-      templates: data.templateCount || 0,
-    })
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadData() }, [loadData])
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'overview', label: 'Overview', icon: '\u25A3' },
