@@ -106,7 +106,7 @@ function VenueSlide({ slide, index, caption }: {
       {/* Background: video clip or photo with Ken Burns */}
       <AbsoluteFill style={{ overflow: 'hidden' }}>
         {isVideo ? (
-          <OffthreadVideo src={slide.videoClipUrl!} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <OffthreadVideo src={slide.videoClipUrl!.startsWith('/') ? staticFile(slide.videoClipUrl!) : slide.videoClipUrl!} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           <Img src={slide.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${scale})` }} />
         )}

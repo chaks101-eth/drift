@@ -35,12 +35,23 @@ async function main() {
   const outputDir = `growth/videos/${destination.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
   const outputPath = `${outputDir}/reel.mp4`
 
-  // Step 5: Copy audio assets to public/ for Remotion to serve
+  // Step 5: Copy all media assets to public/ for Remotion to serve
+  const publicMediaDir = path.resolve('public/reel-assets')
+  if (!fs.existsSync(publicMediaDir)) fs.mkdirSync(publicMediaDir, { recursive: true })
+
   if (result.voiceoverUrl && fs.existsSync(result.voiceoverUrl)) {
-    const publicAudioDir = path.resolve('public/audio')
-    if (!fs.existsSync(publicAudioDir)) fs.mkdirSync(publicAudioDir, { recursive: true })
-    fs.copyFileSync(result.voiceoverUrl, path.join(publicAudioDir, 'voiceover.mp3'))
-    console.log('🔊 Voiceover copied to public/audio/voiceover.mp3')
+    fs.copyFileSync(result.voiceoverUrl, path.join(publicMediaDir, 'voiceover.mp3'))
+    console.log('🔊 Voiceover copied to public/reel-assets/voiceover.mp3')
+  }
+
+  // Copy video clips
+  for (let i = 0; i < result.slides.length; i++) {
+    const clip = result.slides[i].videoClipUrl
+    if (clip && fs.existsSync(clip)) {
+      fs.copyFileSync(clip, path.join(publicMediaDir, `clip_${i}.mp4`))
+      result.slides[i].videoClipUrl = `/reel-assets/clip_${i}.mp4`
+      console.log(`🎥 Clip ${i + 1} copied to public/reel-assets/clip_${i}.mp4`)
+    }
   }
 
   // Step 6: Render with Remotion
@@ -67,7 +78,7 @@ async function main() {
       imageUrl: s.imageUrl,
       videoClipUrl: s.videoClipUrl ? path.resolve(s.videoClipUrl) : undefined,
     })),
-    voiceoverUrl: result.voiceoverUrl ? '/audio/voiceover.mp3' : undefined,
+    voiceoverUrl: result.voiceoverUrl ? '/reel-assets/voiceover.mp3' : undefined,
     captions: result.script.split('\n'),
     ctaUrl: 'https://driftntravel.com',
   }
