@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (token) router.replace('/m/plan/origin')
+    if (token) router.replace('/m')
   }, [token, router])
 
   // Auto-focus email
@@ -45,7 +45,7 @@ export default function LoginPage() {
         if (err) throw err
       }
       // Auth state listener in layout will update the store
-      router.push('/m/plan/origin')
+      router.push('/m')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
       // Human-readable errors
