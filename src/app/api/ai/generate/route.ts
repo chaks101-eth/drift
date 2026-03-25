@@ -8,7 +8,7 @@ import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSu
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
 import { rateLimit } from '@/lib/rate-limit'
 import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
-import { batchGetPlacePhotos } from '@/lib/google-places-photos'
+import { batchGetPlaceData, applyPlaceData, getDestinationPhoto } from '@/lib/google-places-photos'
 
 export const maxDuration = 60
 
@@ -91,14 +91,19 @@ export async function POST(req: NextRequest) {
         })
         .filter(d => d.match > 20)
 
-      // Deduplicate grounded results against catalog cities, use curated images
+      // Deduplicate grounded results against catalog cities, fetch real photos
       const catalogCities = new Set(catalogMatches.map(d => d.city.toLowerCase()))
-      const groundedDests = groundedResult
-        .filter(d => !catalogCities.has(d.city.toLowerCase()))
-        .map(d => ({
-          ...d,
-          image_url: getDestinationImage(d.city),
-        }))
+      const filteredGrounded = groundedResult.filter(d => !catalogCities.has(d.city.toLowerCase()))
+
+      // Fetch real Google Places photos for grounded destinations (parallel)
+      const destPhotos = await Promise.all(
+        filteredGrounded.map(d => getDestinationPhoto(d.city, d.country).catch(() => null))
+      )
+
+      const groundedDests = filteredGrounded.map((d, i) => ({
+        ...d,
+        image_url: destPhotos[i] || getDestinationImage(d.city),
+      }))
 
       // Merge both sources, sort by match score — best destinations win regardless of source
       const allDestinations = [...catalogMatches, ...groundedDests]
@@ -277,30 +282,21 @@ export async function POST(req: NextRequest) {
       // Fix links: strip hallucinated URLs, add real Google Maps / Booking.com links
       fixItemLinks(nonFlightItems, body.destination, body.country)
 
-      // Fetch real Google Places photos for items without catalog images
-      const itemsNeedingPhotos = nonFlightItems.filter(i =>
+      // Enrich items with Google Places data: photos, GPS, ratings, hours, links
+      const itemsNeedingEnrichment = nonFlightItems.filter(i =>
         ['hotel', 'activity', 'food'].includes(i.category) &&
-        (!i.image_url || i.image_url.includes('unsplash.com'))
+        (!i.metadata.lat || !i.image_url || i.image_url.includes('unsplash.com'))
       )
-      if (itemsNeedingPhotos.length > 0) {
+      if (itemsNeedingEnrichment.length > 0) {
         try {
-          const photoMap = await batchGetPlacePhotos(
-            itemsNeedingPhotos.map(i => ({ name: i.name, category: i.category })),
+          const placeDataMap = await batchGetPlaceData(
+            itemsNeedingEnrichment.map(i => ({ name: i.name, category: i.category })),
             body.destination,
             body.country,
           )
-          for (const item of nonFlightItems) {
-            const photo = photoMap.get(item.name.toLowerCase())
-            if (photo) {
-              item.image_url = photo.photoUrl
-              if (photo.rating && !item.metadata.rating) {
-                item.metadata.rating = photo.rating
-              }
-            }
-          }
-          console.log(`[Generate] Google Places photos: ${photoMap.size}/${itemsNeedingPhotos.length} items got real venue photos`)
+          applyPlaceData(nonFlightItems, placeDataMap)
         } catch (e) {
-          console.warn(`[Generate] Google Places photos failed, using fallbacks: ${e}`)
+          console.warn(`[Generate] Google Places enrichment failed, using fallbacks: ${e}`)
         }
       }
 
