@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateItinerary, personalizeItinerary } from '@/lib/ai-agent'
 import { createServerClient } from '@/lib/supabase'
 import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
-import { searchFlights, flightToItineraryItem, resolveIATA } from '@/lib/amadeus'
+import { searchFlights, searchFlightsGrounded, flightToItineraryItem, resolveIATA } from '@/lib/amadeus'
 import { findCatalogDestination, getCatalogData, buildRichCatalogContext, enrichItemsWithCatalog } from '@/lib/catalog'
 import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSuggestions, fixItemLinks } from '@/lib/grounded-search'
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
@@ -157,25 +157,21 @@ export async function POST(req: NextRequest) {
         console.log(`[Generate] Flights: skipped — ${!originIATA ? origin : body.destination} has no IATA code`)
       }
 
+      // Search flights: Amadeus first, grounded fallback if empty
+      async function findFlights(from: string, to: string, date: string): Promise<Awaited<ReturnType<typeof searchFlights>>> {
+        if (!canSearchFlights) return []
+        // Try Amadeus first
+        try {
+          const results = await searchFlights({ origin: from, destination: to, departureDate: date, adults: travelers, maxResults: 5 })
+          if (results.length > 0) return results
+        } catch (e) { console.warn(`[Flights] Amadeus failed ${from}→${to}: ${e}`) }
+        // Fallback: grounded search
+        return searchFlightsGrounded({ origin: body.origin || from, destination: body.destination || to, departureDate: date, adults: travelers })
+      }
+
       const flightPromises = [
-        canSearchFlights
-          ? searchFlights({
-              origin: originIATA!,
-              destination: destIATA!,
-              departureDate: body.start_date,
-              adults: travelers,
-              maxResults: 5,
-            }).catch((e) => { console.error('Outbound flight search failed:', e); return [] })
-          : Promise.resolve([]),
-        canSearchFlights && body.end_date
-          ? searchFlights({
-              origin: destIATA!,
-              destination: originIATA!,
-              departureDate: body.end_date,
-              adults: travelers,
-              maxResults: 5,
-            }).catch((e) => { console.error('Return flight search failed:', e); return [] })
-          : Promise.resolve([]),
+        findFlights(originIATA || origin, destIATA || body.destination, body.start_date),
+        body.end_date ? findFlights(destIATA || body.destination, originIATA || origin, body.end_date) : Promise.resolve([]),
       ] as const
 
       // ─── Get itinerary items (catalog or LLM) ────────────────

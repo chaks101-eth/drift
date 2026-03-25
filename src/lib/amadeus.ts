@@ -341,6 +341,76 @@ export async function searchFlights(params: {
   })
 }
 
+// ─── Grounded Flight Search (Fallback) ──────────────────────
+// When Amadeus test env returns no results, use Gemini + Google Search
+// to find real flight options with prices.
+
+export async function searchFlightsGrounded(params: {
+  origin: string
+  destination: string
+  departureDate: string
+  adults: number
+}): Promise<FlightOffer[]> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return []
+
+  const originCode = params.origin.length === 3 ? params.origin : (cityToIATA(params.origin) || params.origin)
+  const destCode = params.destination.length === 3 ? params.destination : (cityToIATA(params.destination) || params.destination)
+
+  try {
+    console.log(`[Flights] Amadeus empty — trying grounded search: ${originCode} → ${destCode}`)
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `Find 3 real flights from ${params.origin} (${originCode}) to ${params.destination} (${destCode}) on ${params.departureDate} for ${params.adults} adults.
+
+Return ONLY a JSON array: [{"airline":"Airline Name","flightNumber":"XX123","departureAirport":"${originCode}","arrivalAirport":"${destCode}","departureTime":"HH:MM","duration":"Xh Ym","stops":0,"priceUSD":123}]
+JSON only, no markdown.` }] }],
+          tools: [{ google_search: {} }],
+        }),
+      },
+    )
+    if (!res.ok) return []
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
+    const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+    const match = cleaned.match(/\[[\s\S]*\]/)
+    if (!match) return []
+
+    const flights = JSON.parse(match[0]) as Array<{
+      airline: string; flightNumber: string; departureAirport: string; arrivalAirport: string;
+      departureTime: string; duration: string; stops: number; priceUSD: number
+    }>
+
+    console.log(`[Flights] Grounded search found ${flights.length} flights`)
+
+    return flights.map(f => ({
+      airline: f.flightNumber?.slice(0, 2) || '',
+      airlineName: f.airline,
+      flightNumber: f.flightNumber || '',
+      departure: { airport: f.departureAirport || originCode, time: `${params.departureDate}T${f.departureTime || '08:00'}:00` },
+      arrival: { airport: f.arrivalAirport || destCode, time: '' },
+      duration: f.duration || '',
+      stops: f.stops || 0,
+      price: `$${Math.round(f.priceUSD || 0)}`,
+      currency: 'USD',
+      cabin: 'economy' as const,
+      bookingUrl: buildSkyscannerLink(
+        f.departureAirport || originCode,
+        f.arrivalAirport || destCode,
+        params.departureDate,
+        params.adults,
+      ),
+    }))
+  } catch (e) {
+    console.warn(`[Flights] Grounded search failed: ${e}`)
+    return []
+  }
+}
+
 // ─── Booking deep links ─────────────────────────────────────
 // Skyscanner redirect link (works without affiliate ID, add later for revenue)
 
