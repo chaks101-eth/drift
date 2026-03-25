@@ -11,6 +11,7 @@ import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligenc
 import { batchGetPlaceData, applyPlaceData, getDestinationPhoto, getPlaceData } from '@/lib/google-places-photos'
 import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
 import { buildItineraryMaps } from '@/lib/day-maps'
+import { addTravelTimesToItems } from '@/lib/google-routes'
 
 export const maxDuration = 60
 
@@ -328,6 +329,13 @@ export async function POST(req: NextRequest) {
         } catch (e) {
           console.warn(`[Generate] Google Places enrichment failed, using fallbacks: ${e}`)
         }
+      }
+
+      // Calculate real travel times between items (Google Routes API)
+      try {
+        await addTravelTimesToItems(nonFlightItems)
+      } catch (e) {
+        console.warn(`[Generate] Travel times failed: ${e}`)
       }
 
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)

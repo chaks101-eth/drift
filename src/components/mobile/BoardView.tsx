@@ -244,19 +244,33 @@ export default function BoardView({ trip, items }: BoardViewProps) {
 
             {/* Items */}
             <div className="ml-1.5 space-y-3 border-l border-drift-border2 pl-6">
-              {day.items.map((item) => {
+              {day.items.map((item, ii) => {
                 if (item.category === 'flight') {
                   return <FlightCard key={item.id} item={item} onTap={() => openDetail(item.id)} />
                 }
                 if (item.category === 'transfer') return null
+
+                const meta = (item.metadata || {}) as ItemMetadata
+                const travel = meta.travelToNext as { to: string; duration: string; distance: string; mode: string } | undefined
+                const nextItem = day.items[ii + 1]
+                const showTravel = travel && nextItem && nextItem.category !== 'transfer' && nextItem.category !== 'flight'
+
                 return (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    tripVibes={vibes}
-                    onTap={() => openDetail(item.id)}
-                    onMenu={() => openCardMenu(item.id)}
-                  />
+                  <div key={item.id}>
+                    <ItemCard
+                      item={item}
+                      tripVibes={vibes}
+                      onTap={() => openDetail(item.id)}
+                      onMenu={() => openCardMenu(item.id)}
+                    />
+                    {showTravel && (
+                      <div className="flex items-center gap-1.5 py-1 pl-2">
+                        <span className="text-[9px]">{travel.mode === 'walk' ? '🚶' : '🚕'}</span>
+                        <span className="text-[9px] text-drift-text3">{travel.duration} {travel.mode === 'walk' ? 'walk' : 'drive'}</span>
+                        <span className="text-[8px] text-drift-text3/50">· {travel.distance}</span>
+                      </div>
+                    )}
+                  </div>
                 )
               })}
 
