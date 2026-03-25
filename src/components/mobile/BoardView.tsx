@@ -12,6 +12,7 @@ interface Day {
   detail: string
   items: ItineraryItem[]
   insight?: string
+  mapUrl?: string
 }
 
 function fmtDate(dateStr: string): string {
@@ -53,7 +54,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         const dayLabel = item.name.replace(/^Day\s*\d+\s*[:—–\-]\s*/i, '').trim() || item.detail || `Day ${dayList.length + 1}`
         const meta = (item.metadata || {}) as ItemMetadata
         if (meta.trip_brief) brief = meta.trip_brief as string
-        curDay = { label: dayLabel, detail: item.detail, items: [], insight: meta.day_insight as string }
+        curDay = { label: dayLabel, detail: item.detail, items: [], insight: meta.day_insight as string, mapUrl: meta.dayMapUrl as string | undefined }
         if (preItems.length > 0) { curDay.items = [...preItems]; preItems = [] }
       } else {
         if (!curDay) preItems.push(item)
@@ -185,6 +186,18 @@ export default function BoardView({ trip, items }: BoardViewProps) {
               </div>
               <div className="text-sm font-medium text-drift-text">{day.label}</div>
             </div>
+
+            {/* Day Map */}
+            {day.mapUrl && (
+              <div className="mb-3 overflow-hidden rounded-xl border border-drift-border2">
+                <img
+                  src={day.mapUrl}
+                  alt={`Map for Day ${di + 1}`}
+                  className="h-[140px] w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            )}
 
             {/* Items */}
             <div className="ml-1.5 space-y-3 border-l border-drift-border2 pl-6">
