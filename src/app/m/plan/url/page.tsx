@@ -52,20 +52,8 @@ export default function UrlPage() {
   // Don't redirect — if user reached this page, they're either logged in
   // or the layout auth listener will set the token shortly.
   // Only redirect if we're sure there's no session after checking.
+  // ALL hooks must be declared before any conditional return
   const [authResolved, setAuthResolved] = useState(false)
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.replace('/m/login')
-      setAuthResolved(true)
-    })
-  }, [router])
-
-  if (!authResolved) return (
-    <div className="flex h-full items-center justify-center">
-      <div className="text-drift-text3 text-sm">Loading...</div>
-    </div>
-  )
-
   const [step, setStep] = useState<Step>('paste')
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
@@ -74,9 +62,17 @@ export default function UrlPage() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.replace('/m/login')
+      setAuthResolved(true)
+    })
+  }, [router])
+
+  useEffect(() => {
+    if (!authResolved) return
     const t = setTimeout(() => inputRef.current?.focus(), 400)
     return () => clearTimeout(t)
-  }, [])
+  }, [authResolved])
 
   // Extraction step animation
   useEffect(() => {
@@ -206,6 +202,12 @@ export default function UrlPage() {
     shopping: '🛍',
     cultural: '🏛',
   }
+
+  if (!authResolved) return (
+    <div className="flex h-full items-center justify-center bg-drift-bg">
+      <div className="text-drift-text3 text-sm animate-pulse">Loading...</div>
+    </div>
+  )
 
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">
