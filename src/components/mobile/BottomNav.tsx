@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUIStore } from '@/stores/ui-store'
 import { useTripStore } from '@/stores/trip-store'
@@ -51,13 +52,66 @@ export default function BottomNav() {
   const openChat = useUIStore((s) => s.openChat)
   const resetOnboarding = useTripStore((s) => s.resetOnboarding)
   const router = useRouter()
+  const [showNewTrip, setShowNewTrip] = useState(false)
 
-  const handleNewTrip = () => {
+  const handleFromScratch = () => {
+    setShowNewTrip(false)
     resetOnboarding()
     router.push('/m/plan/origin')
   }
 
+  const handleFromUrl = () => {
+    setShowNewTrip(false)
+    router.push('/m/plan/url')
+  }
+
   return (
+    <>
+      {/* New Trip choice sheet */}
+      {showNewTrip && (
+        <div className="fixed inset-0 z-[200]">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowNewTrip(false)} />
+          <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+            <div className="w-full max-w-[430px] rounded-t-2xl border-t border-drift-border2 bg-drift-card px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-5">
+              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-drift-border2" />
+              <h3 className="mb-4 font-serif text-lg text-drift-text">Create a new trip</h3>
+              <div className="space-y-2.5">
+                <button
+                  onClick={handleFromScratch}
+                  className="flex w-full items-center gap-3.5 rounded-xl border border-drift-border2 bg-drift-surface p-4 text-left transition-all active:scale-[0.98]"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-drift-gold-bg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-drift-text">Plan from scratch</div>
+                    <div className="text-[11px] text-drift-text3">Pick your vibes, dates & budget</div>
+                  </div>
+                </button>
+                <button
+                  onClick={handleFromUrl}
+                  className="flex w-full items-center gap-3.5 rounded-xl border border-drift-border2 bg-drift-surface p-4 text-left transition-all active:scale-[0.98]"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-drift-gold-bg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
+                      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-drift-text">Create from reel or link</div>
+                    <div className="text-[11px] text-drift-text3">YouTube, Instagram, TikTok, or blog</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="fixed bottom-0 left-0 right-0 z-[100] flex justify-center bg-gradient-to-t from-drift-bg/100 via-drift-bg/60 to-transparent px-4 pb-[calc(6px+env(safe-area-inset-bottom))] pt-1.5">
       <div role="tablist" className="flex items-center gap-0 rounded-[20px] border border-drift-border2 bg-drift-card/95 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
         {/* Board — left */}
@@ -87,7 +141,7 @@ export default function BottomNav() {
 
         {/* New Trip — center */}
         <button
-          onClick={handleNewTrip}
+          onClick={() => setShowNewTrip(true)}
           aria-label="New trip"
           className="mx-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.25)] transition-transform duration-300 active:scale-90"
         >
@@ -130,5 +184,6 @@ export default function BottomNav() {
         </button>
       </div>
     </div>
+    </>
   )
 }
