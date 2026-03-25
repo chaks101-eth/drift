@@ -26,11 +26,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
   }
 
-  // Check if already personalized (has trip_brief)
-  const hasBrief = items.some(i =>
-    i.category === 'day' && (i.metadata as Record<string, unknown>)?.trip_brief
+  // Check if already personalized (items have whyFactors — not just trip_brief/reason from generation)
+  const hasWhyFactors = items.some(i =>
+    i.category !== 'day' && i.category !== 'flight' && i.category !== 'transfer' &&
+    (i.metadata as Record<string, unknown>)?.whyFactors
   )
-  if (hasBrief) {
+  if (hasWhyFactors) {
     return NextResponse.json({ status: 'already_personalized' })
   }
 
