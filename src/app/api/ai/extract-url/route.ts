@@ -228,9 +228,122 @@ function detectUrlType(url: string): 'youtube' | 'instagram' | 'tiktok' | 'artic
   }
 }
 
+// ─── Video Download via Cobalt ──────────────────────────────────
+
+const COBALT_URL = process.env.COBALT_URL || 'https://cobalt-production-31a7.up.railway.app'
+
+async function downloadVideoViaCobalt(url: string): Promise<Buffer | null> {
+  try {
+    console.log(`[ExtractURL] Cobalt: downloading video...`)
+    const res = await fetch(COBALT_URL + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(10000),
+    })
+    const data = await res.json()
+    if (data.status === 'error' || !data.url) {
+      console.warn(`[ExtractURL] Cobalt error: ${data.text || 'no url returned'}`)
+      return null
+    }
+    console.log(`[ExtractURL] Cobalt: got video URL, downloading...`)
+    const videoRes = await fetch(data.url, { signal: AbortSignal.timeout(15000) })
+    if (!videoRes.ok) return null
+    const buffer = Buffer.from(await videoRes.arrayBuffer())
+    console.log(`[ExtractURL] Cobalt: downloaded ${Math.round(buffer.length / 1024)}KB`)
+    return buffer
+  } catch (e) {
+    console.warn(`[ExtractURL] Cobalt failed: ${e}`)
+    return null
+  }
+}
+
+async function uploadToGeminiFileAPI(videoBuffer: Buffer): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return null
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'X-Goog-Upload-Command': 'start, upload, finalize',
+        'X-Goog-Upload-Header-Content-Length': String(videoBuffer.length),
+        'X-Goog-Upload-Header-Content-Type': 'video/mp4',
+        'Content-Type': 'video/mp4',
+      },
+      body: new Uint8Array(videoBuffer) as unknown as BodyInit,
+    })
+    const data = await res.json()
+    const uri = data.file?.uri
+    if (uri) console.log(`[ExtractURL] Gemini File API: uploaded, URI: ${uri}`)
+    return uri || null
+  } catch (e) {
+    console.warn(`[ExtractURL] Gemini upload failed: ${e}`)
+    return null
+  }
+}
+
+async function analyzeVideoWithGemini(fileUri: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return ''
+
+  // Wait briefly for video processing
+  await new Promise(r => setTimeout(r, 3000))
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [
+        { text: 'Watch this travel video frame by frame. For each scene, identify the specific place, landmark, hotel, restaurant, market, beach, temple, or activity shown. Include text visible on signs, menus, and overlays. List every specific place name with its category (hotel/food/activity/sightseeing/nature/nightlife/shopping/cultural). Be exhaustive — this is for building a travel itinerary.' },
+        { fileData: { mimeType: 'video/mp4', fileUri } },
+      ] }],
+    }),
+  })
+  const data = await res.json()
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+}
+
 // ─── Instagram Extraction ───────────────────────────────────────
 
 async function extractInstagramContent(url: string): Promise<{ text: string; thumbnailBase64: string | null }> {
+  // PRIMARY: Download video via Cobalt → Gemini video analysis
+  const videoBuffer = await downloadVideoViaCobalt(url)
+  if (videoBuffer) {
+    const fileUri = await uploadToGeminiFileAPI(videoBuffer)
+    if (fileUri) {
+      console.log(`[ExtractURL] Analyzing Instagram reel via Gemini video understanding...`)
+      const analysis = await analyzeVideoWithGemini(fileUri)
+      if (analysis.length > 100) {
+        // Also try to get caption for extra context
+        let caption = ''
+        try {
+          const shortcode = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[2]
+          if (shortcode) {
+            const embedRes = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
+              headers: { 'User-Agent': 'Mozilla/5.0' },
+              signal: AbortSignal.timeout(5000),
+            })
+            if (embedRes.ok) {
+              const html = await embedRes.text()
+              const captionMatch = html.match(/class="Caption"[^>]*>([\s\S]*?)<div class="CaptionComments"/i)
+              if (captionMatch) {
+                caption = captionMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
+              }
+            }
+          }
+        } catch { /* best effort */ }
+
+        return {
+          text: `Source: Instagram Reel (analyzed frame by frame)\nURL: ${url}${caption ? `\nCaption: ${caption}` : ''}\n\nVideo content analysis:\n${analysis}`,
+          thumbnailBase64: null,
+        }
+      }
+    }
+  }
+
+  // FALLBACK: Embed HTML parsing + thumbnail (old approach)
+  console.log(`[ExtractURL] Video analysis unavailable, falling back to embed parsing`)
   let caption = ''
   let author = ''
   let thumbnailUrl = ''
@@ -238,73 +351,38 @@ async function extractInstagramContent(url: string): Promise<{ text: string; thu
   const shortcode = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[2]
   if (!shortcode) throw new Error('Invalid Instagram URL')
 
-  const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`
-  console.log(`[ExtractURL] Fetching Instagram embed: ${embedUrl}`)
-
   try {
-    const res = await fetch(embedUrl, {
+    const res = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
       signal: AbortSignal.timeout(10000),
     })
-
     if (res.ok) {
       const html = await res.text()
-
       const captionMatch = html.match(/class="Caption"[^>]*>([\s\S]*?)<div class="CaptionComments"/i)
       if (captionMatch) {
-        caption = captionMatch[1]
-          .replace(/<a[^>]*class="CaptionUsername"[^>]*>[^<]*<\/a>/gi, '')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&amp;/g, '&')
-          .replace(/&#064;/g, '@')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/\s+/g, ' ')
-          .trim()
+        caption = captionMatch[1].replace(/<a[^>]*class="CaptionUsername"[^>]*>[^<]*<\/a>/gi, '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
       }
-
       const authorMatch = html.match(/class="CaptionUsername"[^>]*>([^<]+)</)
       if (authorMatch) author = authorMatch[1].trim()
-
       const imgMatch = html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/)
-      if (imgMatch) {
-        thumbnailUrl = imgMatch[1].replace(/&amp;/g, '&')
-      }
-
-      console.log(`[ExtractURL] Instagram embed: author="${author}", caption="${caption?.slice(0, 80)}...", thumbnail=${thumbnailUrl ? 'yes' : 'no'}`)
+      if (imgMatch) thumbnailUrl = imgMatch[1].replace(/&amp;/g, '&')
     }
-  } catch (e) {
-    console.warn(`[ExtractURL] Instagram embed error: ${e}`)
-  }
+  } catch { /* skip */ }
 
-  // Fetch thumbnail as base64 for multimodal analysis
   let thumbnailBase64: string | null = null
   if (thumbnailUrl) {
     try {
       const imgRes = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(8000) })
-      if (imgRes.ok) {
-        const buffer = await imgRes.arrayBuffer()
-        thumbnailBase64 = Buffer.from(buffer).toString('base64')
-        console.log(`[ExtractURL] Thumbnail fetched: ${Math.round(buffer.byteLength / 1024)}KB`)
-      }
-    } catch (e) {
-      console.warn(`[ExtractURL] Thumbnail fetch error: ${e}`)
-    }
+      if (imgRes.ok) thumbnailBase64 = Buffer.from(await imgRes.arrayBuffer()).toString('base64')
+    } catch { /* skip */ }
   }
 
   const parts: string[] = []
   if (author) parts.push(`Author: @${author}`)
   if (caption) parts.push(`Caption: ${caption}`)
   parts.push(`Source: Instagram Reel`)
-
-  if (!caption && !thumbnailBase64) {
-    throw new Error('Could not extract content from this Instagram reel. Make sure it\'s a public reel.')
-  }
-
-  if (!caption && thumbnailBase64) {
-    parts.push('Note: No caption text was available. Analyze the image to identify the travel destination, setting, and activities shown.')
-  }
+  if (!caption && !thumbnailBase64) throw new Error('Could not extract content from this Instagram reel.')
+  if (!caption && thumbnailBase64) parts.push('Note: No caption text. Analyze the image to identify the travel destination.')
 
   return { text: parts.join('\n'), thumbnailBase64 }
 }
@@ -416,7 +494,27 @@ async function fetchYouTubeTitle(url: string): Promise<string> {
 // ─── TikTok Extraction ──────────────────────────────────────────
 
 async function extractTikTokContent(url: string): Promise<string> {
-  // TikTok oEmbed API — works without auth, gives title + author
+  // PRIMARY: Download video via Cobalt → Gemini video analysis
+  const videoBuffer = await downloadVideoViaCobalt(url)
+  if (videoBuffer) {
+    const fileUri = await uploadToGeminiFileAPI(videoBuffer)
+    if (fileUri) {
+      console.log(`[ExtractURL] Analyzing TikTok via Gemini video understanding...`)
+      const analysis = await analyzeVideoWithGemini(fileUri)
+      if (analysis.length > 100) {
+        // Get title via oEmbed for extra context
+        let title = ''
+        try {
+          const oembed = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(5000) })
+          if (oembed.ok) { const d = await oembed.json(); title = d.title || '' }
+        } catch { /* skip */ }
+
+        return `Source: TikTok (analyzed frame by frame)\nURL: ${url}${title ? `\nTitle: ${title}` : ''}\n\nVideo content analysis:\n${analysis}`
+      }
+    }
+  }
+
+  // FALLBACK: oEmbed + page scraping
   try {
     const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
     const res = await fetch(oembedUrl, { signal: AbortSignal.timeout(10000) })
@@ -428,7 +526,6 @@ async function extractTikTokContent(url: string): Promise<string> {
       parts.push(`Source: TikTok`)
       parts.push(`URL: ${url}`)
 
-      // Also try to fetch the page HTML for more context (description, hashtags)
       try {
         const pageRes = await fetch(url, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
@@ -437,23 +534,17 @@ async function extractTikTokContent(url: string): Promise<string> {
         })
         if (pageRes.ok) {
           const html = await pageRes.text()
-          // Extract description from meta tags
           const descMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/i)
           if (descMatch?.[1]) parts.push(`\nDescription: ${descMatch[1]}`)
-          // Extract hashtags
           const hashtagMatches = html.match(/#[\w]+/g)
           if (hashtagMatches?.length) parts.push(`Hashtags: ${[...new Set(hashtagMatches)].slice(0, 15).join(' ')}`)
         }
-      } catch { /* page fetch is best-effort */ }
+      } catch { /* skip */ }
 
-      const text = parts.join('\n')
-      if (text.length > 30) return text
+      if (parts.join('\n').length > 30) return parts.join('\n')
     }
-  } catch (e) {
-    console.warn(`[ExtractURL] TikTok oEmbed failed: ${e}`)
-  }
+  } catch { /* skip */ }
 
-  // Fallback: try fetching page as article
   return extractArticleContent(url)
 }
 
