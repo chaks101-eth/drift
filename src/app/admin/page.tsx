@@ -170,7 +170,20 @@ export default function AdminDashboard() {
               {tab === 'quality' && <DataQualityTab destinations={destinations} />}
               {tab === 'pipeline' && <PipelineTab destinations={destinations} onRefresh={loadData} />}
               {tab === 'add' && <AddDestinationTab onComplete={() => { loadData(); setTab('overview') }} />}
-              {tab === 'eval' && <EvalPipelineTab />}
+              {tab === 'eval' && (
+                <div className="py-20 text-center">
+                  <h2 className="font-serif text-2xl text-[#c8a44e] mb-4">Eval System</h2>
+                  <p className="text-sm text-[#7a7a85] mb-6">
+                    The eval system has moved to its own dedicated dashboard with batch evals, multi-LLM benchmarks, LLM-as-judge, and pattern analysis.
+                  </p>
+                  <a
+                    href="/admin/eval"
+                    className="inline-block bg-[#c8a44e] text-[#08080c] px-8 py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    Open Eval Dashboard &rarr;
+                  </a>
+                </div>
+              )}
             </>
           )}
         </div>
