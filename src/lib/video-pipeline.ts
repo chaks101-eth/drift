@@ -235,7 +235,7 @@ export async function generateVideoClips(slides: VideoSlide[], outputDir: string
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model_name: 'kling-v2-master',
+            model_name: 'kling-v2-5-turbo',
             image: slide.imageUrl,
             prompt: `Smooth cinematic camera movement, slowly panning across ${slide.name}. ${slide.category === 'food' ? 'Warm restaurant ambiance, appetizing food.' : 'Beautiful travel destination, golden hour lighting.'} Professional travel video style.`,
             duration: '5',
