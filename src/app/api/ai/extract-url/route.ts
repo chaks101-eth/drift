@@ -326,9 +326,42 @@ async function extractYouTubeContent(url: string): Promise<string> {
   const videoId = extractYouTubeVideoId(url)
   if (!videoId) throw new Error('Invalid YouTube URL')
 
-  const parts: string[] = []
+  const apiKey = process.env.GEMINI_API_KEY
 
-  // Try transcript first
+  // PRIMARY: Gemini direct video analysis — watches the actual video frame by frame
+  if (apiKey) {
+    try {
+      console.log(`[ExtractURL] Analyzing YouTube video via Gemini video understanding: ${videoId}`)
+      const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+      const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: 'Watch this travel video carefully. For every frame, identify: destinations, hotels, restaurants, activities, landmarks, beaches, temples, markets, viewpoints, and any text/signs shown. List EVERY specific place name you can identify from the visuals and audio. Include the category (hotel/food/activity/sightseeing) for each.' },
+              { fileData: { mimeType: 'video/mp4', fileUri: url } },
+            ],
+          }],
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const videoAnalysis = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        if (videoAnalysis.length > 100) {
+          console.log(`[ExtractURL] Video analysis: ${videoAnalysis.length} chars`)
+          const title = await fetchYouTubeTitle(url)
+          return `Source: YouTube Video (analyzed frame by frame)\n${title ? `Title: ${title}\n` : ''}URL: ${url}\n\nVideo content analysis:\n${videoAnalysis}`
+        }
+      }
+    } catch (e) {
+      console.warn(`[ExtractURL] Video analysis failed, trying transcript: ${e}`)
+    }
+  }
+
+  // FALLBACK 1: Transcript
+  const parts: string[] = []
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mod = await import('youtube-transcript') as any
@@ -336,52 +369,37 @@ async function extractYouTubeContent(url: string): Promise<string> {
     if (YT?.fetchTranscript) {
       const transcript = await YT.fetchTranscript(videoId)
       const text = transcript.map((t: { text: string }) => t.text).join(' ')
-      if (text.length > 100) {
-        parts.push(`Transcript:\n${text}`)
-      }
+      if (text.length > 100) parts.push(`Transcript:\n${text}`)
     }
-  } catch (e) {
-    console.warn(`[ExtractURL] Transcript unavailable for ${videoId}: ${e}`)
-  }
+  } catch { /* skip */ }
 
-  // Always get title via oEmbed
   const title = await fetchYouTubeTitle(url)
   if (title) parts.unshift(`Title: ${title}`)
 
-  // If we have enough content, return it
-  if (parts.join('\n').length > 50) {
-    return parts.join('\n\n')
-  }
+  if (parts.join('\n').length > 50) return parts.join('\n\n')
 
-  // Fallback: use Gemini grounded search to find info about this video
-  const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-  const apiKey = process.env.GEMINI_API_KEY
+  // FALLBACK 2: Grounded search
   if (apiKey) {
     try {
-      console.log(`[ExtractURL] Using grounded search for YouTube video context: ${videoId}`)
-      const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+      const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `What travel destinations, places, hotels, restaurants, and activities are shown or mentioned in this YouTube video? URL: ${url} (Video ID: ${videoId}). Summarize all travel content including specific place names, locations, and tips.` }] }],
+          contents: [{ parts: [{ text: `What travel content is in this YouTube video? ${url}. List specific places.` }] }],
           tools: [{ google_search: {} }],
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        const groundedText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-        if (groundedText.length > 50) {
-          console.log(`[ExtractURL] Grounded YouTube context: ${groundedText.length} chars`)
-          return `Source: YouTube Video\nURL: ${url}\n\nVideo context (verified via web search):\n${groundedText}`
-        }
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        if (text.length > 50) return `Source: YouTube Video\n\n${text}`
       }
-    } catch (e) {
-      console.warn(`[ExtractURL] Grounded YouTube fallback failed: ${e}`)
-    }
+    } catch { /* skip */ }
   }
 
   if (parts.length > 0) return parts.join('\n\n')
-  throw new Error('Could not extract content from this YouTube video. Try pasting a travel blog or article instead.')
+  throw new Error('Could not extract content from this YouTube video.')
 }
 
 async function fetchYouTubeTitle(url: string): Promise<string> {
