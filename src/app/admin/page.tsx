@@ -39,7 +39,7 @@ type PipelineRun = {
   catalog_destinations?: { city: string; country: string }
 }
 
-type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add' | 'eval'
+type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add' | 'eval' | 'growth'
 
 // ─── Dashboard Shell ────────────────────────────────────────
 
@@ -122,6 +122,7 @@ export default function AdminDashboard() {
     { key: 'pipeline', label: 'Pipeline', icon: '\u25B6' },
     { key: 'add', label: 'Add Destination', icon: '+' },
     { key: 'eval', label: 'Eval Pipeline', icon: '⚡' },
+    { key: 'growth', label: 'Growth', icon: '📈' },
   ]
 
   return (
@@ -184,6 +185,7 @@ export default function AdminDashboard() {
                   </a>
                 </div>
               )}
+              {tab === 'growth' && <GrowthTab />}
             </>
           )}
         </div>
@@ -1758,6 +1760,209 @@ function EvalPipelineTab() {
           )}
         </div>
       )}
+    </>
+  )
+}
+
+// ─── Growth Tab ─────────────────────────────────────────────
+
+const GROWTH_AGENTS = [
+  { id: 'growth-chief', name: 'Growth Chief', desc: 'Orchestrates daily growth cycle', cmd: 'Run today\'s growth cycle' },
+  { id: 'content-creator', name: 'Content Creator', desc: 'Generates posts from trip data', cmd: 'Generate 3 Reddit posts from our best trip data' },
+  { id: 'social-distributor', name: 'Social Distributor', desc: 'Posts to Reddit, Twitter, dev.to', cmd: 'Post the Istanbul trip report to r/travel' },
+  { id: 'email-campaigner', name: 'Email Campaigner', desc: 'Sends user outreach via Resend', cmd: 'Send waitlist conversion emails' },
+  { id: 'analytics-reporter', name: 'Analytics Reporter', desc: 'Tracks metrics, generates reports', cmd: 'Generate this week\'s growth report' },
+]
+
+const CONTENT_ITEMS = [
+  { name: 'Product Hunt Launch', file: 'product-hunt-launch.md', status: 'ready', platform: 'Product Hunt' },
+  { name: 'Istanbul Trip Report', file: 'reddit-posts.md', status: 'ready', platform: 'r/travel' },
+  { name: 'Reel-to-Trip Feature', file: 'reddit-posts.md', status: 'ready', platform: 'r/solotravel' },
+  { name: 'Tech Deep-Dive', file: 'reddit-posts.md', status: 'ready', platform: 'r/digitalnomad' },
+]
+
+function GrowthTab() {
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [copied, setCopied] = useState<string | null>(null)
+
+  function copyCommand(agent: typeof GROWTH_AGENTS[0], prompt?: string) {
+    const agentPath = agent.id === 'growth-chief'
+      ? '.claude/agents/growth/growth-chief.md'
+      : agent.id === 'content-creator'
+        ? '.claude/agents/growth/content/content-creator.md'
+        : agent.id === 'social-distributor'
+          ? '.claude/agents/growth/social/social-distributor.md'
+          : agent.id === 'email-campaigner'
+            ? '.claude/agents/growth/email/email-campaigner.md'
+            : '.claude/agents/growth/analytics/analytics-reporter.md'
+    const cmd = `claude -a ${agentPath} "${prompt || agent.cmd}"`
+    navigator.clipboard.writeText(cmd)
+    setCopied(agent.id)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="font-serif text-2xl text-[#f0efe8]">Growth Dashboard</h2>
+          <p className="text-[12px] text-[#7a7a85] mt-1">Agent-powered growth automation — run via Claude CLI</p>
+        </div>
+      </div>
+
+      {/* Agents */}
+      <div className="mb-8">
+        <div className="text-xs font-semibold text-[#f0efe8] mb-3">Growth Agents</div>
+        <div className="grid grid-cols-1 gap-3">
+          {GROWTH_AGENTS.map(agent => (
+            <div key={agent.id} className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-sm font-semibold text-[#f0efe8]">{agent.name}</div>
+                  <div className="text-[10px] text-[#7a7a85]">{agent.desc}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedAgent(selectedAgent === agent.id ? null : agent.id)}
+                    className="px-3 py-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] text-[10px] text-[#7a7a85] hover:text-[#f0efe8] transition-colors"
+                  >
+                    {selectedAgent === agent.id ? 'Close' : 'Configure'}
+                  </button>
+                  <button
+                    onClick={() => copyCommand(agent)}
+                    className="px-3 py-1.5 rounded-lg bg-[#c8a44e] text-[#0a0a0f] text-[10px] font-semibold"
+                  >
+                    {copied === agent.id ? 'Copied!' : 'Copy CLI Command'}
+                  </button>
+                </div>
+              </div>
+
+              {selectedAgent === agent.id && (
+                <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+                  <div className="text-[9px] uppercase tracking-wider text-[#4a4a55] mb-2">Default command</div>
+                  <code className="block bg-[rgba(255,255,255,0.03)] rounded-lg px-3 py-2 text-[10px] text-[#c8a44e] mb-3 font-mono">
+                    claude -a .claude/agents/growth/.../{agent.id}.md &quot;{agent.cmd}&quot;
+                  </code>
+                  <div className="text-[9px] uppercase tracking-wider text-[#4a4a55] mb-2">Custom prompt</div>
+                  <div className="flex gap-2">
+                    <input
+                      value={customPrompt}
+                      onChange={e => setCustomPrompt(e.target.value)}
+                      placeholder={`e.g. "${agent.cmd}"`}
+                      className="flex-1 bg-transparent border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-xs text-[#f0efe8] placeholder:text-[#4a4a55]"
+                    />
+                    <button
+                      onClick={() => { if (customPrompt) copyCommand(agent, customPrompt) }}
+                      disabled={!customPrompt}
+                      className="px-4 py-2 rounded-lg border border-[#c8a44e] text-[#c8a44e] text-[10px] font-semibold disabled:opacity-30"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Content Queue */}
+      <div className="mb-8">
+        <div className="text-xs font-semibold text-[#f0efe8] mb-3">Content Ready to Post</div>
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+          <div className="grid grid-cols-4 gap-3 px-4 py-2.5 text-[9px] uppercase tracking-wider text-[#4a4a55] border-b border-[rgba(255,255,255,0.04)]">
+            <div>Content</div>
+            <div>Platform</div>
+            <div>Status</div>
+            <div>Action</div>
+          </div>
+          {CONTENT_ITEMS.map((item, i) => (
+            <div key={i} className="grid grid-cols-4 gap-3 px-4 py-3 items-center border-b border-[rgba(255,255,255,0.02)] last:border-0">
+              <div className="text-xs text-[#f0efe8]">{item.name}</div>
+              <div className="text-[10px] text-[#7a7a85]">{item.platform}</div>
+              <div>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-medium ${
+                  item.status === 'ready' ? 'bg-[rgba(78,205,196,0.15)] text-[#4ecdc4]'
+                  : item.status === 'posted' ? 'bg-[rgba(200,164,78,0.15)] text-[#c8a44e]'
+                  : 'bg-[rgba(122,122,133,0.15)] text-[#7a7a85]'
+                }`}>{item.status}</span>
+              </div>
+              <div>
+                <button className="text-[10px] text-[#c8a44e] hover:underline">
+                  View Content
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mb-8">
+        <div className="text-xs font-semibold text-[#f0efe8] mb-3">Quick Actions</div>
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText('claude -a .claude/agents/growth/growth-chief.md "Run today\'s growth cycle"')
+              setCopied('cycle')
+              setTimeout(() => setCopied(null), 2000)
+            }}
+            className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-center hover:border-[#c8a44e] transition-colors"
+          >
+            <div className="text-lg mb-1">🔄</div>
+            <div className="text-[11px] text-[#f0efe8] font-medium">Run Growth Cycle</div>
+            <div className="text-[9px] text-[#4a4a55] mt-1">{copied === 'cycle' ? 'Command copied!' : 'Copy CLI command'}</div>
+          </button>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText('claude -a .claude/agents/growth/content/content-creator.md "Generate 3 Reddit posts from our best trip data for this week"')
+              setCopied('content')
+              setTimeout(() => setCopied(null), 2000)
+            }}
+            className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-center hover:border-[#c8a44e] transition-colors"
+          >
+            <div className="text-lg mb-1">✍️</div>
+            <div className="text-[11px] text-[#f0efe8] font-medium">Generate Content</div>
+            <div className="text-[9px] text-[#4a4a55] mt-1">{copied === 'content' ? 'Command copied!' : 'Copy CLI command'}</div>
+          </button>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText('claude -a .claude/agents/growth/analytics/analytics-reporter.md "Generate this week\'s growth report"')
+              setCopied('report')
+              setTimeout(() => setCopied(null), 2000)
+            }}
+            className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-center hover:border-[#c8a44e] transition-colors"
+          >
+            <div className="text-lg mb-1">📊</div>
+            <div className="text-[11px] text-[#f0efe8] font-medium">Weekly Report</div>
+            <div className="text-[9px] text-[#4a4a55] mt-1">{copied === 'report' ? 'Command copied!' : 'Copy CLI command'}</div>
+          </button>
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="bg-[rgba(200,164,78,0.05)] border border-[rgba(200,164,78,0.1)] rounded-xl p-5">
+        <div className="text-xs font-semibold text-[#c8a44e] mb-3">How Growth Agents Work</div>
+        <div className="space-y-2 text-[11px] text-[#7a7a85]">
+          <div className="flex gap-2">
+            <span className="text-[#c8a44e] font-bold shrink-0">1.</span>
+            <span>Copy a CLI command from above</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-[#c8a44e] font-bold shrink-0">2.</span>
+            <span>Paste and run in your terminal (requires Claude CLI: <code className="text-[#c8a44e]">npm i -g @anthropic-ai/claude-code</code>)</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-[#c8a44e] font-bold shrink-0">3.</span>
+            <span>The agent reads real trip data from Supabase, generates content, and saves to <code className="text-[#c8a44e]">growth/content/</code></span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-[#c8a44e] font-bold shrink-0">4.</span>
+            <span>Review the generated content, then post manually or via the social distributor agent</span>
+          </div>
+        </div>
+      </div>
     </>
   )
 }
