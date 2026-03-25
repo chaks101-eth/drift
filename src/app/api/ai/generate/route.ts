@@ -261,11 +261,12 @@ export async function POST(req: NextRequest) {
           if (destData?.lat) { destLat = destData.lat; destLng = destData.lng }
         } catch { /* best effort */ }
       }
+      let tripWeatherData: Awaited<ReturnType<typeof getTripWeather>> = null
       if (destLat && destLng && body.start_date && body.end_date) {
         try {
-          const weather = await getTripWeather(destLat, destLng, body.start_date, body.end_date)
-          if (weather) {
-            weatherContextText = formatWeatherForLLM(weather)
+          tripWeatherData = await getTripWeather(destLat, destLng, body.start_date, body.end_date)
+          if (tripWeatherData) {
+            weatherContextText = formatWeatherForLLM(tripWeatherData)
           }
         } catch (e) {
           console.warn(`[Generate] Weather fetch failed: ${e}`)
@@ -398,6 +399,29 @@ export async function POST(req: NextRequest) {
           if (enriched.photos?.length) meta.photos = enriched.photos.map(u => upsizeGoogleImage(u))
           else if (enriched.photoUrls?.length) meta.photos = enriched.photoUrls.map(u => upsizeGoogleImage(u))
           meta.source = 'url_import_enriched'
+        }
+
+        // Inject weather data into day separators
+        if (cat === 'day' && tripWeatherData?.days) {
+          // Count which day number this is
+          const dayNum = items.slice(0, idx).filter(i => mapCategory(i.category) === 'day').length + 1
+          const dayWeather = tripWeatherData.days[dayNum - 1]
+          if (dayWeather) {
+            meta.weather = {
+              tempMax: dayWeather.tempMax,
+              tempMin: dayWeather.tempMin,
+              description: dayWeather.description,
+              rainProbability: dayWeather.rainProbability,
+              iconUri: dayWeather.iconUri,
+              isRainy: dayWeather.isRainy,
+              isSunny: dayWeather.isSunny,
+              uvIndex: dayWeather.uvIndex,
+            }
+          }
+          // Store weather summary on first day
+          if (dayNum === 1 && tripWeatherData.summary) {
+            meta.weatherSummary = tripWeatherData.summary
+          }
         }
 
         return {

@@ -7,12 +7,24 @@ import type { Trip, ItineraryItem, ItemMetadata } from '@/stores/trip-store'
 import FlightCard from '@/components/mobile/cards/FlightCard'
 import ItemCard from '@/components/mobile/cards/ItemCard'
 
+interface DayWeatherData {
+  tempMax: number
+  tempMin: number
+  description: string
+  rainProbability: number
+  iconUri?: string
+  isRainy: boolean
+  isSunny: boolean
+  uvIndex: number
+}
+
 interface Day {
   label: string
   detail: string
   items: ItineraryItem[]
   insight?: string
   mapUrl?: string
+  weather?: DayWeatherData
 }
 
 function fmtDate(dateStr: string): string {
@@ -42,11 +54,12 @@ export default function BoardView({ trip, items }: BoardViewProps) {
   const [activeDay, setActiveDay] = useState(0)
 
   // Parse days from items
-  const { days, tripBrief, totalCost } = useMemo(() => {
+  const { days, tripBrief, weatherSummary, totalCost } = useMemo(() => {
     const dayList: Day[] = []
     let curDay: Day | null = null
     let preItems: ItineraryItem[] = []
     let brief = ''
+    let wSummary = ''
 
     items.forEach((item) => {
       if (item.category === 'day') {
@@ -54,7 +67,9 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         const dayLabel = item.name.replace(/^Day\s*\d+\s*[:—–\-]\s*/i, '').trim() || item.detail || `Day ${dayList.length + 1}`
         const meta = (item.metadata || {}) as ItemMetadata
         if (meta.trip_brief) brief = meta.trip_brief as string
-        curDay = { label: dayLabel, detail: item.detail, items: [], insight: meta.day_insight as string, mapUrl: meta.dayMapUrl as string | undefined }
+        if (meta.weatherSummary) wSummary = meta.weatherSummary as string
+        const weather = meta.weather as DayWeatherData | undefined
+        curDay = { label: dayLabel, detail: item.detail, items: [], insight: meta.day_insight as string, mapUrl: meta.dayMapUrl as string | undefined, weather }
         if (preItems.length > 0) { curDay.items = [...preItems]; preItems = [] }
       } else {
         if (!curDay) preItems.push(item)
@@ -68,7 +83,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
 
     const cost = items.reduce((s, i) => s + (parseFloat((i.price || '0').replace(/[^0-9.]/g, '')) || 0), 0)
 
-    return { days: dayList, tripBrief: brief, totalCost: cost }
+    return { days: dayList, tripBrief: brief, weatherSummary: wSummary, totalCost: cost }
   }, [items])
 
   const briefText = tripBrief || getFallbackBrief(trip.vibes || [])
@@ -132,6 +147,14 @@ export default function BoardView({ trip, items }: BoardViewProps) {
           <span className="text-[10px] font-bold uppercase tracking-wider text-drift-text3">Drift&apos;s reasoning</span>
         </div>
         <p className="text-xs leading-relaxed text-drift-text2">{briefText}</p>
+        {weatherSummary && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-drift-surface2 px-3 py-2">
+            <span className="mt-px text-sm">
+              {weatherSummary.includes('rain') || weatherSummary.includes('Rain') ? '🌧' : weatherSummary.includes('Clear') || weatherSummary.includes('sunny') ? '☀️' : '⛅'}
+            </span>
+            <p className="text-[10.5px] leading-snug text-drift-text2">{weatherSummary}</p>
+          </div>
+        )}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {vibes.map((v) => (
             <span key={v} className="rounded-full border border-drift-gold/15 bg-drift-gold-bg px-2.5 py-1 text-[9px] font-medium text-drift-gold">
@@ -157,17 +180,22 @@ export default function BoardView({ trip, items }: BoardViewProps) {
 
       {/* Day pills */}
       <div className="mt-5 flex gap-2 overflow-x-auto px-5 scrollbar-hide">
-        {days.map((_, i) => (
+        {days.map((day, i) => (
           <button
             key={i}
             onClick={() => scrollToDay(i)}
-            className={`shrink-0 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
               activeDay === i
                 ? 'bg-drift-gold text-drift-bg'
                 : 'border border-drift-border2 bg-transparent text-drift-text3'
             }`}
           >
             Day {i + 1}
+            {day.weather && (
+              <span className="text-xs normal-case">
+                {day.weather.isRainy ? '🌧' : day.weather.isSunny ? '☀️' : '⛅'}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -184,7 +212,22 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                   <div className="absolute inset-0 animate-ping rounded-full border border-drift-gold opacity-30" />
                 )}
               </div>
-              <div className="text-sm font-medium text-drift-text">{day.label}</div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-drift-text">{day.label}</div>
+              </div>
+              {day.weather && (
+                <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${day.weather.isRainy ? 'bg-blue-500/10' : day.weather.isSunny ? 'bg-amber-500/10' : 'bg-drift-surface2'}`}>
+                  <span className="text-xs">
+                    {day.weather.isRainy ? '🌧' : day.weather.isSunny ? '☀️' : '⛅'}
+                  </span>
+                  <span className={`text-[10px] font-semibold ${day.weather.isRainy ? 'text-blue-400' : day.weather.isSunny ? 'text-amber-400' : 'text-drift-text2'}`}>
+                    {day.weather.tempMax}°
+                  </span>
+                  {day.weather.isRainy && (
+                    <span className="text-[9px] text-blue-400/70">{day.weather.rainProbability}%</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Day Map */}
