@@ -27,7 +27,7 @@ interface ExtractedData {
   sourceType: string
 }
 
-type Step = 'paste' | 'extracting' | 'review' | 'generating'
+type Step = 'paste' | 'extracting' | 'review' | 'inputs' | 'generating'
 
 const extractSteps = [
   'Reading the content...',
@@ -59,6 +59,10 @@ export default function UrlPage() {
   const [error, setError] = useState('')
   const [extracted, setExtracted] = useState<ExtractedData | null>(null)
   const [extractStep, setExtractStep] = useState(0)
+  const [inputOrigin, setInputOrigin] = useState(onboarding.origin || '')
+  const [inputTravelers, setInputTravelers] = useState(onboarding.travelers || 2)
+  const [inputStartDate, setInputStartDate] = useState('')
+  const [inputEndDate, setInputEndDate] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -127,20 +131,19 @@ export default function UrlPage() {
     if (!extracted || !token) return
     setStep('generating')
 
-    // Map budgetHint to our tier + amount
+    // Use user-provided inputs from the inputs step
     const budgetMap = { budget: 1500, mid: 3000, luxury: 7000 } as const
     const budgetLevel = (extracted.budgetHint || 'mid') as 'budget' | 'mid' | 'luxury'
     const budgetAmount = budgetMap[budgetLevel] || 3000
 
-    // Calculate dates if not already set
-    const today = new Date()
-    const startDate = onboarding.startDate || new Date(today.setDate(today.getDate() + 14)).toISOString().split('T')[0]
-    const endDate = onboarding.endDate || new Date(new Date(startDate).setDate(new Date(startDate).getDate() + (extracted.suggestedDays || 5) - 1)).toISOString().split('T')[0]
+    const startDate = inputStartDate
+    const endDate = inputEndDate
 
-    // Update store with extracted data
+    // Update store with data
     setVibes(extracted.vibes.slice(0, 3))
     setBudget(budgetLevel, budgetAmount)
-    if (!onboarding.startDate) setDates(startDate, endDate)
+    setDates(startDate, endDate)
+    if (inputOrigin) setOrigin(inputOrigin)
 
     try {
       const res = await fetch('/api/ai/generate', {
@@ -153,10 +156,10 @@ export default function UrlPage() {
           vibes: extracted.vibes.slice(0, 3),
           start_date: startDate,
           end_date: endDate,
-          travelers: onboarding.travelers || 2,
+          travelers: inputTravelers,
           budget: budgetLevel,
           budgetAmount,
-          origin: onboarding.origin || 'Delhi',
+          origin: inputOrigin || 'Delhi',
           urlHighlights: extracted.highlights.map((h) => ({
             name: h.name,
             category: h.category,
@@ -363,28 +366,161 @@ export default function UrlPage() {
               </div>
             </div>
 
-            {/* Highlights list */}
-            <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.12em] text-drift-text3">
-              Extracted places ({extracted.highlights.length})
-            </div>
-            <div className="space-y-2">
-              {extracted.highlights.map((h, i) => (
-                <div key={`${h.name}-${i}`} className="flex items-start gap-3 rounded-xl border border-drift-border2 bg-drift-surface p-3">
-                  <span className="mt-0.5 text-base">{categoryIcon[h.category] || '📍'}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-drift-text line-clamp-1">{h.name}</span>
-                      {h.inferredFromDestination && (
-                        <span className="shrink-0 rounded bg-drift-surface2 px-1.5 py-0.5 text-[7px] font-medium text-drift-text3">AI added</span>
-                      )}
-                    </div>
-                    <div className="mt-0.5 text-[10px] leading-snug text-drift-text3 line-clamp-2">{h.detail}</div>
-                    {h.estimatedPrice && (
-                      <div className="mt-1 text-[10px] font-semibold text-drift-gold">{h.estimatedPrice}</div>
-                    )}
+            {/* From the content */}
+            {(() => {
+              const fromContent = extracted.highlights.filter(h => !h.inferredFromDestination)
+              const aiSuggested = extracted.highlights.filter(h => h.inferredFromDestination)
+              return (
+                <>
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.12em] text-drift-gold">
+                    From the {extracted.sourceType === 'youtube' ? 'video' : extracted.sourceType === 'instagram' ? 'reel' : 'article'} ({fromContent.length})
                   </div>
-                </div>
-              ))}
+                  <div className="space-y-2 mb-5">
+                    {fromContent.map((h, i) => (
+                      <div key={`c-${h.name}-${i}`} className="flex items-start gap-3 rounded-xl border border-drift-gold/10 bg-drift-gold-bg p-3">
+                        <span className="mt-0.5 text-base">{categoryIcon[h.category] || '📍'}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs font-semibold text-drift-text line-clamp-1">{h.name}</span>
+                          <div className="mt-0.5 text-[10px] leading-snug text-drift-text3 line-clamp-2">{h.detail}</div>
+                          {h.estimatedPrice && (
+                            <div className="mt-1 text-[10px] font-semibold text-drift-gold">{h.estimatedPrice}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {aiSuggested.length > 0 && (
+                    <>
+                      <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.12em] text-drift-text3">
+                        Drift also suggests ({aiSuggested.length})
+                      </div>
+                      <div className="space-y-2">
+                        {aiSuggested.map((h, i) => (
+                          <div key={`a-${h.name}-${i}`} className="flex items-start gap-3 rounded-xl border border-drift-border2 bg-drift-surface p-3">
+                            <span className="mt-0.5 text-base">{categoryIcon[h.category] || '📍'}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-drift-text line-clamp-1">{h.name}</span>
+                                <span className="shrink-0 rounded bg-drift-surface2 px-1.5 py-0.5 text-[7px] font-medium text-drift-text3">AI pick</span>
+                              </div>
+                              <div className="mt-0.5 text-[10px] leading-snug text-drift-text3 line-clamp-2">{h.detail}</div>
+                              {h.estimatedPrice && (
+                                <div className="mt-1 text-[10px] font-semibold text-drift-gold">{h.estimatedPrice}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              )
+            })()}
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-drift-err/20 bg-drift-err/5 px-3 py-2.5 text-[11px] text-drift-err">
+                {error}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="shrink-0 border-t border-drift-border2 px-6 py-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+            <button
+              onClick={() => {
+                // Pre-fill dates from extraction
+                if (extracted?.suggestedDays) {
+                  const today = new Date()
+                  const start = new Date(today.setDate(today.getDate() + 14))
+                  const end = new Date(new Date(start).setDate(start.getDate() + (extracted.suggestedDays || 5) - 1))
+                  setInputStartDate(start.toISOString().split('T')[0])
+                  setInputEndDate(end.toISOString().split('T')[0])
+                }
+                setStep('inputs')
+              }}
+              className="w-full rounded-[14px] bg-drift-gold py-4 text-xs font-extrabold uppercase tracking-widest text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)] transition-transform active:scale-[0.97]"
+            >
+              Looks Good — Next
+            </button>
+            <button
+              onClick={() => { setStep('paste'); setExtracted(null); setError('') }}
+              className="mt-2 w-full text-center text-[11px] text-drift-text3"
+            >
+              Try a different link
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Inputs Step ── */}
+      {step === 'inputs' && extracted && (
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 pb-4">
+            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-drift-text3">Your trip details</div>
+            <p className="mb-5 text-xs text-drift-text2">
+              We extracted <span className="font-semibold text-drift-gold">{extracted.primaryDestination}</span> from the link. Now tell us about you.
+            </p>
+
+            {/* Origin */}
+            <div className="mb-4">
+              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-drift-text3">Flying from</label>
+              <input
+                value={inputOrigin}
+                onChange={e => setInputOrigin(e.target.value)}
+                placeholder="e.g. Delhi, Mumbai, London"
+                className="w-full rounded-xl border border-drift-border2 bg-transparent px-4 py-3 text-sm text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none"
+              />
+            </div>
+
+            {/* Dates */}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-drift-text3">Start date</label>
+                <input
+                  type="date"
+                  value={inputStartDate}
+                  onChange={e => setInputStartDate(e.target.value)}
+                  className="w-full rounded-xl border border-drift-border2 bg-transparent px-3 py-3 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-drift-text3">End date</label>
+                <input
+                  type="date"
+                  value={inputEndDate}
+                  onChange={e => setInputEndDate(e.target.value)}
+                  className="w-full rounded-xl border border-drift-border2 bg-transparent px-3 py-3 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Travelers */}
+            <div className="mb-4">
+              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-drift-text3">Travelers</label>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setInputTravelers(Math.max(1, inputTravelers - 1))}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-drift-border2 text-drift-text2 active:scale-90"
+                >
+                  −
+                </button>
+                <span className="text-xl font-light text-drift-text w-8 text-center">{inputTravelers}</span>
+                <button
+                  onClick={() => setInputTravelers(Math.min(10, inputTravelers + 1))}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-drift-border2 text-drift-text2 active:scale-90"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Trip summary */}
+            <div className="mt-4 rounded-xl border border-drift-gold/10 bg-drift-gold-bg p-3.5">
+              <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-drift-gold/60">Trip summary</div>
+              <p className="text-[11px] leading-relaxed text-drift-text2">
+                <span className="text-drift-text font-semibold">{extracted.primaryDestination}</span> · {extracted.highlights.filter(h => !h.inferredFromDestination).length} places from the reel + {extracted.highlights.filter(h => h.inferredFromDestination).length} AI suggestions · {extracted.vibes.slice(0, 3).join(', ')} vibes
+              </p>
             </div>
 
             {error && (
@@ -398,15 +534,20 @@ export default function UrlPage() {
           <div className="shrink-0 border-t border-drift-border2 px-6 py-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
             <button
               onClick={handleGenerate}
-              className="w-full rounded-[14px] bg-drift-gold py-4 text-xs font-extrabold uppercase tracking-widest text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)] transition-transform active:scale-[0.97]"
+              disabled={!inputOrigin || !inputStartDate || !inputEndDate}
+              className={`w-full rounded-[14px] py-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
+                inputOrigin && inputStartDate && inputEndDate
+                  ? 'bg-drift-gold text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)] active:scale-[0.97]'
+                  : 'bg-drift-gold/30 text-drift-text3 cursor-not-allowed'
+              }`}
             >
               Build My Trip
             </button>
             <button
-              onClick={() => { setStep('paste'); setExtracted(null); setError('') }}
+              onClick={() => setStep('review')}
               className="mt-2 w-full text-center text-[11px] text-drift-text3"
             >
-              Try a different link
+              ← Back to review
             </button>
           </div>
         </div>
