@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateItinerary, personalizeItinerary } from '@/lib/ai-agent'
 import { createServerClient } from '@/lib/supabase'
 import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
-import { searchFlights, flightToItineraryItem, cityToIATA } from '@/lib/amadeus'
+import { searchFlights, flightToItineraryItem, resolveIATA } from '@/lib/amadeus'
 import { findCatalogDestination, getCatalogData, buildRichCatalogContext, enrichItemsWithCatalog } from '@/lib/catalog'
 import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSuggestions, fixItemLinks } from '@/lib/grounded-search'
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
@@ -145,14 +145,23 @@ export async function POST(req: NextRequest) {
         console.log(`[Generate] No catalog data for "${body.destination}" — LLM will generate from knowledge`)
       }
 
-      // ─── Fetch flights (always real when possible) ────────────
-      const canSearchFlights = cityToIATA(origin) && cityToIATA(body.destination)
+      // ─── Resolve IATA codes dynamically + fetch flights ──────
+      const [originIATA, destIATA] = await Promise.all([
+        resolveIATA(origin),
+        resolveIATA(body.destination),
+      ])
+      const canSearchFlights = !!originIATA && !!destIATA
+      if (canSearchFlights) {
+        console.log(`[Generate] Flights: ${origin}(${originIATA}) → ${body.destination}(${destIATA})`)
+      } else {
+        console.log(`[Generate] Flights: skipped — ${!originIATA ? origin : body.destination} has no IATA code`)
+      }
 
       const flightPromises = [
         canSearchFlights
           ? searchFlights({
-              origin,
-              destination: body.destination,
+              origin: originIATA!,
+              destination: destIATA!,
               departureDate: body.start_date,
               adults: travelers,
               maxResults: 5,
@@ -160,8 +169,8 @@ export async function POST(req: NextRequest) {
           : Promise.resolve([]),
         canSearchFlights && body.end_date
           ? searchFlights({
-              origin: body.destination,
-              destination: origin,
+              origin: destIATA!,
+              destination: originIATA!,
               departureDate: body.end_date,
               adults: travelers,
               maxResults: 5,

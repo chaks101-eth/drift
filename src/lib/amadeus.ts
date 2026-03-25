@@ -159,6 +159,67 @@ export function cityToIATA(city: string): string | null {
   return CITY_IATA[key] || null
 }
 
+// ─── Dynamic IATA Lookup via Gemini Grounding ──────────────────
+// For cities not in our static map, ask Gemini to find the nearest airport.
+// Results are cached in the static map for future lookups.
+
+const pendingLookups = new Map<string, Promise<string | null>>()
+
+/**
+ * Get IATA code for any city worldwide.
+ * Uses static map first, then Gemini grounding as fallback.
+ * Caches results in memory for the process lifetime.
+ */
+export async function resolveIATA(city: string): Promise<string | null> {
+  const key = city.toLowerCase().trim()
+
+  // Check static map first
+  const cached = CITY_IATA[key]
+  if (cached) return cached
+
+  // Deduplicate concurrent lookups for same city
+  if (pendingLookups.has(key)) return pendingLookups.get(key)!
+
+  const promise = lookupIATAViaGrounding(city).then(code => {
+    pendingLookups.delete(key)
+    if (code) {
+      CITY_IATA[key] = code // Cache for future use
+      console.log(`[IATA] Resolved ${city} → ${code} (via Gemini grounding)`)
+    }
+    return code
+  })
+
+  pendingLookups.set(key, promise)
+  return promise
+}
+
+async function lookupIATAViaGrounding(city: string): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return null
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `What is the nearest major airport IATA code for ${city}? Reply with ONLY the 3-letter IATA code, nothing else.` }] }],
+          tools: [{ google_search: {} }],
+        }),
+      },
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
+    // Extract 3-letter code
+    const match = text.match(/\b([A-Z]{3})\b/)
+    return match ? match[1] : null
+  } catch {
+    return null
+  }
+}
+
 // ─── Format helpers ───────────────────────────────────────────
 
 function formatDuration(iso: string): string {

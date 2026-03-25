@@ -271,7 +271,7 @@ export async function searchCatalog(
 
 // ─── Slim Catalog Summary (Issue 2 — token-efficient) ────────
 
-export async function loadCatalogSummary(destination: string): Promise<string> {
+export async function loadCatalogSummary(destination: string, tripItems?: ItineraryItem[]): Promise<string> {
   const db = getDb()
 
   const { data: dest } = await db
@@ -282,33 +282,65 @@ export async function loadCatalogSummary(destination: string): Promise<string> {
     .limit(1)
     .single()
 
-  if (!dest) return ''
+  // If catalog exists, use it
+  if (dest) {
+    const [{ data: hotels }, { data: activities }, { data: restaurants }] = await Promise.all([
+      db.from('catalog_hotels').select('name, price_per_night, price_level').eq('destination_id', dest.id),
+      db.from('catalog_activities').select('name, price').eq('destination_id', dest.id),
+      db.from('catalog_restaurants').select('name, avg_cost, price_level').eq('destination_id', dest.id),
+    ])
 
-  const [{ data: hotels }, { data: activities }, { data: restaurants }] = await Promise.all([
-    db.from('catalog_hotels').select('name, price_per_night, price_level').eq('destination_id', dest.id),
-    db.from('catalog_activities').select('name, price').eq('destination_id', dest.id),
-    db.from('catalog_restaurants').select('name, avg_cost, price_level').eq('destination_id', dest.id),
-  ])
+    const parts: string[] = [`\nCATALOG SUMMARY FOR ${dest.city.toUpperCase()}, ${dest.country.toUpperCase()}:`]
 
-  const parts: string[] = [`\nCATALOG SUMMARY FOR ${dest.city.toUpperCase()}, ${dest.country.toUpperCase()}:`]
+    if (hotels?.length) {
+      const prices = hotels.map(h => parseFloat((h.price_per_night || '0').replace(/[^0-9.]/g, ''))).filter(p => p > 0)
+      const min = Math.min(...prices), max = Math.max(...prices)
+      parts.push(`Hotels (${hotels.length}, $${min}-${max}/night): ${hotels.map(h => `${h.name} (${h.price_per_night}, ${h.price_level})`).join(', ')}`)
+    }
 
-  if (hotels?.length) {
-    const prices = hotels.map(h => parseFloat((h.price_per_night || '0').replace(/[^0-9.]/g, ''))).filter(p => p > 0)
-    const min = Math.min(...prices), max = Math.max(...prices)
-    parts.push(`Hotels (${hotels.length}, $${min}-${max}/night): ${hotels.map(h => `${h.name} (${h.price_per_night}, ${h.price_level})`).join(', ')}`)
+    if (activities?.length) {
+      parts.push(`Activities (${activities.length}): ${activities.map(a => `${a.name} (${a.price})`).join(', ')}`)
+    }
+
+    if (restaurants?.length) {
+      parts.push(`Restaurants (${restaurants.length}): ${restaurants.map(r => `${r.name} (${r.avg_cost}, ${r.price_level})`).join(', ')}`)
+    }
+
+    parts.push('[Use search_catalog tool for full details, reviews, and honest takes]')
+    return parts.join('\n')
   }
 
-  if (activities?.length) {
-    parts.push(`Activities (${activities.length}): ${activities.map(a => `${a.name} (${a.price})`).join(', ')}`)
+  // No catalog — build context from the trip's own items (for grounded/non-catalog destinations)
+  if (tripItems?.length) {
+    const hotels = tripItems.filter(i => i.category === 'hotel')
+    const activities = tripItems.filter(i => i.category === 'activity')
+    const food = tripItems.filter(i => i.category === 'food')
+
+    const parts: string[] = [`\nAVAILABLE PLACES IN ${destination.toUpperCase()} (from this trip's data):`]
+
+    if (hotels.length) {
+      parts.push(`Hotels: ${hotels.map(h => {
+        const m = (h.metadata || {}) as Record<string, unknown>
+        return `${h.name} (${h.price}${m.rating ? `, ${m.rating}★` : ''})`
+      }).join(', ')}`)
+    }
+
+    if (activities.length) {
+      parts.push(`Activities: ${activities.map(a => `${a.name} (${a.price})`).join(', ')}`)
+    }
+
+    if (food.length) {
+      parts.push(`Restaurants: ${food.map(f => {
+        const m = (f.metadata || {}) as Record<string, unknown>
+        return `${f.name} (${f.price}${m.rating ? `, ${m.rating}★` : ''})`
+      }).join(', ')}`)
+    }
+
+    parts.push('[These are verified places with real photos and ratings. You can recommend swaps between them or suggest alternatives from your knowledge.]')
+    return parts.join('\n')
   }
 
-  if (restaurants?.length) {
-    parts.push(`Restaurants (${restaurants.length}): ${restaurants.map(r => `${r.name} (${r.avg_cost}, ${r.price_level})`).join(', ')}`)
-  }
-
-  parts.push('[Use search_catalog tool for full details, reviews, and honest takes]')
-
-  return parts.join('\n')
+  return ''
 }
 
 // ─── Get destination ID helper ───────────────────────────────

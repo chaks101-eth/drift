@@ -151,11 +151,11 @@ export async function chatWithAgent(
     }
   }
 
-  // Load slim catalog summary (names + prices only — full detail via tools)
+  // Load catalog summary, or use trip items as context for non-catalog destinations
   let catalogContext = ''
   if (context.destination) {
     try {
-      catalogContext = await loadCatalogSummary(context.destination)
+      catalogContext = await loadCatalogSummary(context.destination, context.itinerary)
     } catch {
       // Best-effort
     }
@@ -343,7 +343,7 @@ export async function chatWithAgentStream(
   let catalogContext = ''
   if (context.destination) {
     try {
-      catalogContext = await loadCatalogSummary(context.destination)
+      catalogContext = await loadCatalogSummary(context.destination, context.itinerary)
     } catch { /* best-effort */ }
   }
 
