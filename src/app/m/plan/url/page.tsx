@@ -49,9 +49,15 @@ export default function UrlPage() {
     formatBudget,
   } = useTripStore()
 
+  // Wait 2s for auth to load before redirecting (token starts as null)
+  const [authChecked, setAuthChecked] = useState(false)
   useEffect(() => {
-    if (token === null) router.replace('/m/login')
-  }, [token, router])
+    const t = setTimeout(() => setAuthChecked(true), 2000)
+    return () => clearTimeout(t)
+  }, [])
+  useEffect(() => {
+    if (authChecked && !token) router.replace('/m/login')
+  }, [authChecked, token, router])
 
   const [step, setStep] = useState<Step>('paste')
   const [url, setUrl] = useState('')
