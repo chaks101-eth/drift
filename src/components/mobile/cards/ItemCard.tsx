@@ -80,7 +80,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               fill
               className="object-cover"
               sizes="92px"
-              unoptimized={!imgSrc.includes('unsplash.com') && !imgSrc.includes('googleusercontent.com')}
+              unoptimized={!imgSrc.includes('unsplash.com') && !imgSrc.includes('googleusercontent.com') && !imgSrc.includes('googleapis.com')}
               onError={onImgError}
             />
           </div>

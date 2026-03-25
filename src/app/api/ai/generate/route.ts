@@ -8,6 +8,7 @@ import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSu
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
 import { rateLimit } from '@/lib/rate-limit'
 import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
+import { batchGetPlacePhotos } from '@/lib/google-places-photos'
 
 export const maxDuration = 60
 
@@ -275,6 +276,33 @@ export async function POST(req: NextRequest) {
 
       // Fix links: strip hallucinated URLs, add real Google Maps / Booking.com links
       fixItemLinks(nonFlightItems, body.destination, body.country)
+
+      // Fetch real Google Places photos for items without catalog images
+      const itemsNeedingPhotos = nonFlightItems.filter(i =>
+        ['hotel', 'activity', 'food'].includes(i.category) &&
+        (!i.image_url || i.image_url.includes('unsplash.com'))
+      )
+      if (itemsNeedingPhotos.length > 0) {
+        try {
+          const photoMap = await batchGetPlacePhotos(
+            itemsNeedingPhotos.map(i => ({ name: i.name, category: i.category })),
+            body.destination,
+            body.country,
+          )
+          for (const item of nonFlightItems) {
+            const photo = photoMap.get(item.name.toLowerCase())
+            if (photo) {
+              item.image_url = photo.photoUrl
+              if (photo.rating && !item.metadata.rating) {
+                item.metadata.rating = photo.rating
+              }
+            }
+          }
+          console.log(`[Generate] Google Places photos: ${photoMap.size}/${itemsNeedingPhotos.length} items got real venue photos`)
+        } catch (e) {
+          console.warn(`[Generate] Google Places photos failed, using fallbacks: ${e}`)
+        }
+      }
 
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)
 
