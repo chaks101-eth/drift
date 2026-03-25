@@ -89,7 +89,7 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
 ): Promise<T> {
-  const delays = [8000, 15000, 25000]
+  const delays = [1000, 2000, 4000] // Gemini paid tier — short backoff
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn()
@@ -481,7 +481,25 @@ export async function chatWithAgentStream(
   await writer.close()
 }
 
-// ─── Itinerary Generation (non-agentic, single LLM call) ────
+// ─── Multi-Step Itinerary Generation ──────────────────────────
+// Step 1: Generate trip outline (day themes, place names) — small, fast
+// Step 2: Generate each day's details in PARALLEL — never truncates
+// Result: consistent quality regardless of trip length
+
+type GeneratedItem = {
+  category: string; name: string; detail: string; description: string;
+  price: string; image_url: string; time: string; position: number;
+  metadata: Record<string, unknown>
+}
+
+interface DayOutline {
+  dayNum: number
+  date: string
+  theme: string
+  places: string[] // place names planned for this day
+  dayInsight: string
+  tripBrief?: string // only on day 1
+}
 
 export async function generateItinerary(params: {
   destination: string
@@ -500,101 +518,273 @@ export async function generateItinerary(params: {
 }) {
   const llm = getLlm()
   const model = getModel()
+  const startTime = Date.now()
 
-  // Calculate trip duration for short-trip awareness
   const start = new Date(params.startDate)
   const end = new Date(params.endDate)
   const numDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
-  const budgetLine = params.budgetAmount
-    ? `Budget: $${params.budgetAmount} total per person ($${Math.round(params.budgetAmount / numDays)}/person/day) — level: ${params.budget}`
-    : `Budget: ${params.budget}`
-  const durationNote = numDays <= 3 ? `\nThis is a SHORT trip (${numDays} days) — pack only highlights, skip filler.` : ''
-  const occasionNote = params.occasion && params.occasion !== 'Just exploring'
-    ? `\nOccasion: ${params.occasion} — tailor activities, restaurants, and hotel style to this occasion.`
-    : ''
 
-  // URL highlights from content-to-trip extraction
-  let urlSection = ''
-  if (params.urlHighlights?.length) {
-    const mentioned = params.urlHighlights.filter(h => !h.estimatedPrice?.includes('inferred'))
-    urlSection = `\n\nIMPORTANT — This trip is based on content the user shared. You MUST include these places:
-${mentioned.map(h => `- ${h.name} (${h.category}): ${h.detail}`).join('\n')}
-${params.urlSummary ? `\nContent summary: ${params.urlSummary}` : ''}
-Tag each included highlight with metadata.source: "url_import". Any additional items you add should have metadata.source: "ai".`
-  }
-
-  // Build date labels for each day
+  // Build date labels
   const dayDates: string[] = []
   for (let d = 0; d < numDays; d++) {
     const date = new Date(start)
     date.setDate(date.getDate() + d)
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
-    const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    dayDates.push(`${dayName}, ${monthDay}`)
+    dayDates.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
   }
 
-  const userContent = `Generate a complete day-by-day itinerary for a trip to ${params.destination}, ${params.country}.
+  const budgetLine = params.budgetAmount
+    ? `$${params.budgetAmount} total/person ($${Math.round(params.budgetAmount / numDays)}/day) — ${params.budget}`
+    : params.budget
+  const occasionNote = params.occasion && params.occasion !== 'Just exploring'
+    ? `\nOccasion: ${params.occasion}` : ''
 
-Vibes: ${params.vibes.join(', ')}
-Dates: ${params.startDate} to ${params.endDate} (${numDays} days)
-Travelers: ${params.travelers}
-${budgetLine}
-Flying from: ${params.originCity}${durationNote}${occasionNote}${urlSection}${params.planningNotes || ''}
+  // URL highlights
+  let urlPlaces = ''
+  if (params.urlHighlights?.length) {
+    const mentioned = params.urlHighlights.filter(h => !h.estimatedPrice?.includes('inferred'))
+    urlPlaces = `\nMUST include: ${mentioned.map(h => `${h.name} (${h.category})`).join(', ')}`
+  }
 
-CRITICAL: You MUST generate EXACTLY ${numDays} day separators — one for each day:
-${dayDates.map((d, i) => `  Day ${i + 1} (${d})`).join('\n')}
+  // ─── STEP 1: Generate trip outline ────────────────────────────
+  console.log(`[Generate] Step 1: Outline for ${numDays}-day ${params.destination} trip`)
 
-Start with outbound flight, then hotel check-in, then day-by-day activities/food, end with return flight.
-Use "day" items as separators with name: "Day 1 — Theme · ${dayDates[0]}", "Day 2 — Theme · ${dayDates[1] || ''}", etc. Include the actual date in the name.
-Each day must have 2-4 activities + 1-2 meals. Do NOT leave any day empty.
-Include 2-3 alternatives in metadata.alts for hotels and major activities.
-Keep descriptions short (1 sentence max) to stay within token limits.
-IMPORTANT: Each day separator must have metadata.day_insight (opinionated 1-2 sentence comment about that day). The first day must also have metadata.trip_brief (2-3 sentence overall trip strategy).
-IMPORTANT: If planning intelligence or weather data is provided above, USE IT. Group nearby places on the same day. Respect best times. Schedule outdoor activities on sunny days and indoor on rainy days. This is real data, not guesswork.
+  // Extract just place names from planning notes (not full metadata) for the outline
+  let placeHints = ''
+  if (params.planningNotes) {
+    // Pull just the place names from catalog/grounded context
+    const nameMatches = params.planningNotes.match(/^\s*-\s+([^({\n]+)/gm)
+    if (nameMatches?.length) {
+      placeHints = `\nAvailable real places: ${nameMatches.map(m => m.replace(/^\s*-\s+/, '').trim()).slice(0, 20).join(', ')}`
+    }
+  }
+
+  const outlinePrompt = `Plan a ${numDays}-day trip to ${params.destination}, ${params.country}.
+Vibes: ${params.vibes.join(', ')} | Budget: ${budgetLine} | Travelers: ${params.travelers}${occasionNote}${urlPlaces}${placeHints}
+
+Return a JSON object with:
+1. "hotel": { "name": "Hotel Name", "detail": "tagline", "price": "$X/night" }
+2. "days": array of EXACTLY ${numDays} objects, each with:
+   - "dayNum": 1-${numDays}
+   - "date": "${dayDates[0]}", "${dayDates[1] || ''}", etc.
+   - "theme": catchy 3-5 word theme
+   - "places": array of 3-5 specific real place names (activities + restaurants)
+   - "dayInsight": 1-2 sentence opinionated comment
+3. "tripBrief": 2-3 sentence strategy
+
+Use REAL place names. Group nearby places on same day. Be opinionated.
+JSON only. First char {, last char }.`
+
+  const outlineRes = await withRetry(() => llm.chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages: [
+      { role: 'system', content: 'You are Drift\'s trip planner. Output ONLY valid JSON. No markdown.' },
+      { role: 'user', content: outlinePrompt },
+    ],
+  }))
+
+  const outlineRaw = outlineRes.choices[0].message.content || '{}'
+  const outlineCleaned = outlineRaw.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim()
+  const outlineMatch = outlineCleaned.match(/\{[\s\S]*\}/)
+
+  let outline: { hotel: { name: string; detail: string; price: string }; days: DayOutline[]; tripBrief: string }
+  try {
+    outline = JSON.parse(outlineMatch ? outlineMatch[0] : outlineCleaned)
+  } catch {
+    console.error('[Generate] Outline parse failed, falling back to single-call')
+    // Fallback: generate everything in one call (old behavior)
+    return generateItinerarySingleCall(params, numDays, dayDates)
+  }
+
+  const outlineElapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+  console.log(`[Generate] Step 1 done in ${outlineElapsed}s — ${outline.days?.length || 0} days outlined, hotel: ${outline.hotel?.name}`)
+
+  // ─── STEP 2: Generate each day's items IN PARALLEL ────────────
+  console.log(`[Generate] Step 2: Generating ${outline.days.length} days in parallel`)
+
+  // Generate days in batches of 3 to stay within Gemini rate limits
+  const dayResults: GeneratedItem[][] = []
+  const BATCH = 3
+  for (let i = 0; i < outline.days.length; i += BATCH) {
+    const batch = outline.days.slice(i, i + BATCH)
+    const batchResults = await Promise.all(
+      batch.map((day) => generateDayItems(llm, model, params, day, outline.hotel)
+        .catch(e => {
+          console.warn(`[Generate] Day ${day.dayNum} failed: ${e}`)
+          return [] as GeneratedItem[]
+        })
+      )
+    )
+    dayResults.push(...batchResults)
+  }
+
+  // Retry any empty days (rate limit may have caused failures)
+  for (let i = 0; i < dayResults.length; i++) {
+    if (!dayResults[i] || dayResults[i].length === 0) {
+      console.warn(`[Generate] Day ${i + 1} is empty, retrying...`)
+      try {
+        await throttleLlm()
+        dayResults[i] = await generateDayItems(llm, model, params, outline.days[i], outline.hotel)
+      } catch {
+        // Generate a minimal fallback day
+        dayResults[i] = [{
+          category: 'activity', name: `Explore ${params.destination}`, detail: 'Free day to explore at your own pace',
+          description: '', price: 'Free', image_url: '', time: '10:00', position: 0,
+          metadata: { reason: 'A relaxed day to discover hidden gems on your own', whyFactors: ['Flexible schedule', 'Local exploration'] },
+        }]
+      }
+    }
+  }
+
+  // ─── STEP 3: Merge into final item array ──────────────────────
+  const allItems: GeneratedItem[] = []
+
+  // Hotel check-in (position 0)
+  allItems.push({
+    category: 'hotel',
+    name: outline.hotel.name,
+    detail: outline.hotel.detail || '',
+    description: '',
+    price: outline.hotel.price || '',
+    image_url: '',
+    time: '14:00',
+    position: 0,
+    metadata: {
+      reason: `Your base in ${params.destination}`,
+      whyFactors: [`Matches your ${params.vibes[0] || 'travel'} vibe`, `${params.budget} budget range`],
+    },
+  })
+
+  // Day items
+  for (let i = 0; i < dayResults.length; i++) {
+    const dayItems = dayResults[i]
+    const day = outline.days[i]
+
+    // Day separator
+    allItems.push({
+      category: 'day',
+      name: `Day ${day.dayNum} — ${day.theme} · ${day.date}`,
+      detail: day.theme,
+      description: '',
+      price: '',
+      image_url: '',
+      time: '',
+      position: allItems.length,
+      metadata: {
+        day_insight: day.dayInsight,
+        ...(i === 0 && outline.tripBrief ? { trip_brief: outline.tripBrief } : {}),
+      },
+    })
+
+    // Day's items
+    for (const item of dayItems) {
+      allItems.push({ ...item, position: allItems.length })
+    }
+  }
+
+  const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+  console.log(`[Generate] All steps done in ${totalElapsed}s — ${allItems.length} items total`)
+
+  return allItems
+}
+
+/** Generate detailed items for a single day */
+async function generateDayItems(
+  llm: OpenAI,
+  model: string,
+  params: { destination: string; country: string; vibes: string[]; budget: string; budgetAmount?: number; planningNotes?: string },
+  day: DayOutline,
+  hotel: { name: string },
+): Promise<GeneratedItem[]> {
+  const prompt = `Generate detailed itinerary items for Day ${day.dayNum} (${day.date}) in ${params.destination}, ${params.country}.
+Theme: ${day.theme}
+Places to include: ${day.places.join(', ')}
+Vibes: ${params.vibes.join(', ')} | Budget: ${params.budget}
+Hotel: ${hotel.name}
+
+Return a JSON array of 4-7 items. Each item:
+{
+  "category": "activity|food|transfer",
+  "name": "Place Name",
+  "detail": "Brief tagline",
+  "description": "One sentence description",
+  "price": "$XX",
+  "time": "HH:MM",
+  "metadata": {
+    "reason": "Why Drift picked this — opinionated, specific to vibes",
+    "whyFactors": ["reason 1", "reason 2", "reason 3"],
+    "alts": [{"name": "Alt Name", "detail": "Why", "price": "$XX"}]
+  }
+}
+
+Include realistic timing (travel between spots, meal breaks). Alternate intensity.
+Use realistic USD prices. Include 1-2 alternatives for major activities.
+Return ONLY the JSON array. First char [, last char ].`
+
+  // No throttle here — parallel calls are rate-safe on Gemini Tier 1 (2000 RPM)
+  const res = await withRetry(() => llm.chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages: [
+      { role: 'system', content: 'You are Drift\'s itinerary engine. Output ONLY valid JSON arrays. No markdown.' },
+      { role: 'user', content: prompt },
+    ],
+  }))
+
+  const text = res.choices[0].message.content || '[]'
+  const cleaned = text.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim()
+
+  try {
+    return JSON.parse(cleaned) as GeneratedItem[]
+  } catch {
+    const repaired = repairTruncatedJson(cleaned)
+    return JSON.parse(repaired) as GeneratedItem[]
+  }
+}
+
+/** Fallback: single-call generation (if outline parsing fails) */
+async function generateItinerarySingleCall(
+  params: Parameters<typeof generateItinerary>[0],
+  numDays: number,
+  dayDates: string[],
+): Promise<GeneratedItem[]> {
+  const llm = getLlm()
+  const model = getModel()
+
+  const budgetLine = params.budgetAmount
+    ? `Budget: $${params.budgetAmount} total per person — level: ${params.budget}`
+    : `Budget: ${params.budget}`
+
+  const userContent = `Generate a complete day-by-day itinerary for ${numDays} days in ${params.destination}, ${params.country}.
+Vibes: ${params.vibes.join(', ')} | ${budgetLine} | ${params.travelers} travelers
+Flying from: ${params.originCity}
+${params.planningNotes || ''}
+
+Generate EXACTLY ${numDays} days: ${dayDates.join(', ')}.
+Start with hotel, then day-by-day activities/food. Each day: 2-4 activities + 1-2 meals.
+Every item needs metadata.reason and metadata.whyFactors.
+Day separators: "Day N — Theme · Date" with metadata.day_insight. Day 1 also needs metadata.trip_brief.
 Return ONLY the JSON array.`
 
-  const response = await llm.chat.completions.create({
+  await throttleLlm()
+  const response = await withRetry(() => llm.chat.completions.create({
     model,
     max_tokens: 16384,
     messages: [
       { role: 'system', content: GENERATION_SYSTEM_PROMPT },
       { role: 'user', content: userContent },
     ],
-  })
+  }))
 
   const text = response.choices[0].message.content || '[]'
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
-  type GeneratedItem = {
-    category: string; name: string; detail: string; description: string;
-    price: string; image_url: string; time: string; position: number;
-    metadata: Record<string, unknown>
-  }
-
-  // Try to parse; if truncated JSON, attempt repair
-  let items: GeneratedItem[]
   try {
-    items = JSON.parse(cleaned) as GeneratedItem[]
+    return JSON.parse(cleaned) as GeneratedItem[]
   } catch {
-    console.warn('[Generate] JSON truncated, attempting repair...')
     const repaired = repairTruncatedJson(cleaned)
-    items = JSON.parse(repaired) as GeneratedItem[]
+    return JSON.parse(repaired) as GeneratedItem[]
   }
-
-  // Validate: check for empty days and missing days
-  const daySeparators = items.filter(i => i.category === 'day')
-  const lastDayIdx = items.findLastIndex(i => i.category === 'day')
-  const itemsAfterLastDay = lastDayIdx >= 0 ? items.slice(lastDayIdx + 1).filter(i => i.category !== 'flight' && i.category !== 'transfer') : []
-
-  if (daySeparators.length < numDays || (lastDayIdx >= 0 && itemsAfterLastDay.length === 0)) {
-    console.warn(`[Generate] Incomplete: ${daySeparators.length}/${numDays} days generated, last day has ${itemsAfterLastDay.length} items. Removing empty trailing day.`)
-    // Remove the empty trailing day separator
-    if (lastDayIdx >= 0 && itemsAfterLastDay.length === 0) {
-      items.splice(lastDayIdx, 1)
-    }
-  }
-
-  return items
 }
 
 // ─── Personalization Pass (catalog trips → feels hand-crafted) ──

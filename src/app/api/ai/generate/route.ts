@@ -8,7 +8,7 @@ import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSu
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
 import { rateLimit } from '@/lib/rate-limit'
 import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
-import { batchGetPlaceData, applyPlaceData, getDestinationPhoto } from '@/lib/google-places-photos'
+import { batchGetPlaceData, applyPlaceData, getDestinationPhoto, getPlaceData } from '@/lib/google-places-photos'
 import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
 import { buildItineraryMaps } from '@/lib/day-maps'
 
@@ -195,37 +195,24 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Build rich catalog context for LLM (ratings, GPS, hours, honest takes)
+      // ─── Parallel pre-generation: grounding + weather + flights ──
+      // Run ALL pre-generation tasks in parallel to minimize latency
       const catalogContextText = catalogData ? buildRichCatalogContext(catalogData) : ''
+      const needsGrounding = !catalogData || catalogData.hotels.length < 3
 
-      // ─── Grounded search for real-time web data ──────────────
-      // Run Google Search grounding to find real, verified places.
-      // Especially useful for non-catalog destinations or to supplement catalog.
-      let groundedContextText = ''
-      if (!catalogData || catalogData.hotels.length < 3) {
-        try {
-          const groundedResult = await groundedDestinationSearch({
-            destination: body.destination,
-            country: body.country || '',
-            vibes: body.vibes || [],
-            budget,
-            travelers,
-            days: tripDays,
-          })
-          if (groundedResult?.places.length) {
-            groundedContextText = formatGroundedContext(groundedResult)
-            console.log(`[Generate] Grounded search: ${groundedResult.places.length} real places found via ${groundedResult.searchQueries.length} Google searches`)
-          }
-        } catch (e) {
-          console.warn(`[Generate] Grounded search failed, continuing without: ${e}`)
-        }
+      // Get destination GPS (fast, from catalog metadata)
+      let destLat: number | undefined
+      let destLng: number | undefined
+      if (catalogData?.hotels?.[0]) {
+        const hm = (catalogData.hotels[0] as unknown as Record<string, unknown>).metadata as Record<string, unknown> | undefined
+        destLat = hm?.lat as number; destLng = hm?.lng as number
       }
 
-      // Generate planning intelligence from any enriched data
+      // Planning notes from URL enrichment
       let planningNotesText = ''
       if (enrichedHighlights?.length) {
         const planningItems = enrichedHighlights
-          .filter((h: { source: string }) => h.source === 'serpapi')
+          .filter((h: { source: string }) => h.source === 'serpapi' || h.source === 'google_places')
           .map((h: Record<string, unknown>) => ({
             name: h.name as string,
             category: h.category as string,
@@ -243,55 +230,65 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // ─── Fetch weather forecast for trip dates ──────────────────
-      let weatherContextText = ''
-      // Get destination GPS: from catalog or Google Places
-      let destLat = catalogData?.destination ? ((catalogData.destination as unknown as Record<string, unknown>).lat as number) : undefined
-      let destLng = catalogData?.destination ? ((catalogData.destination as unknown as Record<string, unknown>).lng as number) : undefined
-      // If no catalog GPS, try to get from first catalog hotel/activity
-      if (!destLat && catalogData?.hotels?.[0]) {
-        const hm = (catalogData.hotels[0] as unknown as Record<string, unknown>).metadata as Record<string, unknown> | undefined
-        destLat = hm?.lat as number; destLng = hm?.lng as number
-      }
-      // Fallback: use Google Places to find destination GPS
-      if (!destLat && body.destination) {
-        try {
-          const { getPlaceData } = await import('@/lib/google-places-photos')
-          const destData = await getPlaceData(body.destination, body.destination, body.country)
-          if (destData?.lat) { destLat = destData.lat; destLng = destData.lng }
-        } catch { /* best effort */ }
-      }
-      let tripWeatherData: Awaited<ReturnType<typeof getTripWeather>> = null
-      if (destLat && destLng && body.start_date && body.end_date) {
-        try {
-          tripWeatherData = await getTripWeather(destLat, destLng, body.start_date, body.end_date)
-          if (tripWeatherData) {
-            weatherContextText = formatWeatherForLLM(tripWeatherData)
-          }
-        } catch (e) {
-          console.warn(`[Generate] Weather fetch failed: ${e}`)
-        }
-      }
+      // Fire grounding + weather + GPS lookup + flights ALL IN PARALLEL
+      const [groundedResult, weatherAndGps, outboundFlights, returnFlights] = await Promise.all([
+        // Grounded search (only for non-catalog destinations)
+        needsGrounding
+          ? groundedDestinationSearch({
+              destination: body.destination, country: body.country || '',
+              vibes: body.vibes || [], budget, travelers, days: tripDays,
+            }).catch(() => null)
+          : Promise.resolve(null),
 
-      // ─── Always use LLM generation + real flights ──────────────
-      const [llmItems, outboundFlights, returnFlights] = await Promise.all([
-        generateItinerary({
-          destination: body.destination,
-          country: body.country,
-          vibes: body.vibes,
-          startDate: body.start_date,
-          endDate: body.end_date,
-          travelers,
-          budget,
-          budgetAmount: body.budgetAmount || undefined,
-          originCity: origin,
-          occasion: body.occasion || undefined,
-          urlHighlights: enrichedHighlights,
-          urlSummary: body.urlSummary || undefined,
-          planningNotes: (planningNotesText + catalogContextText + groundedContextText + weatherContextText) || undefined,
-        }),
+        // Weather + GPS (get GPS first if needed, then weather)
+        (async () => {
+          let lat = destLat, lng = destLng
+          if (!lat && body.destination) {
+            try {
+              const destData = await getPlaceData(body.destination, body.destination, body.country)
+              if (destData?.lat) { lat = destData.lat; lng = destData.lng }
+            } catch { /* best effort */ }
+          }
+          let weather: Awaited<ReturnType<typeof getTripWeather>> = null
+          if (lat && lng && body.start_date && body.end_date) {
+            try {
+              weather = await getTripWeather(lat, lng, body.start_date, body.end_date)
+            } catch { /* best effort */ }
+          }
+          return { lat, lng, weather }
+        })(),
+
+        // Flights (already defined as promises)
         ...flightPromises,
       ])
+
+      const groundedContextText = groundedResult?.places?.length
+        ? formatGroundedContext(groundedResult)
+        : ''
+      if (groundedResult?.places?.length) {
+        console.log(`[Generate] Grounded search: ${groundedResult.places.length} places found`)
+      }
+
+      const tripWeatherData = weatherAndGps.weather
+      const weatherContextText = tripWeatherData ? formatWeatherForLLM(tripWeatherData) : ''
+      if (!destLat && weatherAndGps.lat) { destLat = weatherAndGps.lat; destLng = weatherAndGps.lng }
+
+      // ─── LLM generation (multi-step: outline → parallel days) ──
+      const llmItems = await generateItinerary({
+        destination: body.destination,
+        country: body.country,
+        vibes: body.vibes,
+        startDate: body.start_date,
+        endDate: body.end_date,
+        travelers,
+        budget,
+        budgetAmount: body.budgetAmount || undefined,
+        originCity: origin,
+        occasion: body.occasion || undefined,
+        urlHighlights: enrichedHighlights,
+        urlSummary: body.urlSummary || undefined,
+        planningNotes: (planningNotesText + catalogContextText + groundedContextText + weatherContextText) || undefined,
+      })
 
       // Sanitize LLM categories
       let nonFlightItems = llmItems
