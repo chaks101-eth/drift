@@ -138,7 +138,7 @@ export default function UrlPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          type: 'generate',
+          type: 'itinerary',
           destination: extracted.primaryDestination,
           country: extracted.country,
           vibes: extracted.vibes.slice(0, 3),
