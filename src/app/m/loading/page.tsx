@@ -7,11 +7,11 @@ import { supabase } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
 const steps = [
-  { text: 'Checking weather & searching flights', icon: '✈️', duration: 4000 },
-  { text: 'Finding the must-see spots for your vibes', icon: '📍', duration: 6000 },
-  { text: 'Planning your day-by-day itinerary', icon: '🗓️', duration: 10000 },
-  { text: 'Getting real venue photos & ratings', icon: '📸', duration: 15000 },
-  { text: 'Crafting your personal trip strategy', icon: '✨', duration: 5000 },
+  { text: 'Checking weather & searching flights', duration: 8000 },
+  { text: 'Finding the must-see spots for your vibes', duration: 15000 },
+  { text: 'Planning your day-by-day itinerary', duration: 25000 },
+  { text: 'Getting real venue photos & ratings', duration: 40000 },
+  { text: 'Adding the finishing touches', duration: 20000 },
 ]
 
 // Destination-specific tips shown during loading
@@ -49,7 +49,7 @@ export default function LoadingPage() {
   // Show tip after a delay
   useEffect(() => {
     const destName = onboarding.destination?.city || ''
-    const t = setTimeout(() => setTip(getRandomTip(destName)), 8000)
+    const t = setTimeout(() => setTip(getRandomTip(destName)), 3000)
     return () => clearTimeout(t)
   }, [onboarding.destination?.city])
 
@@ -113,8 +113,12 @@ export default function LoadingPage() {
 
         trackEvent('trip_generated', 'conversion', dest.city)
 
-        // Jump to last step
-        setActiveStep(steps.length - 1)
+        // Fast-forward through remaining steps smoothly
+        setGenerationDone(true)
+        for (let s = activeStep + 1; s < steps.length; s++) {
+          await new Promise(r => setTimeout(r, 400))
+          setActiveStep(s)
+        }
 
         // Run personalization while showing "finishing touches"
         try {
@@ -196,7 +200,11 @@ export default function LoadingPage() {
 
             return (
               <div key={i} className="flex items-center gap-3 py-2 transition-all duration-500" style={{ opacity: isDone ? 0.3 : isActive ? 1 : 0.08, transform: isActive ? 'translateX(0)' : isDone ? 'translateX(0)' : 'translateX(4px)' }}>
-                <span className="w-5 text-center text-sm">{isDone ? '✓' : step.icon}</span>
+                <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${isDone ? 'bg-drift-gold/20 text-drift-gold' : isActive ? 'bg-drift-gold text-drift-bg' : 'bg-drift-surface2 text-drift-text3'}`}>
+                  {isDone ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : (i + 1)}
+                </div>
                 <div className="flex-1">
                   <div className="text-[12px] leading-snug" style={{ color: isActive ? '#c8a44e' : isDone ? '#7a7a85' : '#4a4a55' }}>
                     {step.text}

@@ -62,7 +62,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
         <button
           onClick={(e) => { e.stopPropagation(); onMenu() }}
           aria-label={`Menu for ${item.name}`}
-          className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm"
+          className="absolute right-1.5 top-1.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-drift-text2">
             <circle cx="12" cy="6" r="1.5" />

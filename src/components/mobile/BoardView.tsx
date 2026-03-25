@@ -148,11 +148,11 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         </div>
         <p className="text-xs leading-relaxed text-drift-text2">{briefText}</p>
         {weatherSummary && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl bg-drift-surface2 px-3 py-2">
-            <span className="mt-px text-sm">
-              {weatherSummary.includes('rain') || weatherSummary.includes('Rain') ? '🌧' : weatherSummary.includes('Clear') || weatherSummary.includes('sunny') ? '☀️' : '⛅'}
-            </span>
-            <p className="text-[10.5px] leading-snug text-drift-text2">{weatherSummary}</p>
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-drift-surface2 px-3 py-2.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" className="mt-0.5 shrink-0">
+              <circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+            <p className="text-[11px] leading-snug text-drift-text2">{weatherSummary}</p>
           </div>
         )}
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -192,9 +192,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
           >
             Day {i + 1}
             {day.weather && (
-              <span className="text-xs normal-case">
-                {day.weather.isRainy ? '🌧' : day.weather.isSunny ? '☀️' : '⛅'}
-              </span>
+              <span className={`h-1.5 w-1.5 rounded-full ${day.weather.isRainy ? 'bg-blue-400' : day.weather.isSunny ? 'bg-amber-400' : 'bg-drift-text3'}`} />
             )}
           </button>
         ))}
@@ -216,30 +214,37 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                 <div className="text-sm font-medium text-drift-text">{day.label}</div>
               </div>
               {day.weather && (
-                <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${day.weather.isRainy ? 'bg-blue-500/10' : day.weather.isSunny ? 'bg-amber-500/10' : 'bg-drift-surface2'}`}>
-                  <span className="text-xs">
-                    {day.weather.isRainy ? '🌧' : day.weather.isSunny ? '☀️' : '⛅'}
-                  </span>
-                  <span className={`text-[10px] font-semibold ${day.weather.isRainy ? 'text-blue-400' : day.weather.isSunny ? 'text-amber-400' : 'text-drift-text2'}`}>
+                <div className={`flex items-center gap-1 rounded-full px-2 py-1 ${day.weather.isRainy ? 'bg-blue-500/8' : day.weather.isSunny ? 'bg-amber-500/8' : 'bg-drift-surface2'}`}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" className="shrink-0">
+                    {day.weather.isRainy ? (
+                      <><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25" stroke="#60a5fa" /><path d="M8 19v2M12 19v2M16 19v2" stroke="#60a5fa" /></>
+                    ) : day.weather.isSunny ? (
+                      <><circle cx="12" cy="12" r="4" stroke="#fbbf24" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#fbbf24" /></>
+                    ) : (
+                      <><path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M17.66 6.34l1.41-1.41M2 12h4" stroke="#9ca3af" /><path d="M17.5 21H9a5 5 0 01-.5-9.97A7 7 0 0117 10a4.5 4.5 0 01.5 11z" stroke="#9ca3af" /></>
+                    )}
+                  </svg>
+                  <span className={`text-[10px] font-medium ${day.weather.isRainy ? 'text-blue-400' : day.weather.isSunny ? 'text-amber-400' : 'text-drift-text3'}`}>
                     {day.weather.tempMax}°
                   </span>
-                  {day.weather.isRainy && (
-                    <span className="text-[9px] text-blue-400/70">{day.weather.rainProbability}%</span>
-                  )}
                 </div>
               )}
             </div>
 
-            {/* Day Map */}
+            {/* Day Map — tap to expand */}
             {day.mapUrl && (
-              <div className="mb-3 overflow-hidden rounded-xl border border-drift-border2">
-                <img
-                  src={day.mapUrl}
-                  alt={`Map for Day ${di + 1}`}
-                  className="h-[140px] w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
+              <button
+                onClick={() => window.open(day.mapUrl!, '_blank')}
+                className="mb-3 flex w-full items-center gap-2.5 rounded-xl border border-drift-border2 bg-drift-surface px-3 py-2.5 text-left transition-all active:scale-[0.98]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" className="shrink-0">
+                  <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z" /><path d="M8 2v16" /><path d="M16 6v16" />
+                </svg>
+                <span className="text-[11px] text-drift-text2">View Day {di + 1} on map</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="2" className="ml-auto shrink-0">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </button>
             )}
 
             {/* Items */}
@@ -264,10 +269,16 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       onMenu={() => openCardMenu(item.id)}
                     />
                     {showTravel && (
-                      <div className="flex items-center gap-1.5 py-1 pl-2">
-                        <span className="text-[9px]">{travel.mode === 'walk' ? '🚶' : '🚕'}</span>
-                        <span className="text-[9px] text-drift-text3">{travel.duration} {travel.mode === 'walk' ? 'walk' : 'drive'}</span>
-                        <span className="text-[8px] text-drift-text3/50">· {travel.distance}</span>
+                      <div className="flex items-center gap-2 py-1.5 pl-1">
+                        <div className="h-3 border-l border-dashed border-drift-border2" />
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="shrink-0">
+                          {travel.mode === 'walk'
+                            ? <><circle cx="12" cy="5" r="2" /><path d="M10 22l2-7 4 1v-6l-4-1-2 3" /></>
+                            : <><path d="M5 17h14l1-5H4l1 5z" /><circle cx="7.5" cy="17" r="2" /><circle cx="16.5" cy="17" r="2" /><path d="M5 12l1-4h12l1 4" /></>
+                          }
+                        </svg>
+                        <span className="text-[11px] text-drift-text3">{travel.duration}</span>
+                        <span className="text-[10px] text-drift-text3/40">{travel.distance}</span>
                       </div>
                     )}
                   </div>
