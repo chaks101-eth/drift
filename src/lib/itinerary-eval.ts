@@ -304,3 +304,97 @@ function buildSummary(
 
   return parts.join(' ')
 }
+
+// ─── Benchmark: Raw LLM vs Drift ─────────────────────────────
+// Generates a "raw LLM" itinerary (same model, basic prompt, no infrastructure)
+// and evals it with the same dimensions. Shows the value Drift adds.
+
+export interface BenchmarkResult {
+  destination: string
+  vibes: string[]
+  drift: EvalResult
+  rawLlm: EvalResult
+  delta: { overall: number; placeValidity: number; vibeMatch: number; mustSee: number; ratings: number }
+}
+
+/**
+ * Generate a raw LLM itinerary (no grounding, no Places, no catalog)
+ * and parse it into EvalItems for scoring.
+ */
+export async function generateRawLlmItinerary(
+  destination: string,
+  country: string,
+  vibes: string[],
+  days: number,
+): Promise<EvalItem[]> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return []
+
+  try {
+    const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `Plan a ${days}-day ${vibes.join(', ')} trip to ${destination}, ${country} for 2 travelers on a mid budget.
+
+Return a JSON array of items:
+[{"category":"day|hotel|activity|food","name":"Specific Place Name","price":"$XX","metadata":{}}]
+
+Include: 1 hotel, then for each day: a day separator + 3-4 activities/restaurants.
+Use REAL place names. JSON only, no markdown.` }] }],
+      }),
+    })
+
+    if (!res.ok) return []
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
+    const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+    const match = cleaned.match(/\[[\s\S]*\]/)
+    if (!match) return []
+
+    const items = JSON.parse(match[0]) as Array<{ category: string; name: string; price?: string; metadata?: Record<string, unknown> }>
+    return items.map(i => ({
+      name: i.name || '',
+      category: i.category || 'activity',
+      price: i.price || '',
+      metadata: i.metadata || {},
+    }))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Run a full benchmark: Drift pipeline vs raw LLM on same destination + vibes.
+ * Both outputs scored with identical eval dimensions.
+ */
+export async function benchmarkVsRawLlm(
+  driftItems: EvalItem[],
+  destination: string,
+  country: string,
+  vibes: string[],
+  days: number,
+): Promise<BenchmarkResult> {
+  // Generate raw LLM itinerary
+  const rawItems = await generateRawLlmItinerary(destination, country, vibes, days)
+
+  // Eval both with same dimensions
+  const [driftEval, rawEval] = await Promise.all([
+    evaluateItinerary(driftItems, destination, country, vibes),
+    evaluateItinerary(rawItems, destination, country, vibes),
+  ])
+
+  return {
+    destination,
+    vibes,
+    drift: driftEval,
+    rawLlm: rawEval,
+    delta: {
+      overall: driftEval.overallScore - rawEval.overallScore,
+      placeValidity: driftEval.dimensions.placeValidity.score - rawEval.dimensions.placeValidity.score,
+      vibeMatch: driftEval.dimensions.vibeMatch.score - rawEval.dimensions.vibeMatch.score,
+      mustSee: driftEval.dimensions.mustSeeCoverage.score - rawEval.dimensions.mustSeeCoverage.score,
+      ratings: driftEval.dimensions.ratingQuality.score - rawEval.dimensions.ratingQuality.score,
+    },
+  }
+}

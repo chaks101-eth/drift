@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { evaluateItinerary } from '@/lib/itinerary-eval'
+import { evaluateItinerary, benchmarkVsRawLlm } from '@/lib/itinerary-eval'
 
-export const maxDuration = 60
+export const maxDuration = 120
 
-// POST /api/ai/eval — evaluate an itinerary's quality
+// POST /api/ai/eval — evaluate an itinerary's quality, optionally benchmark vs raw LLM
 export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -13,11 +13,11 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser(token)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { tripId } = await req.json()
+  const { tripId, benchmark } = await req.json()
   if (!tripId) return NextResponse.json({ error: 'Missing tripId' }, { status: 400 })
 
   const [{ data: trip }, { data: items }] = await Promise.all([
-    supabase.from('trips').select('destination, country, vibes').eq('id', tripId).single(),
+    supabase.from('trips').select('destination, country, vibes, start_date, end_date').eq('id', tripId).single(),
     supabase.from('itinerary_items').select('name, category, price, metadata').eq('trip_id', tripId).order('position'),
   ])
 
@@ -32,6 +32,23 @@ export async function POST(req: NextRequest) {
     metadata: (i.metadata || {}) as Record<string, unknown>,
   }))
 
+  // If benchmark mode, compare Drift vs raw LLM
+  if (benchmark) {
+    const days = trip.start_date && trip.end_date
+      ? Math.max(1, Math.round((new Date(trip.end_date).getTime() - new Date(trip.start_date).getTime()) / (1000 * 60 * 60 * 24)))
+      : 4
+
+    const result = await benchmarkVsRawLlm(
+      evalItems,
+      trip.destination,
+      trip.country || '',
+      trip.vibes || [],
+      days,
+    )
+    return NextResponse.json(result)
+  }
+
+  // Standard eval
   const result = await evaluateItinerary(
     evalItems,
     trip.destination,

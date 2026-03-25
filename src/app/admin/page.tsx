@@ -1405,6 +1405,14 @@ type EvalScore = {
   }
 }
 
+type BenchmarkScore = {
+  destination: string
+  vibes: string[]
+  drift: EvalScore
+  rawLlm: EvalScore
+  delta: { overall: number; placeValidity: number; vibeMatch: number; mustSee: number; ratings: number }
+}
+
 const EVAL_PRESETS = [
   { dest: 'Tokyo', country: 'Japan', vibes: ['culture', 'foodie'], days: 4 },
   { dest: 'Barcelona', country: 'Spain', vibes: ['city', 'romance', 'foodie'], days: 3 },
@@ -1425,6 +1433,8 @@ function scoreColor(score: number): string {
 
 function EvalPipelineTab() {
   const [results, setResults] = useState<EvalScore[]>([])
+  const [benchmarks, setBenchmarks] = useState<BenchmarkScore[]>([])
+  const [mode, setMode] = useState<'eval' | 'benchmark'>('eval')
   const [running, setRunning] = useState(false)
   const [currentDest, setCurrentDest] = useState('')
   const [progress, setProgress] = useState({ done: 0, total: 0 })
@@ -1449,7 +1459,13 @@ function EvalPipelineTab() {
 
       try {
         const result = await runSingleEval(p.dest, p.country, p.vibes, p.days)
-        if (result) setResults(prev => [...prev, result])
+        if (result) {
+          if (mode === 'benchmark' && 'drift' in result) {
+            setBenchmarks(prev => [...prev, result as unknown as BenchmarkScore])
+          } else {
+            setResults(prev => [...prev, result as EvalScore])
+          }
+        }
       } catch (e) {
         console.error(`Eval failed for ${p.dest}:`, e)
       }
@@ -1477,7 +1493,8 @@ function EvalPipelineTab() {
     setRunning(false)
   }
 
-  async function runSingleEval(dest: string, country: string, vibes: string[], days: number): Promise<EvalScore | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function runSingleEval(dest: string, country: string, vibes: string[], days: number): Promise<any> {
     // Step 1: Generate trip via admin secret
     const today = new Date()
     const start = new Date(today.setDate(today.getDate() + 14)).toISOString().split('T')[0]
@@ -1501,11 +1518,11 @@ function EvalPipelineTab() {
     const genData = await genRes.json()
     if (!genData.trip?.id) return null
 
-    // Step 2: Run eval
+    // Step 2: Run eval (with optional benchmark)
     const evalRes = await fetch('/api/ai/eval', {
       method: 'POST',
       headers: { ...buildHeaders(), Authorization: `Bearer ${getSecret()}` },
-      body: JSON.stringify({ tripId: genData.trip.id }),
+      body: JSON.stringify({ tripId: genData.trip.id, benchmark: mode === 'benchmark' }),
     })
 
     if (!evalRes.ok) return null
@@ -1531,11 +1548,27 @@ function EvalPipelineTab() {
         )}
       </div>
 
+      {/* Mode toggle */}
+      <div className="flex gap-2 mb-5">
+        <button
+          onClick={() => { setMode('eval'); setResults([]); setBenchmarks([]) }}
+          className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${mode === 'eval' ? 'bg-[#c8a44e] text-[#0a0a0f]' : 'border border-[rgba(255,255,255,0.1)] text-[#7a7a85]'}`}
+        >
+          Quality Eval
+        </button>
+        <button
+          onClick={() => { setMode('benchmark'); setResults([]); setBenchmarks([]) }}
+          className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${mode === 'benchmark' ? 'bg-[#c8a44e] text-[#0a0a0f]' : 'border border-[rgba(255,255,255,0.1)] text-[#7a7a85]'}`}
+        >
+          Benchmark vs Raw LLM
+        </button>
+      </div>
+
       {/* Controls */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Preset batch */}
         <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
-          <div className="text-xs font-semibold text-[#f0efe8] mb-2">Batch Eval (8 destinations)</div>
+          <div className="text-xs font-semibold text-[#f0efe8] mb-2">{mode === 'benchmark' ? 'Batch Benchmark (Drift vs Raw LLM)' : 'Batch Eval (8 destinations)'}</div>
           <div className="text-[10px] text-[#7a7a85] mb-3">
             {EVAL_PRESETS.map(p => p.dest).join(', ')}
           </div>
@@ -1642,6 +1675,73 @@ function EvalPipelineTab() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Benchmark Results (Drift vs Raw LLM) */}
+      {benchmarks.length > 0 && (
+        <div className="space-y-3 mt-6">
+          <div className="text-sm font-semibold text-[#f0efe8] mb-3">Drift vs Raw LLM — Side by Side</div>
+
+          <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-3 grid grid-cols-8 gap-2 text-center text-[8px] uppercase tracking-wider text-[#4a4a55]">
+            <div className="text-left">Destination</div>
+            <div>Source</div>
+            <div>Overall</div>
+            <div>Places</div>
+            <div>Vibes</div>
+            <div>Must-Sees</div>
+            <div>Balance</div>
+            <div>Ratings</div>
+          </div>
+
+          {benchmarks.map((b, i) => (
+            <div key={i} className="space-y-1">
+              <div className="bg-[#0e0e14] border border-[rgba(78,205,196,0.15)] rounded-xl p-3 grid grid-cols-8 gap-2 items-center text-center text-xs">
+                <div className="text-left">
+                  <div className="text-[#f0efe8]">{b.destination}</div>
+                  <div className="text-[8px] text-[#4a4a55]">{b.vibes.join(', ')}</div>
+                </div>
+                <div className="text-[#4ecdc4] font-semibold text-[10px]">DRIFT</div>
+                <div className="text-lg font-light" style={{ color: scoreColor(b.drift.overallScore) }}>{b.drift.overallScore}</div>
+                <div style={{ color: scoreColor(b.drift.dimensions.placeValidity.score) }}>{b.drift.dimensions.placeValidity.score}</div>
+                <div style={{ color: scoreColor(b.drift.dimensions.vibeMatch.score) }}>{b.drift.dimensions.vibeMatch.score}</div>
+                <div style={{ color: scoreColor(b.drift.dimensions.mustSeeCoverage.score) }}>{b.drift.dimensions.mustSeeCoverage.score}</div>
+                <div style={{ color: scoreColor(b.drift.dimensions.dayBalance.score) }}>{b.drift.dimensions.dayBalance.score}</div>
+                <div style={{ color: scoreColor(b.drift.dimensions.ratingQuality.score) }}>{b.drift.dimensions.ratingQuality.score}</div>
+              </div>
+              <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-3 grid grid-cols-8 gap-2 items-center text-center text-xs">
+                <div></div>
+                <div className="text-[#7a7a85] font-semibold text-[10px]">RAW LLM</div>
+                <div className="text-lg font-light" style={{ color: scoreColor(b.rawLlm.overallScore) }}>{b.rawLlm.overallScore}</div>
+                <div style={{ color: scoreColor(b.rawLlm.dimensions.placeValidity.score) }}>{b.rawLlm.dimensions.placeValidity.score}</div>
+                <div style={{ color: scoreColor(b.rawLlm.dimensions.vibeMatch.score) }}>{b.rawLlm.dimensions.vibeMatch.score}</div>
+                <div style={{ color: scoreColor(b.rawLlm.dimensions.mustSeeCoverage.score) }}>{b.rawLlm.dimensions.mustSeeCoverage.score}</div>
+                <div style={{ color: scoreColor(b.rawLlm.dimensions.dayBalance.score) }}>{b.rawLlm.dimensions.dayBalance.score}</div>
+                <div style={{ color: scoreColor(b.rawLlm.dimensions.ratingQuality.score) }}>{b.rawLlm.dimensions.ratingQuality.score}</div>
+              </div>
+              <div className="bg-[rgba(200,164,78,0.04)] rounded-xl p-2 grid grid-cols-8 gap-2 items-center text-center text-[10px]">
+                <div></div>
+                <div className="text-[#c8a44e] font-bold">DELTA</div>
+                {[b.delta.overall, b.delta.placeValidity, b.delta.vibeMatch, b.delta.mustSee, 0, b.delta.ratings].map((d, j) => (
+                  <div key={j} className={d > 0 ? 'text-[#4ecdc4] font-semibold' : d < 0 ? 'text-[#e74c3c]' : 'text-[#4a4a55]'}>
+                    {d > 0 ? '+' : ''}{d}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {benchmarks.length > 1 && (
+            <div className="bg-[rgba(200,164,78,0.08)] border border-[rgba(200,164,78,0.15)] rounded-xl p-5 text-center mt-4">
+              <div className="text-[9px] uppercase tracking-wider text-[#c8a44e] mb-2">Average Delta across {benchmarks.length} destinations</div>
+              <div className="text-4xl font-light text-[#4ecdc4]">
+                +{Math.round(benchmarks.reduce((s, b) => s + b.delta.overall, 0) / benchmarks.length)}
+              </div>
+              <div className="text-xs text-[#7a7a85] mt-1">
+                Drift scores higher than a raw LLM on average
+              </div>
+            </div>
+          )}
         </div>
       )}
     </>
