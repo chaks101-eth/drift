@@ -1,22 +1,23 @@
 // ─── Itinerary Quality Scorer ─────────────────────────────────
-// Scores generated itineraries across 6 dimensions.
-// Refactored from itinerary-eval.ts to use place cache and be composable.
+// Scores generated itineraries across 7 dimensions.
+// Split must-see into: landmark coverage (iconic places) + vibe must-haves (best-for-this-vibe).
 
 import { verifyPlace } from './place-cache'
 import type {
   EvalItem, EvalResult, DimensionScores,
-  PlaceValidityScore, VibeMatchScore, MustSeeCoverageScore,
+  PlaceValidityScore, VibeMatchScore, LandmarkCoverageScore, VibeMustHavesScore,
   PriceRealismScore, DayBalanceScore, RatingQualityScore,
 } from './types'
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
-// ─── Dimension Weights ───────────────────────────────────────
+// ─── Dimension Weights (7 dimensions, sum = 1.0) ────────────
 
 const WEIGHTS = {
-  placeValidity: 0.25,
-  vibeMatch: 0.20,
-  mustSeeCoverage: 0.25,
+  placeValidity: 0.20,
+  vibeMatch: 0.15,
+  landmarkCoverage: 0.15,
+  vibeMustHaves: 0.20,
   priceRealism: 0.10,
   dayBalance: 0.10,
   ratingQuality: 0.10,
@@ -32,9 +33,10 @@ export async function evaluateItinerary(
 ): Promise<EvalResult> {
   const realItems = items.filter(i => ['hotel', 'activity', 'food'].includes(i.category))
 
-  const [placeValidity, vibeAndMustSee, priceRealism, dayBalance, ratingQuality] = await Promise.all([
+  const [placeValidity, vibeMatchResult, landmarkAndVibeMustHaves, priceRealism, dayBalance, ratingQuality] = await Promise.all([
     evalPlaceValidity(realItems, destination, country),
-    evalVibeMatchAndMustSees(realItems, destination, country, vibes),
+    evalVibeMatch(realItems, destination, country, vibes),
+    evalLandmarksAndVibeMustHaves(realItems, destination, country, vibes),
     evalPriceRealism(realItems, destination),
     evalDayBalance(items),
     evalRatingQuality(realItems),
@@ -42,8 +44,9 @@ export async function evaluateItinerary(
 
   const overallScore = Math.round(
     placeValidity.score * WEIGHTS.placeValidity +
-    vibeAndMustSee.vibeMatch.score * WEIGHTS.vibeMatch +
-    vibeAndMustSee.mustSeeCoverage.score * WEIGHTS.mustSeeCoverage +
+    vibeMatchResult.score * WEIGHTS.vibeMatch +
+    landmarkAndVibeMustHaves.landmarks.score * WEIGHTS.landmarkCoverage +
+    landmarkAndVibeMustHaves.vibeMustHaves.score * WEIGHTS.vibeMustHaves +
     priceRealism.score * WEIGHTS.priceRealism +
     dayBalance.score * WEIGHTS.dayBalance +
     ratingQuality.score * WEIGHTS.ratingQuality
@@ -51,8 +54,9 @@ export async function evaluateItinerary(
 
   const dimensions: DimensionScores = {
     placeValidity,
-    vibeMatch: vibeAndMustSee.vibeMatch,
-    mustSeeCoverage: vibeAndMustSee.mustSeeCoverage,
+    vibeMatch: vibeMatchResult,
+    landmarkCoverage: landmarkAndVibeMustHaves.landmarks,
+    vibeMustHaves: landmarkAndVibeMustHaves.vibeMustHaves,
     priceRealism,
     dayBalance,
     ratingQuality,
@@ -63,7 +67,7 @@ export async function evaluateItinerary(
     vibes,
     overallScore,
     dimensions,
-    summary: buildSummary(overallScore, placeValidity, vibeAndMustSee, priceRealism),
+    summary: buildSummary(overallScore, dimensions),
   }
 }
 
@@ -94,21 +98,13 @@ async function evalPlaceValidity(
   return { score, verified, total: sample.length, invalid }
 }
 
-// ─── Dimensions 2 & 3: Vibe Match + Must-See Coverage ────────
+// ─── Dimension 2: Vibe Match ─────────────────────────────────
 
-async function evalVibeMatchAndMustSees(
+async function evalVibeMatch(
   items: EvalItem[], destination: string, country: string, vibes: string[],
-): Promise<{
-  vibeMatch: VibeMatchScore
-  mustSeeCoverage: MustSeeCoverageScore
-}> {
+): Promise<VibeMatchScore> {
   const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    return {
-      vibeMatch: { score: 50, matched: 0, total: 0, mismatches: [] },
-      mustSeeCoverage: { score: 50, hit: 0, total: 0, mustSees: [], missing: [] },
-    }
-  }
+  if (!apiKey) return { score: 50, matched: 0, total: 0, mismatches: [] }
 
   const itemNames = items.map(i => `${i.name} (${i.category})`).join(', ')
   const vibeStr = vibes.join(', ')
@@ -125,15 +121,11 @@ Items: ${itemNames}
 Return JSON:
 {
   "vibeMatchPercent": 0-100,
-  "mismatches": ["Place Name — why it doesn't match the vibes"],
-  "mustSees": ["Place 1", "Place 2", "Place 3", "Place 4", "Place 5"],
-  "mustSeesPresent": ["Place 1", "Place 3"],
-  "mustSeesMissing": ["Place 2", "Place 4", "Place 5"]
+  "mismatches": ["Place Name — why it doesn't match the ${vibeStr} vibes"]
 }
 
-"mustSees" = the 5 absolute must-visit places in ${destination} for ${vibeStr} vibes.
 "vibeMatchPercent" = what % of the listed items genuinely match ${vibeStr} vibes.
-"mismatches" = items that don't fit the vibes at all.
+"mismatches" = items that clearly don't fit the requested vibes.
 JSON only.` }] }],
         tools: [{ google_search: {} }],
       }),
@@ -146,35 +138,107 @@ JSON only.` }] }],
     const match = cleaned.match(/\{[\s\S]*\}/)
     const result = JSON.parse(match ? match[0] : cleaned)
 
-    const mustSees = (result.mustSees || []) as string[]
-    const present = (result.mustSeesPresent || []) as string[]
-    const missing = (result.mustSeesMissing || []) as string[]
     const mismatches = (result.mismatches || []) as string[]
+    return {
+      score: result.vibeMatchPercent || 50,
+      matched: items.length - mismatches.length,
+      total: items.length,
+      mismatches,
+    }
+  } catch {
+    return { score: 50, matched: 0, total: items.length, mismatches: [] }
+  }
+}
+
+// ─── Dimensions 3 & 4: Landmark Coverage + Vibe Must-Haves ──
+
+async function evalLandmarksAndVibeMustHaves(
+  items: EvalItem[], destination: string, country: string, vibes: string[],
+): Promise<{
+  landmarks: LandmarkCoverageScore
+  vibeMustHaves: VibeMustHavesScore
+}> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    return {
+      landmarks: { score: 50, hit: 0, total: 0, landmarks: [], missing: [] },
+      vibeMustHaves: { score: 50, hit: 0, total: 0, vibeMustHaves: [], missing: [] },
+    }
+  }
+
+  const itemNames = items.map(i => `${i.name} (${i.category})`).join(', ')
+  const vibeStr = vibes.join(', ')
+
+  try {
+    const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `Analyze this ${destination}, ${country} itinerary.
+
+Items: ${itemNames}
+
+Return JSON with TWO separate lists:
+
+{
+  "landmarks": ["Place 1", "Place 2", "Place 3", "Place 4", "Place 5"],
+  "landmarksPresent": ["Place 1"],
+  "landmarksMissing": ["Place 2", "Place 3", "Place 4", "Place 5"],
+  "vibeMustHaves": ["Place A", "Place B", "Place C", "Place D", "Place E"],
+  "vibeMustHavesPresent": ["Place A", "Place B"],
+  "vibeMustHavesMissing": ["Place C", "Place D", "Place E"]
+}
+
+"landmarks" = the 5 iconic, universally recognized landmarks/attractions in ${destination} that ANY tourist should see regardless of their travel style. Think: the places that appear on every postcard, travel guide, and "top 10" list.
+
+"vibeMustHaves" = the 5 BEST places in ${destination} specifically for someone traveling with "${vibeStr}" vibes. These should NOT be generic landmarks — they should be the places a local would recommend to someone who specifically wants ${vibeStr} experiences. For example: if vibes are "foodie", list the best food spots, not temples. If vibes are "adventure", list thrill activities, not museums.
+
+For both lists, check which items from the itinerary match (present) and which are missing.
+JSON only.` }] }],
+        tools: [{ google_search: {} }],
+      }),
+    })
+
+    if (!res.ok) throw new Error(`API ${res.status}`)
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+    const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+    const match = cleaned.match(/\{[\s\S]*\}/)
+    const result = JSON.parse(match ? match[0] : cleaned)
+
+    const landmarkList = (result.landmarks || []) as string[]
+    const landmarkPresent = (result.landmarksPresent || []) as string[]
+    const landmarkMissing = (result.landmarksMissing || []) as string[]
+
+    const vibeList = (result.vibeMustHaves || []) as string[]
+    const vibePresent = (result.vibeMustHavesPresent || []) as string[]
+    const vibeMissing = (result.vibeMustHavesMissing || []) as string[]
 
     return {
-      vibeMatch: {
-        score: result.vibeMatchPercent || 50,
-        matched: items.length - mismatches.length,
-        total: items.length,
-        mismatches,
+      landmarks: {
+        score: landmarkList.length > 0 ? Math.round((landmarkPresent.length / landmarkList.length) * 100) : 50,
+        hit: landmarkPresent.length,
+        total: landmarkList.length,
+        landmarks: landmarkList,
+        missing: landmarkMissing,
       },
-      mustSeeCoverage: {
-        score: mustSees.length > 0 ? Math.round((present.length / mustSees.length) * 100) : 50,
-        hit: present.length,
-        total: mustSees.length,
-        mustSees,
-        missing,
+      vibeMustHaves: {
+        score: vibeList.length > 0 ? Math.round((vibePresent.length / vibeList.length) * 100) : 50,
+        hit: vibePresent.length,
+        total: vibeList.length,
+        vibeMustHaves: vibeList,
+        missing: vibeMissing,
       },
     }
   } catch {
     return {
-      vibeMatch: { score: 50, matched: 0, total: items.length, mismatches: [] },
-      mustSeeCoverage: { score: 50, hit: 0, total: 0, mustSees: [], missing: [] },
+      landmarks: { score: 50, hit: 0, total: 0, landmarks: [], missing: [] },
+      vibeMustHaves: { score: 50, hit: 0, total: 0, vibeMustHaves: [], missing: [] },
     }
   }
 }
 
-// ─── Dimension 4: Price Realism ──────────────────────────────
+// ─── Dimension 5: Price Realism ──────────────────────────────
 
 async function evalPriceRealism(
   items: EvalItem[], destination: string,
@@ -202,7 +266,7 @@ async function evalPriceRealism(
   return { score: Math.max(0, Math.min(100, score)), notes }
 }
 
-// ─── Dimension 5: Day Balance ────────────────────────────────
+// ─── Dimension 6: Day Balance ────────────────────────────────
 
 async function evalDayBalance(items: EvalItem[]): Promise<DayBalanceScore> {
   const itemsPerDay: number[] = []
@@ -237,7 +301,7 @@ async function evalDayBalance(items: EvalItem[]): Promise<DayBalanceScore> {
   return { score: Math.max(0, Math.min(100, score)), itemsPerDay, notes }
 }
 
-// ─── Dimension 6: Rating Quality ─────────────────────────────
+// ─── Dimension 7: Rating Quality ─────────────────────────────
 
 async function evalRatingQuality(items: EvalItem[]): Promise<RatingQualityScore> {
   const ratings = items
@@ -255,12 +319,7 @@ async function evalRatingQuality(items: EvalItem[]): Promise<RatingQualityScore>
 
 // ─── Summary Builder ─────────────────────────────────────────
 
-function buildSummary(
-  overall: number,
-  validity: PlaceValidityScore,
-  vibeAndMust: { vibeMatch: VibeMatchScore; mustSeeCoverage: MustSeeCoverageScore },
-  price: PriceRealismScore,
-): string {
+function buildSummary(overall: number, dims: DimensionScores): string {
   const parts: string[] = []
 
   if (overall >= 85) parts.push('Excellent itinerary — investor-ready.')
@@ -268,10 +327,11 @@ function buildSummary(
   else if (overall >= 50) parts.push('Needs improvement — some issues found.')
   else parts.push('Significant quality issues detected.')
 
-  if (validity.invalid.length > 0) parts.push(`${validity.invalid.length} places couldn't be verified on Google Maps.`)
-  if (vibeAndMust.mustSeeCoverage.missing.length > 0) parts.push(`Missing must-sees: ${vibeAndMust.mustSeeCoverage.missing.join(', ')}.`)
-  if (vibeAndMust.vibeMatch.score < 70) parts.push('Some items don\'t match the requested vibes.')
-  if (price.score < 60) parts.push(price.notes)
+  if (dims.placeValidity.invalid.length > 0) parts.push(`${dims.placeValidity.invalid.length} places couldn't be verified on Google Maps.`)
+  if (dims.landmarkCoverage.missing.length > 0) parts.push(`Missing landmarks: ${dims.landmarkCoverage.missing.join(', ')}.`)
+  if (dims.vibeMustHaves.missing.length > 0) parts.push(`Missing vibe picks: ${dims.vibeMustHaves.missing.join(', ')}.`)
+  if (dims.vibeMatch.score < 70) parts.push('Some items don\'t match the requested vibes.')
+  if (dims.priceRealism.score < 60) parts.push(dims.priceRealism.notes)
 
   return parts.join(' ')
 }

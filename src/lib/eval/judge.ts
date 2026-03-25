@@ -38,7 +38,8 @@ export async function judgeItinerary(
 
   const scoreSummary = `Place Validity: ${dimensionScores.placeValidity.score}/100, ` +
     `Vibe Match: ${dimensionScores.vibeMatch.score}/100, ` +
-    `Must-See: ${dimensionScores.mustSeeCoverage.score}/100, ` +
+    `Landmarks: ${dimensionScores.landmarkCoverage.score}/100, ` +
+    `Vibe Must-Haves: ${dimensionScores.vibeMustHaves.score}/100, ` +
     `Price: ${dimensionScores.priceRealism.score}/100, ` +
     `Day Balance: ${dimensionScores.dayBalance.score}/100, ` +
     `Ratings: ${dimensionScores.ratingQuality.score}/100`

@@ -23,11 +23,19 @@ export interface VibeMatchScore {
   mismatches: string[]
 }
 
-export interface MustSeeCoverageScore {
+export interface LandmarkCoverageScore {
   score: number
   hit: number
   total: number
-  mustSees: string[]
+  landmarks: string[]
+  missing: string[]
+}
+
+export interface VibeMustHavesScore {
+  score: number
+  hit: number
+  total: number
+  vibeMustHaves: string[]
   missing: string[]
 }
 
@@ -52,7 +60,8 @@ export interface RatingQualityScore {
 export interface DimensionScores {
   placeValidity: PlaceValidityScore
   vibeMatch: VibeMatchScore
-  mustSeeCoverage: MustSeeCoverageScore
+  landmarkCoverage: LandmarkCoverageScore
+  vibeMustHaves: VibeMustHavesScore
   priceRealism: PriceRealismScore
   dayBalance: DayBalanceScore
   ratingQuality: RatingQualityScore

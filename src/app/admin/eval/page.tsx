@@ -20,7 +20,8 @@ type Trip = { id: string; destination: string; country: string; vibes: string[];
 type DimensionScores = {
   placeValidity: { score: number; verified: number; total: number; invalid: string[] }
   vibeMatch: { score: number; matched: number; total: number; mismatches: string[] }
-  mustSeeCoverage: { score: number; hit: number; total: number; mustSees: string[]; missing: string[] }
+  landmarkCoverage: { score: number; hit: number; total: number; landmarks: string[]; missing: string[] }
+  vibeMustHaves: { score: number; hit: number; total: number; vibeMustHaves: string[]; missing: string[] }
   priceRealism: { score: number; notes: string }
   dayBalance: { score: number; itemsPerDay: number[]; notes: string }
   ratingQuality: { score: number; avgRating: number; ratedCount: number; total: number }
@@ -76,8 +77,8 @@ function scoreBg(score: number): string {
 }
 
 const dimLabels: Record<string, string> = {
-  placeValidity: 'Places', vibeMatch: 'Vibes', mustSeeCoverage: 'Must-Sees',
-  priceRealism: 'Prices', dayBalance: 'Balance', ratingQuality: 'Ratings',
+  placeValidity: 'Places', vibeMatch: 'Vibes', landmarkCoverage: 'Landmarks',
+  vibeMustHaves: 'Vibe Picks', priceRealism: 'Prices', dayBalance: 'Balance', ratingQuality: 'Ratings',
 }
 
 const judgeDimLabels: Record<string, string> = {
@@ -789,11 +790,19 @@ function ResultDetail({ result }: { result: EvalResultRow }) {
         </div>
       )}
 
-      {/* Missing must-sees */}
-      {dims?.mustSeeCoverage?.missing?.length > 0 && (
+      {/* Missing landmarks */}
+      {dims?.landmarkCoverage?.missing?.length > 0 && (
         <div>
-          <div className="text-[10px] text-[#f0a500] uppercase tracking-wider mb-1">Missing Must-Sees</div>
-          <div className="text-xs text-[#7a7a85]">{dims.mustSeeCoverage.missing.join(', ')}</div>
+          <div className="text-[10px] text-[#f0a500] uppercase tracking-wider mb-1">Missing Landmarks</div>
+          <div className="text-xs text-[#7a7a85]">{dims.landmarkCoverage.missing.join(', ')}</div>
+        </div>
+      )}
+
+      {/* Missing vibe must-haves */}
+      {dims?.vibeMustHaves?.missing?.length > 0 && (
+        <div>
+          <div className="text-[10px] text-[#c8a44e] uppercase tracking-wider mb-1">Missing Vibe Picks</div>
+          <div className="text-xs text-[#7a7a85]">{dims.vibeMustHaves.missing.join(', ')}</div>
         </div>
       )}
 

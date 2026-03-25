@@ -15,7 +15,7 @@ export interface BenchmarkResult {
   vibes: string[]
   drift: EvalResult
   rawLlm: EvalResult
-  delta: { overall: number; placeValidity: number; vibeMatch: number; mustSee: number; ratings: number }
+  delta: { overall: number; placeValidity: number; vibeMatch: number; landmarks: number; vibeMustHaves: number; ratings: number }
 }
 
 export async function benchmarkVsRawLlm(
@@ -49,7 +49,8 @@ export async function benchmarkVsRawLlm(
       overall: driftEval.overallScore - rawEval.overallScore,
       placeValidity: driftEval.dimensions.placeValidity.score - rawEval.dimensions.placeValidity.score,
       vibeMatch: driftEval.dimensions.vibeMatch.score - rawEval.dimensions.vibeMatch.score,
-      mustSee: driftEval.dimensions.mustSeeCoverage.score - rawEval.dimensions.mustSeeCoverage.score,
+      landmarks: driftEval.dimensions.landmarkCoverage.score - rawEval.dimensions.landmarkCoverage.score,
+      vibeMustHaves: driftEval.dimensions.vibeMustHaves.score - rawEval.dimensions.vibeMustHaves.score,
       ratings: driftEval.dimensions.ratingQuality.score - rawEval.dimensions.ratingQuality.score,
     },
   }
