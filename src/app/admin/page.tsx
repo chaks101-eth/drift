@@ -39,7 +39,7 @@ type PipelineRun = {
   catalog_destinations?: { city: string; country: string }
 }
 
-type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add'
+type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add' | 'eval'
 
 // ─── Dashboard Shell ────────────────────────────────────────
 
@@ -120,6 +120,7 @@ export default function AdminDashboard() {
     { key: 'quality', label: 'Data Quality', icon: '\u2714' },
     { key: 'pipeline', label: 'Pipeline', icon: '\u25B6' },
     { key: 'add', label: 'Add Destination', icon: '+' },
+    { key: 'eval', label: 'Eval Pipeline', icon: '⚡' },
   ]
 
   return (
@@ -168,6 +169,7 @@ export default function AdminDashboard() {
               {tab === 'quality' && <DataQualityTab destinations={destinations} />}
               {tab === 'pipeline' && <PipelineTab destinations={destinations} onRefresh={loadData} />}
               {tab === 'add' && <AddDestinationTab onComplete={() => { loadData(); setTab('overview') }} />}
+              {tab === 'eval' && <EvalPipelineTab />}
             </>
           )}
         </div>
@@ -1382,6 +1384,266 @@ function AddDestinationTab({ onComplete }: { onComplete: () => void }) {
           </div>
         )}
       </div>
+    </>
+  )
+}
+
+// ─── Eval Pipeline Tab ──────────────────────────────────────
+
+type EvalScore = {
+  destination: string
+  vibes: string[]
+  overallScore: number
+  summary: string
+  dimensions: {
+    placeValidity: { score: number; verified: number; total: number; invalid: string[] }
+    vibeMatch: { score: number; matched: number; total: number; mismatches: string[] }
+    mustSeeCoverage: { score: number; hit: number; total: number; mustSees: string[]; missing: string[] }
+    priceRealism: { score: number; notes: string }
+    dayBalance: { score: number; itemsPerDay: number[]; notes: string }
+    ratingQuality: { score: number; avgRating: number; ratedCount: number; total: number }
+  }
+}
+
+const EVAL_PRESETS = [
+  { dest: 'Tokyo', country: 'Japan', vibes: ['culture', 'foodie'], days: 4 },
+  { dest: 'Barcelona', country: 'Spain', vibes: ['city', 'romance', 'foodie'], days: 3 },
+  { dest: 'Cape Town', country: 'South Africa', vibes: ['adventure', 'beach'], days: 5 },
+  { dest: 'Bali', country: 'Indonesia', vibes: ['beach', 'spiritual', 'romance'], days: 4 },
+  { dest: 'Istanbul', country: 'Turkey', vibes: ['culture', 'foodie', 'city'], days: 3 },
+  { dest: 'Lisbon', country: 'Portugal', vibes: ['culture', 'romance'], days: 4 },
+  { dest: 'Marrakech', country: 'Morocco', vibes: ['adventure', 'culture', 'foodie'], days: 3 },
+  { dest: 'Bangkok', country: 'Thailand', vibes: ['foodie', 'city'], days: 3 },
+]
+
+function scoreColor(score: number): string {
+  if (score >= 85) return '#4ecdc4'
+  if (score >= 70) return '#c8a44e'
+  if (score >= 50) return '#f0a500'
+  return '#e74c3c'
+}
+
+function EvalPipelineTab() {
+  const [results, setResults] = useState<EvalScore[]>([])
+  const [running, setRunning] = useState(false)
+  const [currentDest, setCurrentDest] = useState('')
+  const [progress, setProgress] = useState({ done: 0, total: 0 })
+  const [customDest, setCustomDest] = useState('')
+  const [customCountry, setCustomCountry] = useState('')
+  const [customVibes, setCustomVibes] = useState('')
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+
+  async function runPresetEval() {
+    setRunning(true)
+    setResults([])
+    setProgress({ done: 0, total: EVAL_PRESETS.length })
+
+    // Need a token — use admin to create temp user
+    const loginRes = await fetch('/api/auth/callback?eval=true').catch(() => null)
+    void loginRes
+
+    for (let i = 0; i < EVAL_PRESETS.length; i++) {
+      const p = EVAL_PRESETS[i]
+      setCurrentDest(p.dest)
+      setProgress({ done: i, total: EVAL_PRESETS.length })
+
+      try {
+        const result = await runSingleEval(p.dest, p.country, p.vibes, p.days)
+        if (result) setResults(prev => [...prev, result])
+      } catch (e) {
+        console.error(`Eval failed for ${p.dest}:`, e)
+      }
+    }
+
+    setCurrentDest('')
+    setRunning(false)
+    setProgress({ done: EVAL_PRESETS.length, total: EVAL_PRESETS.length })
+  }
+
+  async function runCustomEval() {
+    if (!customDest) return
+    setRunning(true)
+    setCurrentDest(customDest)
+
+    const vibes = customVibes.split(',').map(v => v.trim()).filter(Boolean)
+    try {
+      const result = await runSingleEval(customDest, customCountry, vibes.length ? vibes : ['culture', 'foodie'], 4)
+      if (result) setResults(prev => [...prev, result])
+    } catch (e) {
+      console.error('Eval failed:', e)
+    }
+
+    setCurrentDest('')
+    setRunning(false)
+  }
+
+  async function runSingleEval(dest: string, country: string, vibes: string[], days: number): Promise<EvalScore | null> {
+    // Step 1: Generate trip via admin secret
+    const today = new Date()
+    const start = new Date(today.setDate(today.getDate() + 14)).toISOString().split('T')[0]
+    const end = new Date(new Date(start).setDate(new Date(start).getDate() + days)).toISOString().split('T')[0]
+
+    const genRes = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { ...buildHeaders(), Authorization: `Bearer ${getSecret()}` },
+      body: JSON.stringify({
+        type: 'itinerary', destination: dest, country, vibes,
+        start_date: start, end_date: end, travelers: 2, budget: 'mid', origin: 'Delhi',
+      }),
+    })
+
+    // If auth fails (admin secret isn't a user token), try the trip eval on existing trips
+    if (!genRes.ok) {
+      console.warn(`Generate failed for ${dest} (${genRes.status}), trying existing trips...`)
+      return null
+    }
+
+    const genData = await genRes.json()
+    if (!genData.trip?.id) return null
+
+    // Step 2: Run eval
+    const evalRes = await fetch('/api/ai/eval', {
+      method: 'POST',
+      headers: { ...buildHeaders(), Authorization: `Bearer ${getSecret()}` },
+      body: JSON.stringify({ tripId: genData.trip.id }),
+    })
+
+    if (!evalRes.ok) return null
+    return evalRes.json()
+  }
+
+  const avgScore = results.length > 0
+    ? Math.round(results.reduce((s, r) => s + r.overallScore, 0) / results.length)
+    : 0
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="font-serif text-2xl text-[#f0efe8]">Eval Pipeline</h2>
+          <p className="text-[12px] text-[#7a7a85] mt-1">Automated quality scoring for generated itineraries</p>
+        </div>
+        {results.length > 0 && (
+          <div className="text-center">
+            <div className="text-3xl font-light" style={{ color: scoreColor(avgScore) }}>{avgScore}</div>
+            <div className="text-[8px] uppercase tracking-wider text-[#4a4a55]">Avg Score</div>
+          </div>
+        )}
+      </div>
+
+      {/* Controls */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* Preset batch */}
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+          <div className="text-xs font-semibold text-[#f0efe8] mb-2">Batch Eval (8 destinations)</div>
+          <div className="text-[10px] text-[#7a7a85] mb-3">
+            {EVAL_PRESETS.map(p => p.dest).join(', ')}
+          </div>
+          <button
+            onClick={runPresetEval}
+            disabled={running}
+            className="w-full py-2 rounded-lg bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold disabled:opacity-30"
+          >
+            {running ? `Evaluating ${currentDest}... (${progress.done}/${progress.total})` : 'Run Batch Eval'}
+          </button>
+        </div>
+
+        {/* Custom */}
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+          <div className="text-xs font-semibold text-[#f0efe8] mb-2">Custom Eval</div>
+          <div className="flex gap-2 mb-2">
+            <input value={customDest} onChange={e => setCustomDest(e.target.value)} placeholder="Destination" className="flex-1 bg-transparent border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-1.5 text-xs text-[#f0efe8] placeholder:text-[#4a4a55]" />
+            <input value={customCountry} onChange={e => setCustomCountry(e.target.value)} placeholder="Country" className="w-24 bg-transparent border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-1.5 text-xs text-[#f0efe8] placeholder:text-[#4a4a55]" />
+          </div>
+          <input value={customVibes} onChange={e => setCustomVibes(e.target.value)} placeholder="Vibes (comma separated)" className="w-full bg-transparent border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-1.5 text-xs text-[#f0efe8] placeholder:text-[#4a4a55] mb-2" />
+          <button
+            onClick={runCustomEval}
+            disabled={running || !customDest}
+            className="w-full py-2 rounded-lg border border-[#c8a44e] text-[#c8a44e] text-sm font-semibold disabled:opacity-30"
+          >
+            {running ? `Evaluating ${currentDest}...` : 'Run Eval'}
+          </button>
+        </div>
+      </div>
+
+      {/* Results */}
+      {results.length > 0 && (
+        <div className="space-y-3">
+          {/* Summary bar */}
+          <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 grid grid-cols-7 gap-3 text-center text-[9px] uppercase tracking-wider text-[#4a4a55]">
+            <div>Destination</div>
+            <div>Overall</div>
+            <div>Places</div>
+            <div>Vibes</div>
+            <div>Must-Sees</div>
+            <div>Balance</div>
+            <div>Ratings</div>
+          </div>
+
+          {results.map((r, i) => (
+            <div key={i}>
+              <button
+                onClick={() => setExpandedIdx(expandedIdx === i ? null : i)}
+                className="w-full bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 grid grid-cols-7 gap-3 items-center text-center hover:border-[rgba(255,255,255,0.12)] transition-all"
+              >
+                <div className="text-left">
+                  <div className="text-sm text-[#f0efe8]">{r.destination}</div>
+                  <div className="text-[9px] text-[#4a4a55]">{r.vibes.join(', ')}</div>
+                </div>
+                <div className="text-xl font-light" style={{ color: scoreColor(r.overallScore) }}>{r.overallScore}</div>
+                <div style={{ color: scoreColor(r.dimensions.placeValidity.score) }}>{r.dimensions.placeValidity.score}</div>
+                <div style={{ color: scoreColor(r.dimensions.vibeMatch.score) }}>{r.dimensions.vibeMatch.score}</div>
+                <div style={{ color: scoreColor(r.dimensions.mustSeeCoverage.score) }}>{r.dimensions.mustSeeCoverage.score}</div>
+                <div style={{ color: scoreColor(r.dimensions.dayBalance.score) }}>{r.dimensions.dayBalance.score}</div>
+                <div style={{ color: scoreColor(r.dimensions.ratingQuality.score) }}>{r.dimensions.ratingQuality.score}</div>
+              </button>
+
+              {/* Expanded detail */}
+              {expandedIdx === i && (
+                <div className="bg-[#0a0a10] border border-[rgba(255,255,255,0.04)] rounded-b-xl px-5 py-4 -mt-1 space-y-3">
+                  <p className="text-xs text-[#7a7a85]">{r.summary}</p>
+
+                  {r.dimensions.placeValidity.invalid.length > 0 && (
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider text-[#e74c3c] mb-1">Unverified Places</div>
+                      <div className="text-xs text-[#7a7a85]">{r.dimensions.placeValidity.invalid.join(', ')}</div>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wider text-[#c8a44e] mb-1">Must-Sees for {r.vibes.join(' + ')}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {r.dimensions.mustSeeCoverage.mustSees.map(ms => {
+                        const hit = !r.dimensions.mustSeeCoverage.missing.includes(ms)
+                        return (
+                          <span key={ms} className={`px-2 py-0.5 rounded text-[10px] ${hit ? 'bg-[rgba(78,205,196,0.15)] text-[#4ecdc4]' : 'bg-[rgba(231,76,60,0.15)] text-[#e74c3c]'}`}>
+                            {hit ? '✓' : '✗'} {ms}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {r.dimensions.vibeMatch.mismatches.length > 0 && (
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider text-[#f0a500] mb-1">Vibe Mismatches</div>
+                      {r.dimensions.vibeMatch.mismatches.map((m, j) => (
+                        <div key={j} className="text-[10px] text-[#7a7a85]">• {m}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-6 text-[10px] text-[#7a7a85]">
+                    <div>Days: {r.dimensions.dayBalance.itemsPerDay.join(', ')} items</div>
+                    <div>Avg rating: {r.dimensions.ratingQuality.avgRating}★ ({r.dimensions.ratingQuality.ratedCount}/{r.dimensions.ratingQuality.total})</div>
+                    <div>{r.dimensions.priceRealism.notes}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   )
 }
