@@ -122,9 +122,36 @@ const CITY_IATA: Record<string, string> = {
   'johannesburg': 'JNB', 'casablanca': 'CMN', 'tunis': 'TUN',
   'addis ababa': 'ADD', 'dar es salaam': 'DAR', 'accra': 'ACC',
   'lagos': 'LOS', 'seychelles': 'SEZ',
+  // Southeast Asia (expanded)
+  'krabi': 'KBV', 'pattaya': 'UTP', 'koh samui': 'USM', 'ko samui': 'USM',
+  'langkawi': 'LGK', 'penang': 'PEN', 'luang prabang': 'LPQ',
+  'yogyakarta': 'JOG', 'lombok': 'LOP', 'da nang': 'DAD',
+  'nha trang': 'CXR', 'phu quoc': 'PQC', 'yangon': 'RGN',
+  'vientiane': 'VTE', 'brunei': 'BWN',
+  // South Asia (expanded)
+  'pondicherry': 'PNY', 'jaisalmer': 'JSA',
+  'tirupati': 'TIR', 'aurangabad': 'IXU', 'dharamshala': 'DHM',
+  'diu': 'DIU',
+  // Central Asia / Caucasus
+  'tbilisi': 'TBS', 'batumi': 'BUS', 'yerevan': 'EVN', 'baku': 'GYD',
+  'tashkent': 'TAS', 'almaty': 'ALA', 'bishkek': 'FRU',
+  // South America (expanded)
+  'cusco': 'CUZ', 'cartagena': 'CTG', 'santiago': 'SCL',
+  'montevideo': 'MVD', 'quito': 'UIO', 'la paz': 'LPB',
+  // Turkey (expanded)
+  'antalya': 'AYT', 'cappadocia': 'ASR', 'nevsehir': 'NAV',
+  'bodrum': 'BJV', 'izmir': 'ADB',
+  // Africa (expanded)
+  'victoria falls': 'VFA', 'kilimanjaro': 'JRO', 'arusha': 'JRO',
+  'windhoek': 'WDH', 'livingstone': 'LVI', 'kigali': 'KGL',
+  'entebbe': 'EBB', 'kampala': 'EBB', 'maputo': 'MPM',
+  // Nepal / Bhutan
+  'pokhara': 'PKR', 'paro': 'PBH', 'bhutan': 'PBH',
   // Oceania
   'sydney': 'SYD', 'melbourne': 'MEL', 'auckland': 'AKL',
   'perth': 'PER', 'brisbane': 'BNE', 'fiji': 'NAN',
+  'queenstown': 'ZQN', 'christchurch': 'CHC', 'cairns': 'CNS',
+  'gold coast': 'OOL', 'tahiti': 'PPT', 'bora bora': 'BOB',
 }
 
 export function cityToIATA(city: string): string | null {
