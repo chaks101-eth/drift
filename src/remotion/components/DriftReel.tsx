@@ -202,7 +202,7 @@ export const DriftReel: React.FC<ReelProps> = ({
 
       {/* Voiceover — full volume */}
       {voiceoverUrl && (
-        <Audio src={voiceoverUrl.startsWith('/') ? staticFile(voiceoverUrl) : voiceoverUrl} volume={0.9} />
+        <Audio src={voiceoverUrl.startsWith('/') ? staticFile(voiceoverUrl) : voiceoverUrl} volume={1.5} />
       )}
 
       {/* Intro */}

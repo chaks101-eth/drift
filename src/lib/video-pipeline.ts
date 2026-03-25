@@ -127,14 +127,14 @@ ${slideList}
 
 Rules:
 - Write exactly ${slides.length + 2} lines (1 intro, ${slides.length} for each place, 1 outro)
-- Each line should be 3-5 seconds when spoken (10-20 words max)
-- Intro: Hook that stops scrolling. Don't say "hey guys" or "welcome"
-- Each place line: mention the name, one vivid detail, why it's special
-- Outro: "Plan this trip at driftntravel.com" or similar CTA
-- Tone: confident, slightly poetic, like a luxury travel narrator
-- NO emojis, NO hashtags, NO "link in bio"
+- CRITICAL: Each line must be MAX 8 words. The total script must fit in ${3 + slides.length * 3 + 3} seconds.
+- Intro (3 sec): Short hook, max 6 words. Example: "Sri Lanka will surprise you."
+- Each place (3 sec): Name + one detail, max 8 words. Example: "Gangaramaya Temple. Sacred, serene, stunning."
+- Outro (3 sec): CTA, max 6 words. Example: "Plan this at driftntravel.com"
+- Tone: confident, poetic, luxury travel narrator
+- NO emojis, NO hashtags, NO filler words
 
-Return ONLY the script lines, one per line. No numbering, no labels.`
+Return ONLY the script lines, one per line. No numbering, no labels. Keep it SHORT.`
 
   const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
     method: 'POST',
