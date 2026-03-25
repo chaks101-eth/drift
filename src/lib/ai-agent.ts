@@ -523,6 +523,16 @@ ${params.urlSummary ? `\nContent summary: ${params.urlSummary}` : ''}
 Tag each included highlight with metadata.source: "url_import". Any additional items you add should have metadata.source: "ai".`
   }
 
+  // Build date labels for each day
+  const dayDates: string[] = []
+  for (let d = 0; d < numDays; d++) {
+    const date = new Date(start)
+    date.setDate(date.getDate() + d)
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
+    const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    dayDates.push(`${dayName}, ${monthDay}`)
+  }
+
   const userContent = `Generate a complete day-by-day itinerary for a trip to ${params.destination}, ${params.country}.
 
 Vibes: ${params.vibes.join(', ')}
@@ -531,12 +541,16 @@ Travelers: ${params.travelers}
 ${budgetLine}
 Flying from: ${params.originCity}${durationNote}${occasionNote}${urlSection}${params.planningNotes || ''}
 
+CRITICAL: You MUST generate EXACTLY ${numDays} day separators — one for each day:
+${dayDates.map((d, i) => `  Day ${i + 1} (${d})`).join('\n')}
+
 Start with outbound flight, then hotel check-in, then day-by-day activities/food, end with return flight.
-Use "day" items as separators (name: "Day 1 — Theme", "Day 2 — Theme", etc. — always 1-based). Use "transfer" for travel between locations.
-Include 2-3 alternatives in metadata.alts for flights, hotels, and major activities.
+Use "day" items as separators with name: "Day 1 — Theme · ${dayDates[0]}", "Day 2 — Theme · ${dayDates[1] || ''}", etc. Include the actual date in the name.
+Each day must have 2-4 activities + 1-2 meals. Do NOT leave any day empty.
+Include 2-3 alternatives in metadata.alts for hotels and major activities.
 Keep descriptions short (1 sentence max) to stay within token limits.
 IMPORTANT: Each day separator must have metadata.day_insight (opinionated 1-2 sentence comment about that day). The first day must also have metadata.trip_brief (2-3 sentence overall trip strategy).
-IMPORTANT: If planning intelligence is provided above, USE IT. Group nearby places on the same day. Respect best times. Follow pairing suggestions. This is real data, not guesswork.
+IMPORTANT: If planning intelligence or weather data is provided above, USE IT. Group nearby places on the same day. Respect best times. Schedule outdoor activities on sunny days and indoor on rainy days. This is real data, not guesswork.
 Return ONLY the JSON array.`
 
   const response = await llm.chat.completions.create({
@@ -551,22 +565,36 @@ Return ONLY the JSON array.`
   const text = response.choices[0].message.content || '[]'
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
+  type GeneratedItem = {
+    category: string; name: string; detail: string; description: string;
+    price: string; image_url: string; time: string; position: number;
+    metadata: Record<string, unknown>
+  }
+
   // Try to parse; if truncated JSON, attempt repair
+  let items: GeneratedItem[]
   try {
-    return JSON.parse(cleaned) as Array<{
-      category: string; name: string; detail: string; description: string;
-      price: string; image_url: string; time: string; position: number;
-      metadata: Record<string, unknown>
-    }>
+    items = JSON.parse(cleaned) as GeneratedItem[]
   } catch {
     console.warn('[Generate] JSON truncated, attempting repair...')
     const repaired = repairTruncatedJson(cleaned)
-    return JSON.parse(repaired) as Array<{
-      category: string; name: string; detail: string; description: string;
-      price: string; image_url: string; time: string; position: number;
-      metadata: Record<string, unknown>
-    }>
+    items = JSON.parse(repaired) as GeneratedItem[]
   }
+
+  // Validate: check for empty days and missing days
+  const daySeparators = items.filter(i => i.category === 'day')
+  const lastDayIdx = items.findLastIndex(i => i.category === 'day')
+  const itemsAfterLastDay = lastDayIdx >= 0 ? items.slice(lastDayIdx + 1).filter(i => i.category !== 'flight' && i.category !== 'transfer') : []
+
+  if (daySeparators.length < numDays || (lastDayIdx >= 0 && itemsAfterLastDay.length === 0)) {
+    console.warn(`[Generate] Incomplete: ${daySeparators.length}/${numDays} days generated, last day has ${itemsAfterLastDay.length} items. Removing empty trailing day.`)
+    // Remove the empty trailing day separator
+    if (lastDayIdx >= 0 && itemsAfterLastDay.length === 0) {
+      items.splice(lastDayIdx, 1)
+    }
+  }
+
+  return items
 }
 
 // ─── Personalization Pass (catalog trips → feels hand-crafted) ──
