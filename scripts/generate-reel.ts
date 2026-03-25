@@ -35,7 +35,15 @@ async function main() {
   const outputDir = `growth/videos/${destination.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
   const outputPath = `${outputDir}/reel.mp4`
 
-  // Step 5: Render with Remotion
+  // Step 5: Copy audio assets to public/ for Remotion to serve
+  if (result.voiceoverUrl && fs.existsSync(result.voiceoverUrl)) {
+    const publicAudioDir = path.resolve('public/audio')
+    if (!fs.existsSync(publicAudioDir)) fs.mkdirSync(publicAudioDir, { recursive: true })
+    fs.copyFileSync(result.voiceoverUrl, path.join(publicAudioDir, 'voiceover.mp3'))
+    console.log('🔊 Voiceover copied to public/audio/voiceover.mp3')
+  }
+
+  // Step 6: Render with Remotion
   console.log('\n🎞️ Composing final video with Remotion...')
 
   const bundleLocation = await bundle({
@@ -57,9 +65,9 @@ async function main() {
       price: s.price,
       rating: s.rating,
       imageUrl: s.imageUrl,
-      videoClipUrl: s.videoClipUrl || undefined,
+      videoClipUrl: s.videoClipUrl ? path.resolve(s.videoClipUrl) : undefined,
     })),
-    voiceoverUrl: result.voiceoverUrl || undefined,
+    voiceoverUrl: result.voiceoverUrl ? '/audio/voiceover.mp3' : undefined,
     captions: result.script.split('\n'),
     ctaUrl: 'https://driftntravel.com',
   }

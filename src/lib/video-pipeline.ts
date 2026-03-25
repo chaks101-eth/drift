@@ -203,26 +203,42 @@ export async function generateVoiceover(script: string, outputPath: string): Pro
 // ─── Step 4: Generate Video Clips from Photos (Kling) ────────
 
 export async function generateVideoClips(slides: VideoSlide[], outputDir: string): Promise<void> {
-  const klingKey = process.env.KLING_API_KEY
+  const klingAccessKey = process.env.KLING_ACCESS_KEY
+  const klingSecretKey = process.env.KLING_SECRET_KEY
   const runwayKey = process.env.RUNWAY_API_KEY
 
-  if (klingKey) {
+  if (klingAccessKey && klingSecretKey) {
     console.log('[Video] Using Kling AI for photo→video')
+
+    // Generate JWT token for Kling API
+    const crypto = await import('crypto')
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
+    const now = Math.floor(Date.now() / 1000)
+    const payload = Buffer.from(JSON.stringify({
+      iss: klingAccessKey,
+      exp: now + 1800, // 30 min
+      nbf: now - 5,
+      iat: now,
+    })).toString('base64url')
+    const signature = crypto.createHmac('sha256', klingSecretKey).update(`${header}.${payload}`).digest('base64url')
+    const jwt = `${header}.${payload}.${signature}`
+
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i]
       try {
-        // Kling image-to-video API
+        console.log(`[Video] Generating clip ${i + 1}/${slides.length}: ${slide.name}...`)
+
         const res = await fetch('https://api.klingai.com/v1/videos/image2video', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${klingKey}`,
+            'Authorization': `Bearer ${jwt}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model_name: 'kling-v1',
             image: slide.imageUrl,
-            prompt: `Smooth cinematic movement, slowly panning across ${slide.name} in ${slide.category === 'food' ? 'a restaurant' : 'a scenic location'}. Travel video style, warm lighting.`,
-            duration: '3',
+            prompt: `Smooth cinematic camera movement, slowly panning across ${slide.name}. ${slide.category === 'food' ? 'Warm restaurant ambiance, appetizing food.' : 'Beautiful travel destination, golden hour lighting.'} Professional travel video style.`,
+            duration: '5',
             aspect_ratio: '9:16',
           }),
         })
@@ -230,33 +246,40 @@ export async function generateVideoClips(slides: VideoSlide[], outputDir: string
         const data = await res.json()
         const taskId = data?.data?.task_id
 
-        if (taskId) {
-          // Poll for completion
-          for (let j = 0; j < 30; j++) {
-            await new Promise(r => setTimeout(r, 5000))
-            const statusRes = await fetch(`https://api.klingai.com/v1/videos/image2video/${taskId}`, {
-              headers: { 'Authorization': `Bearer ${klingKey}` },
-            })
-            const statusData = await statusRes.json()
-            if (statusData?.data?.task_status === 'succeed') {
-              const videoUrl = statusData.data.task_result?.videos?.[0]?.url
-              if (videoUrl) {
-                // Download video
-                const videoRes = await fetch(videoUrl)
-                const fs = await import('fs')
-                const buffer = Buffer.from(await videoRes.arrayBuffer())
-                const clipPath = `${outputDir}/clip_${i}.mp4`
-                fs.writeFileSync(clipPath, buffer)
-                slide.videoClipUrl = clipPath
-                console.log(`[Video] Clip ${i + 1}/${slides.length}: ${slide.name} → ${clipPath}`)
-              }
-              break
+        if (!taskId) {
+          console.error(`[Video] Kling no task ID for ${slide.name}:`, JSON.stringify(data).slice(0, 200))
+          continue
+        }
+
+        console.log(`[Video]   Task ${taskId} — polling...`)
+
+        // Poll for completion (up to 2.5 min per clip)
+        for (let j = 0; j < 30; j++) {
+          await new Promise(r => setTimeout(r, 5000))
+          const statusRes = await fetch(`https://api.klingai.com/v1/videos/image2video/${taskId}`, {
+            headers: { 'Authorization': `Bearer ${jwt}` },
+          })
+          const statusData = await statusRes.json()
+          const status = statusData?.data?.task_status
+
+          if (status === 'succeed') {
+            const videoUrl = statusData.data.task_result?.videos?.[0]?.url
+            if (videoUrl) {
+              const videoRes = await fetch(videoUrl)
+              const fs = await import('fs')
+              const buffer = Buffer.from(await videoRes.arrayBuffer())
+              const clipPath = `${outputDir}/clip_${i}.mp4`
+              fs.writeFileSync(clipPath, buffer)
+              slide.videoClipUrl = clipPath
+              console.log(`[Video]   ✅ ${slide.name} → ${clipPath} (${(buffer.length / 1024 / 1024).toFixed(1)} MB)`)
             }
-            if (statusData?.data?.task_status === 'failed') {
-              console.error(`[Video] Kling failed for ${slide.name}`)
-              break
-            }
+            break
           }
+          if (status === 'failed') {
+            console.error(`[Video]   ❌ Kling failed for ${slide.name}: ${statusData?.data?.task_status_msg || 'unknown'}`)
+            break
+          }
+          // Still processing...
         }
       } catch (err) {
         console.error(`[Video] Kling error for ${slide.name}:`, err)

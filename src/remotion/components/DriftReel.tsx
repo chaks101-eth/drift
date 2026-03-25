@@ -7,6 +7,7 @@ import {
   interpolate,
   Sequence,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion'
@@ -196,12 +197,12 @@ export const DriftReel: React.FC<ReelProps> = ({
     <AbsoluteFill style={{ backgroundColor: C.bg }}>
       {/* Background music — lower volume */}
       {musicUrl && (
-        <Audio src={musicUrl} volume={0.15} />
+        <Audio src={musicUrl.startsWith('/') ? staticFile(musicUrl) : musicUrl} volume={0.15} />
       )}
 
       {/* Voiceover — full volume */}
       {voiceoverUrl && (
-        <Audio src={voiceoverUrl} volume={0.9} />
+        <Audio src={voiceoverUrl.startsWith('/') ? staticFile(voiceoverUrl) : voiceoverUrl} volume={0.9} />
       )}
 
       {/* Intro */}
