@@ -26,7 +26,7 @@ function statusColor(s: string) {
 export default function GrowthDashboard() {
   const [authed, setAuthed] = useState(false)
   const [secretInput, setSecretInput] = useState('')
-  const [tab, setTab] = useState<'generate' | 'queue' | 'metrics' | 'learnings'>('generate')
+  const [tab, setTab] = useState<'generate' | 'queue' | 'video' | 'email' | 'metrics' | 'learnings' | 'automation'>('generate')
 
   if (!authed) return (
     <div className="min-h-screen bg-[#08080c] flex items-center justify-center">
@@ -50,7 +50,7 @@ export default function GrowthDashboard() {
           <h1 className="font-serif text-xl text-[#c8a44e]">Growth Engine</h1>
         </div>
         <div className="flex gap-2">
-          {(['generate', 'queue', 'metrics', 'learnings'] as const).map(t => (
+          {(['generate', 'queue', 'video', 'email', 'metrics', 'learnings', 'automation'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${tab === t ? 'bg-[rgba(200,164,78,0.15)] text-[#c8a44e]' : 'text-[#7a7a85] hover:text-[#f0efe8]'}`}>
               {t}
@@ -61,8 +61,11 @@ export default function GrowthDashboard() {
       <div className="max-w-[1200px] mx-auto px-8 py-8">
         {tab === 'generate' && <GenerateTab />}
         {tab === 'queue' && <QueueTab />}
+        {tab === 'video' && <VideoTab />}
+        {tab === 'email' && <EmailTab />}
         {tab === 'metrics' && <MetricsTab />}
         {tab === 'learnings' && <LearningsTab />}
+        {tab === 'automation' && <AutomationTab />}
       </div>
     </div>
   )
@@ -402,6 +405,265 @@ function LearningsTab() {
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Video Tab ───────────────────────────────────────────────
+
+function VideoTab() {
+  const [destination, setDestination] = useState('')
+  const [duration, setDuration] = useState(15)
+  const [generating, setGenerating] = useState(false)
+  const [result, setResult] = useState<Record<string, unknown> | null>(null)
+
+  async function generateVideo() {
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/growth/video', {
+        method: 'POST', headers: hdrs(),
+        body: JSON.stringify({ destination: destination || undefined, duration, aspectRatio: '9:16' }),
+      })
+      setResult(await res.json())
+    } catch { /* ignore */ } finally { setGenerating(false) }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+        <h2 className="text-lg font-serif text-[#f0efe8] mb-4">Video / Reel Generator</h2>
+        <p className="text-xs text-[#7a7a85] mb-4">
+          Generates short-form videos from real trip photos for Instagram Reels and TikTok.
+          Uses Creatomate ($12/mo) or Shotstack ($25/mo). Falls back to slide data for manual creation.
+        </p>
+        <div className="flex flex-wrap gap-4 items-end mb-4">
+          <div>
+            <label className="text-[10px] text-[#4a4a55] uppercase tracking-wider block mb-1">Destination (auto if blank)</label>
+            <input value={destination} onChange={e => setDestination(e.target.value)} placeholder="Istanbul, Bali..."
+              className="bg-[#08080c] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#f0efe8] w-[200px]" />
+          </div>
+          <div>
+            <label className="text-[10px] text-[#4a4a55] uppercase tracking-wider block mb-1">Duration</label>
+            <select value={duration} onChange={e => setDuration(parseInt(e.target.value))}
+              className="bg-[#08080c] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#f0efe8]">
+              <option value={15}>15s</option><option value={30}>30s</option><option value={60}>60s</option>
+            </select>
+          </div>
+          <button onClick={generateVideo} disabled={generating}
+            className="bg-[#c8a44e] text-[#08080c] px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+            {generating ? 'Generating...' : 'Generate Video'}
+          </button>
+        </div>
+      </div>
+
+      {result && (
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+          <h3 className="text-sm font-medium text-[#f0efe8] mb-3 uppercase tracking-wider">Result</h3>
+          {result.videoUrl ? (
+            <div>
+              <p className="text-xs text-[#4ecdc4] mb-2">Video rendered via {result.renderer as string}</p>
+              <a href={result.videoUrl as string} target="_blank" rel="noopener" className="text-sm text-[#c8a44e] underline">{result.videoUrl as string}</a>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs text-[#f0a500] mb-2">{result.instructions as string}</p>
+              <div className="text-[10px] text-[#4a4a55] mb-2">Slides ({(result.slides as Array<unknown>)?.length || 0}):</div>
+              <div className="space-y-1">
+                {((result.slides as Array<Record<string, unknown>>) || []).map((s, i) => (
+                  <div key={i} className="flex items-center gap-3 text-xs text-[#7a7a85]">
+                    <span className="text-[#4a4a55] w-4">{i + 1}</span>
+                    {typeof s.imageUrl === 'string' && <img src={s.imageUrl} alt="" className="w-12 h-12 rounded object-cover" />}
+                    <span>{s.overlay as string}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Email Tab ───────────────────────────────────────────────
+
+function EmailTab() {
+  const [type, setType] = useState('digest')
+  const [sending, setSending] = useState(false)
+  const [result, setResult] = useState<Record<string, unknown> | null>(null)
+  const [customTo, setCustomTo] = useState('')
+  const [customSubject, setCustomSubject] = useState('')
+  const [customBody, setCustomBody] = useState('')
+
+  async function sendEmails() {
+    setSending(true)
+    try {
+      const body: Record<string, unknown> = { type }
+      if (type === 'custom') { body.customTo = customTo; body.customSubject = customSubject; body.customBody = customBody }
+      const res = await fetch('/api/growth/email', { method: 'POST', headers: hdrs(), body: JSON.stringify(body) })
+      setResult(await res.json())
+    } catch { /* ignore */ } finally { setSending(false) }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+        <h2 className="text-lg font-serif text-[#f0efe8] mb-4">Email Campaigns</h2>
+        <div className="flex flex-wrap gap-4 items-end mb-4">
+          <div>
+            <label className="text-[10px] text-[#4a4a55] uppercase tracking-wider block mb-1">Campaign Type</label>
+            <select value={type} onChange={e => setType(e.target.value)}
+              className="bg-[#08080c] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#f0efe8]">
+              <option value="digest">Weekly Digest</option>
+              <option value="follow_up">Trip Follow-up (24h)</option>
+              <option value="reactivation">Reactivation (7d inactive)</option>
+              <option value="custom">Custom Email</option>
+            </select>
+          </div>
+          <button onClick={sendEmails} disabled={sending}
+            className="bg-[#c8a44e] text-[#08080c] px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+            {sending ? 'Sending...' : 'Send Campaign'}
+          </button>
+        </div>
+
+        {type === 'custom' && (
+          <div className="space-y-3 mt-4 border-t border-[rgba(255,255,255,0.06)] pt-4">
+            <input value={customTo} onChange={e => setCustomTo(e.target.value)} placeholder="recipient@email.com"
+              className="w-full bg-[#08080c] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#f0efe8]" />
+            <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} placeholder="Subject line"
+              className="w-full bg-[#08080c] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#f0efe8]" />
+            <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} placeholder="Email body (HTML supported)" rows={4}
+              className="w-full bg-[#08080c] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#f0efe8] resize-none" />
+          </div>
+        )}
+
+        <p className="text-[10px] text-[#4a4a55] mt-2">
+          {process.env.NEXT_PUBLIC_RESEND_CONFIGURED === 'true'
+            ? 'Resend configured — emails will be sent automatically.'
+            : 'Resend not configured. Emails will be saved as drafts in the content queue.'}
+        </p>
+      </div>
+
+      {result && (
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+          <h3 className="text-sm font-medium text-[#f0efe8] mb-3 uppercase tracking-wider">Result</h3>
+          <div className="flex gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-serif text-[#4ecdc4]">{result.sent as number || 0}</div>
+              <div className="text-[10px] text-[#4a4a55]">Sent</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-serif text-[#c8a44e]">{result.drafted as number || 0}</div>
+              <div className="text-[10px] text-[#4a4a55]">Drafted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-serif text-[#e74c3c]">{result.failed as number || 0}</div>
+              <div className="text-[10px] text-[#4a4a55]">Failed</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Automation Tab ──────────────────────────────────────────
+
+function AutomationTab() {
+  const [running, setRunning] = useState<string | null>(null)
+  const [result, setResult] = useState<Record<string, unknown> | null>(null)
+  const [fetchingMetrics, setFetchingMetrics] = useState(false)
+  const [metricsResult, setMetricsResult] = useState<Record<string, unknown> | null>(null)
+
+  async function runCycle(cycle: string) {
+    setRunning(cycle)
+    setResult(null)
+    try {
+      const res = await fetch('/api/growth/cron', { method: 'POST', headers: hdrs(), body: JSON.stringify({ cycle }) })
+      setResult(await res.json())
+    } catch { /* ignore */ } finally { setRunning(null) }
+  }
+
+  async function fetchMetrics() {
+    setFetchingMetrics(true)
+    try {
+      const res = await fetch('/api/growth/metrics', { method: 'POST', headers: hdrs(), body: JSON.stringify({}) })
+      setMetricsResult(await res.json())
+    } catch { /* ignore */ } finally { setFetchingMetrics(false) }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+        <h2 className="text-lg font-serif text-[#f0efe8] mb-4">Growth Automation</h2>
+        <p className="text-xs text-[#7a7a85] mb-6">
+          Run the full growth cycle manually, or set up Railway cron jobs to automate.
+        </p>
+
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <button onClick={() => runCycle('daily')} disabled={!!running}
+            className="p-4 rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-[#c8a44e33] text-left">
+            <div className="text-sm text-[#f0efe8] font-medium mb-1">{running === 'daily' ? 'Running...' : 'Run Daily Cycle'}</div>
+            <div className="text-[10px] text-[#4a4a55]">Generate content → post scheduled → send follow-up emails</div>
+          </button>
+          <button onClick={() => runCycle('weekly')} disabled={!!running}
+            className="p-4 rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-[#c8a44e33] text-left">
+            <div className="text-sm text-[#f0efe8] font-medium mb-1">{running === 'weekly' ? 'Running...' : 'Run Weekly Cycle'}</div>
+            <div className="text-[10px] text-[#4a4a55]">Learning loop → plan content → send digest + reactivation</div>
+          </button>
+          <button onClick={fetchMetrics} disabled={fetchingMetrics}
+            className="p-4 rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-[#c8a44e33] text-left">
+            <div className="text-sm text-[#f0efe8] font-medium mb-1">{fetchingMetrics ? 'Fetching...' : 'Fetch Platform Metrics'}</div>
+            <div className="text-[10px] text-[#4a4a55]">Pull latest engagement from Reddit, Twitter, Instagram, dev.to</div>
+          </button>
+        </div>
+
+        {/* Cron setup instructions */}
+        <div className="border-t border-[rgba(255,255,255,0.06)] pt-4">
+          <h3 className="text-xs text-[#4a4a55] uppercase tracking-wider mb-2">Cron Setup (Railway)</h3>
+          <div className="text-[10px] text-[#7a7a85] space-y-1 font-mono">
+            <p># Daily at 10:00 AM IST (4:30 AM UTC)</p>
+            <p>curl -X POST https://drift-production-3829.up.railway.app/api/growth/cron -H &quot;x-admin-secret: $ADMIN_SECRET&quot; -H &quot;Content-Type: application/json&quot; -d &apos;{'{'}&#34;cycle&#34;:&#34;daily&#34;{'}'}&apos;</p>
+            <p className="mt-2"># Weekly on Sunday 8:00 PM IST (2:30 PM UTC)</p>
+            <p>curl -X POST https://drift-production-3829.up.railway.app/api/growth/cron -H &quot;x-admin-secret: $ADMIN_SECRET&quot; -H &quot;Content-Type: application/json&quot; -d &apos;{'{'}&#34;cycle&#34;:&#34;weekly&#34;{'}'}&apos;</p>
+          </div>
+        </div>
+      </div>
+
+      {result && (
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+          <h3 className="text-sm font-medium text-[#f0efe8] mb-3 uppercase tracking-wider">Cycle Result — {result.cycle as string}</h3>
+          <div className={`text-xs px-2 py-1 rounded inline-block mb-3 ${result.status === 'completed' ? 'bg-[rgba(78,205,196,0.1)] text-[#4ecdc4]' : 'bg-[rgba(231,76,60,0.1)] text-[#e74c3c]'}`}>
+            {result.status as string}
+          </div>
+          <div className="space-y-1">
+            {((result.log as string[]) || []).map((line, i) => (
+              <div key={i} className="text-xs text-[#7a7a85]">{line}</div>
+            ))}
+          </div>
+          {typeof result.error === 'string' && <div className="text-xs text-[#e74c3c] mt-2">{result.error}</div>}
+        </div>
+      )}
+
+      {metricsResult && (
+        <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
+          <h3 className="text-sm font-medium text-[#f0efe8] mb-3 uppercase tracking-wider">Metrics Fetch Result</h3>
+          <div className="flex gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-serif text-[#4ecdc4]">{metricsResult.fetched as number}</div>
+              <div className="text-[10px] text-[#4a4a55]">Fetched</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-serif text-[#e74c3c]">{metricsResult.failed as number}</div>
+              <div className="text-[10px] text-[#4a4a55]">Failed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-serif text-[#7a7a85]">{metricsResult.total as number}</div>
+              <div className="text-[10px] text-[#4a4a55]">Total Posts</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
