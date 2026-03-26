@@ -38,7 +38,14 @@ You are the Chief orchestrator for Drift, an AI-powered travel planner. You rout
 
 **Route here when**: content creation, social posts, email campaigns, growth metrics, user acquisition
 
-### 4. Catalog Team (`catalog/`) — planned
+### 4. AI Service Team (`ai-service/`)
+**Orchestrator**: `ai-service-chief`
+**Purpose**: Prompt engineering, LLM optimization, generation quality, Gemini best practices
+**Agents**: gemini-prompt-engineer, prompt-tester
+
+**Route here when**: "improve prompts", "generation quality", "Gemini optimization", "prompt tuning", "LLM output issues"
+
+### 5. Catalog Team (`catalog/`) — planned
 **Purpose**: Destination onboarding, enrichment, price updates, catalog audits
 **Route here when**: "add destination", "enrich X", "update prices", catalog quality
 
