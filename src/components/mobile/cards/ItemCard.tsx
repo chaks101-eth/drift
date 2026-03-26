@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { parsePrice } from '@/lib/parse-price'
 import { useTripStore, type ItineraryItem, type ItemMetadata } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
 
@@ -98,7 +99,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
             </div>
             <div className="mt-1 text-xs font-bold text-drift-text">
               {(() => {
-                const num = parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) || 0
+                const num = parsePrice(item.price)
                 return num === 0 ? 'Free' : formatBudget(num)
               })()}
             </div>
@@ -161,7 +162,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
         <div className="border-t border-drift-border2 px-3 py-2.5 animate-[fadeUp_0.2s_ease-out]">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
             {alts.map((alt, i) => {
-              const altNum = parseFloat((alt.price || '0').replace(/[^0-9.]/g, '')) || 0
+              const altNum = parsePrice(alt.price)
               const ratingBadge = alt.trust?.find(t => t.type === 'success')
 
               return (

@@ -1,4 +1,5 @@
 // ─── Itinerary Quality Scorer ─────────────────────────────────
+import { parsePrice } from '@/lib/parse-price'
 // Scores generated itineraries across 7 dimensions.
 // Split must-see into: landmark coverage (iconic places) + vibe must-haves (best-for-this-vibe).
 
@@ -244,7 +245,7 @@ async function evalPriceRealism(
   items: EvalItem[], destination: string,
 ): Promise<PriceRealismScore> {
   const prices = items
-    .map(i => parseFloat(i.price.replace(/[^0-9.]/g, '')) || 0)
+    .map(i => parsePrice(i.price))
     .filter(p => p > 0)
 
   if (prices.length === 0) return { score: 50, notes: 'No prices to evaluate' }
@@ -252,7 +253,7 @@ async function evalPriceRealism(
   const avg = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length)
   const max = Math.max(...prices)
   const freeCount = items.filter(i => {
-    const p = parseFloat(i.price.replace(/[^0-9.]/g, '')) || 0
+    const p = parsePrice(i.price)
     return p === 0 || i.price.toLowerCase().includes('free')
   }).length
 

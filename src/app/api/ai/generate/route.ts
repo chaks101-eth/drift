@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateItinerary, personalizeItinerary } from '@/lib/ai-agent'
+import { parsePrice } from '@/lib/parse-price'
 import { createServerClient } from '@/lib/supabase'
 import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
 import { searchFlights, searchFlightsGrounded, flightToItineraryItem, resolveIATA } from '@/lib/amadeus'
@@ -537,9 +538,9 @@ function mergeFlights(
   if (outboundFlights.length > 0) {
     const best = outboundFlights[0]
     const outItem = flightToItineraryItem(best, 0)
-    const bestPrice = parseFloat(best.price.replace(/[^0-9.]/g, ''))
+    const bestPrice = parsePrice(best.price)
     outItem.metadata.alts = outboundFlights.slice(1, 4).map(f => {
-      const altPrice = parseFloat(f.price.replace(/[^0-9.]/g, ''))
+      const altPrice = parsePrice(f.price)
       const trust: Array<{ type: string; text: string }> = []
       const diff = bestPrice - altPrice
       if (diff > 5) trust.push({ type: 'gold', text: `$${Math.round(diff)} cheaper` })
@@ -564,9 +565,9 @@ function mergeFlights(
   if (returnFlights.length > 0) {
     const best = returnFlights[0]
     const retItem = flightToItineraryItem(best, 999)
-    const bestPrice = parseFloat(best.price.replace(/[^0-9.]/g, ''))
+    const bestPrice = parsePrice(best.price)
     retItem.metadata.alts = returnFlights.slice(1, 4).map(f => {
-      const altPrice = parseFloat(f.price.replace(/[^0-9.]/g, ''))
+      const altPrice = parsePrice(f.price)
       const trust: Array<{ type: string; text: string }> = []
       const diff = bestPrice - altPrice
       if (diff > 5) trust.push({ type: 'gold', text: `$${Math.round(diff)} cheaper` })

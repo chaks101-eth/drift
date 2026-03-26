@@ -1,6 +1,7 @@
 'use client'
 
 import { useTripStore } from '@/stores/trip-store'
+import { parsePrice } from '@/lib/parse-price'
 import type { ItineraryItem, ItemMetadata } from '@/stores/trip-store'
 
 interface FlightCardProps {
@@ -58,7 +59,7 @@ export default function FlightCard({ item, onTap }: FlightCardProps) {
         {/* Airline + price */}
         <div className="flex items-center justify-between border-t border-drift-border2 pt-3">
           <span className="text-xs text-drift-text2">{(meta.airline as string) || item.detail || ''}</span>
-          <span className="text-sm font-bold text-drift-gold">{(() => { const n = parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) || 0; return n === 0 ? '' : formatBudget(n) })()}</span>
+          <span className="text-sm font-bold text-drift-gold">{(() => { const n = parsePrice(item.price); return n === 0 ? '' : formatBudget(n) })()}</span>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/ui-store'
 import { useTripStore } from '@/stores/trip-store'
 import type { Trip, ItineraryItem, ItemMetadata } from '@/stores/trip-store'
+import { parsePrice } from '@/lib/parse-price'
 import FlightCard from '@/components/mobile/cards/FlightCard'
 import ItemCard from '@/components/mobile/cards/ItemCard'
 
@@ -110,7 +111,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
   const costs = useMemo(() => {
     const c = { flights: 0, hotels: 0, activities: 0, food: 0 }
     items.forEach((i) => {
-      const p = parseFloat((i.price || '0').replace(/[^0-9.]/g, '')) || 0
+      const p = parsePrice(i.price)
       if (i.category === 'flight') c.flights += p
       else if (i.category === 'hotel') {
         // Hotel prices are per-night — multiply by nights
@@ -292,7 +293,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                     return Math.max(1, nextDayIdx - thisDayIdx)
                   })()
                   const totalHotelCost = isPerNight
-                    ? `${formatBudget(parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) * hotelNights)} total`
+                    ? `${formatBudget(parsePrice(item.price) * hotelNights)} total`
                     : item.price
 
                   return (

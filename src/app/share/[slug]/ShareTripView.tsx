@@ -1,4 +1,5 @@
 'use client'
+import { parsePrice } from '@/lib/parse-price'
 
 import { useState } from 'react'
 import Image from 'next/image'
@@ -12,10 +13,6 @@ type Item = {
   id: string; category: string; name: string; detail: string; description: string | null;
   price: string; image_url: string | null; time: string | null; position: number;
   metadata: Record<string, unknown> | null
-}
-
-function parsePrice(price: string): number {
-  return parseFloat(price.replace(/[^0-9.]/g, '')) || 0
 }
 
 function fmtDate(dateStr: string): string {

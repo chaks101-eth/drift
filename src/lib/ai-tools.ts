@@ -1,4 +1,5 @@
 // ─── Drift AI Tools ───────────────────────────────────────────
+import { parsePrice } from '@/lib/parse-price'
 // Gemini-optimized tool definitions (descriptive names, enums, detailed descriptions).
 // Server-side execution — AI calls tool, server runs it, feeds result back.
 
@@ -392,7 +393,7 @@ async function executeAdjustBudget(
 
   for (const item of context.items) {
     if (item.category === 'day' || item.category === 'transfer') continue
-    const price = parseFloat((item.price || '0').replace(/[^0-9.]/g, ''))
+    const price = parsePrice(item.price)
     if (!breakdown[item.category]) breakdown[item.category] = { count: 0, total: 0, items: [] }
     breakdown[item.category].count++
     breakdown[item.category].total += price
@@ -422,18 +423,18 @@ async function executeAdjustBudget(
     if (!alts.length) continue
 
     for (const item of catItems) {
-      const currentPrice = parseFloat((item.price || '0').replace(/[^0-9.]/g, ''))
+      const currentPrice = parsePrice(item.price)
       const bestAlt = direction === 'cheaper'
         ? alts.reduce((best, a) => {
-            const p = parseFloat((a.price || '0').replace(/[^0-9.]/g, ''))
-            return p < parseFloat((best.price || '0').replace(/[^0-9.]/g, '')) ? a : best
+            const p = parsePrice(a.price)
+            return p < parsePrice(best.price) ? a : best
           })
         : alts.reduce((best, a) => {
-            const p = parseFloat((a.price || '0').replace(/[^0-9.]/g, ''))
-            return p > parseFloat((best.price || '0').replace(/[^0-9.]/g, '')) ? a : best
+            const p = parsePrice(a.price)
+            return p > parsePrice(best.price) ? a : best
           })
 
-      const altPrice = parseFloat((bestAlt.price || '0').replace(/[^0-9.]/g, ''))
+      const altPrice = parsePrice(bestAlt.price)
       const savings = currentPrice - altPrice
 
       if ((direction === 'cheaper' && savings > 0) || (direction === 'luxury' && savings < 0)) {
@@ -482,7 +483,7 @@ async function executeGetTripInsights(
   let totalSpend = 0
   const byCategory: Record<string, number> = {}
   for (const item of real) {
-    const price = parseFloat((item.price || '0').replace(/[^0-9.]/g, ''))
+    const price = parsePrice(item.price)
     totalSpend += price
     byCategory[item.category] = (byCategory[item.category] || 0) + price
   }

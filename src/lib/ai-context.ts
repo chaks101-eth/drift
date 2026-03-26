@@ -3,6 +3,7 @@
 // Keeps token usage minimal by loading only what's relevant.
 
 import { createClient } from '@supabase/supabase-js'
+import { parsePrice } from './parse-price'
 import type { ItineraryItem } from './database.types'
 
 function getDb() {
@@ -40,7 +41,7 @@ export function buildTripSummary(items: ItineraryItem[]): string {
     const status = item.status !== 'none' ? ` [${item.status}]` : ''
     lines.push(`  ${item.category}: ${item.name}${price}${time}${status} [id:${item.id}]`)
 
-    const numPrice = parseFloat((item.price || '0').replace(/[^0-9.]/g, ''))
+    const numPrice = parsePrice(item.price)
     total += numPrice
   }
 
@@ -55,9 +56,7 @@ export function buildTripSummary(items: ItineraryItem[]): string {
 
 // ─── Preference Signals (Issue 6) ────────────────────────────
 
-function parsePrice(price: string | null): number {
-  return parseFloat((price || '0').replace(/[^0-9.]/g, ''))
-}
+// parsePrice imported from @/lib/parse-price
 
 function buildPreferenceSignals(items: ItineraryItem[]): string {
   const picked = items.filter(i => i.status === 'picked')
@@ -293,7 +292,7 @@ export async function loadCatalogSummary(destination: string, tripItems?: Itiner
     const parts: string[] = [`\nCATALOG SUMMARY FOR ${dest.city.toUpperCase()}, ${dest.country.toUpperCase()}:`]
 
     if (hotels?.length) {
-      const prices = hotels.map(h => parseFloat((h.price_per_night || '0').replace(/[^0-9.]/g, ''))).filter(p => p > 0)
+      const prices = hotels.map(h => parsePrice(h.price_per_night)).filter(p => p > 0)
       const min = Math.min(...prices), max = Math.max(...prices)
       parts.push(`Hotels (${hotels.length}, $${min}-${max}/night): ${hotels.map(h => `${h.name} (${h.price_per_night}, ${h.price_level})`).join(', ')}`)
     }
