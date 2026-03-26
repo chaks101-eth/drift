@@ -46,6 +46,14 @@ export const funnel = {
 
   /** User used URL-to-trip */
   urlExtracted: (source: string, dest: string) => trackEvent('funnel_url_extracted', 'conversion', `${source}|${dest}`),
+
+  /** Step-by-step funnel tracking */
+  originSelected: (city: string) => trackEvent('funnel_origin', 'funnel', city),
+  datesSelected: (start: string, end: string) => trackEvent('funnel_dates', 'funnel', `${start}|${end}`),
+  budgetSelected: (level: string, amount?: number) => trackEvent('funnel_budget', 'funnel', level, amount),
+
+  /** Error tracking */
+  generationFailed: (dest: string, error: string) => trackEvent('funnel_generate_fail', 'error', `${dest}|${error}`),
 }
 
 // ─── Engagement Events ────────────────────────────────────────
@@ -55,4 +63,5 @@ export const engage = {
   itemSwapped: (dest: string) => trackEvent('item_swapped', 'engagement', dest),
   itemDetailViewed: (name: string) => trackEvent('item_detail', 'engagement', name),
   tripRegenerated: (dest: string) => trackEvent('trip_regenerated', 'engagement', dest),
+  chatToolUsed: (tool: string) => trackEvent('chat_tool_used', 'engagement', tool),
 }

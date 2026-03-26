@@ -69,7 +69,13 @@ export default function DetailSheet() {
     const num = parsePrice(item.price)
     stats.push({ v: num === 0 ? 'Free' : formatBudget(num), l: item.category === 'hotel' ? 'Per Night' : 'Price' })
   }
-  info.slice(0, 3).forEach((i) => stats.push({ v: i.v, l: i.l }))
+  if (meta.rating && (meta.rating as number) > 0) {
+    const reviewLabel = meta.reviewCount
+      ? `${(meta.reviewCount as number) >= 1000 ? `${((meta.reviewCount as number) / 1000).toFixed(1)}K` : meta.reviewCount} reviews`
+      : 'Rating'
+    stats.push({ v: `★ ${(meta.rating as number).toFixed(1)}`, l: reviewLabel })
+  }
+  info.slice(0, 2).forEach((i) => stats.push({ v: i.v, l: i.l }))
 
   // Booking URL
   const bookingUrl = (meta.bookingUrl || meta.booking_url) as string | undefined
@@ -128,9 +134,39 @@ export default function DetailSheet() {
         </div>
 
         <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-          {/* Title */}
+          {/* Title + Source badge */}
           <h2 className="mt-4 font-serif text-xl font-semibold text-drift-text">{item.name}</h2>
+          {meta.source && (
+            <span className={`mt-1.5 inline-block rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+              ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
+                ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text3'
+            }`}>
+              {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? 'Verified Place' : 'AI Suggested'}
+            </span>
+          )}
           <p className="mt-1.5 text-xs leading-relaxed text-drift-text2">{item.description || item.detail || ''}</p>
+
+          {/* Address + Maps link */}
+          {(meta.address || mapsUrl) && (
+            <div className="mt-3 space-y-1.5">
+              {meta.address && (
+                <div className="flex items-start gap-2 text-[11px] text-drift-text3">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="mt-0.5 shrink-0">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                  </svg>
+                  {meta.address as string}
+                </div>
+              )}
+              {mapsUrl && (
+                <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] font-medium text-drift-gold">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                  </svg>
+                  Open in Google Maps
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Stats */}
           {stats.length > 0 && (
