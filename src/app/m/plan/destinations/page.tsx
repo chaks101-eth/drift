@@ -29,6 +29,7 @@ export default function DestinationsPage() {
   const [generating, setGenerating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [activeDot, setActiveDot] = useState(0)
+  const [customDest, setCustomDest] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Show toast with auto-dismiss
@@ -139,8 +140,31 @@ export default function DestinationsPage() {
     })()
   }
 
+  // Country auto-detection
+  const countryMap: Record<string, string> = {
+    bali: 'Indonesia', bangkok: 'Thailand', dubai: 'UAE', paris: 'France', tokyo: 'Japan',
+    istanbul: 'Turkey', phuket: 'Thailand', singapore: 'Singapore', maldives: 'Maldives',
+    goa: 'India', london: 'UK', rome: 'Italy', santorini: 'Greece', 'new york': 'USA',
+    barcelona: 'Spain', lisbon: 'Portugal', amsterdam: 'Netherlands', prague: 'Czech Republic',
+    vienna: 'Austria', berlin: 'Germany', seoul: 'South Korea', sydney: 'Australia',
+    'cape town': 'South Africa', marrakech: 'Morocco', cairo: 'Egypt', jaipur: 'India',
+    manali: 'India', delhi: 'India', mumbai: 'India', colombo: 'Sri Lanka', hanoi: 'Vietnam',
+    'chiang mai': 'Thailand', krabi: 'Thailand', pattaya: 'Thailand', uluwatu: 'Indonesia',
+  }
+
   // Navigate to loading screen which handles generation
   const handleGenerate = () => {
+    if (customDest.trim().length > 1) {
+      // User typed a custom destination
+      const parts = customDest.trim().split(',').map(s => s.trim())
+      const city = parts[0]
+      const country = parts[1] || countryMap[city.toLowerCase()] || ''
+      setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: pickedVibes })
+      trackEvent('destination_custom', 'funnel', city)
+      setGenerating(true)
+      router.push('/m/loading')
+      return
+    }
     if (selectedIdx === null) return
     const dest = destinations[selectedIdx]
     setDestination(dest)
@@ -148,7 +172,9 @@ export default function DestinationsPage() {
     router.push('/m/loading')
   }
 
+  const hasCustom = customDest.trim().length > 1
   const selectedDest = selectedIdx !== null ? destinations[selectedIdx] : null
+  const canConfirm = hasCustom || selectedIdx !== null
 
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">
@@ -161,7 +187,26 @@ export default function DestinationsPage() {
         <h1 className="mb-1 font-serif text-3xl font-light text-drift-text">
           Pick your <em className="font-normal italic text-drift-gold">destination</em>
         </h1>
-        <p className="mb-4 text-xs text-drift-text3">Based on your vibes, we found these matches</p>
+        <p className="mb-3 text-xs text-drift-text3">Based on your vibes, or type your own</p>
+
+        {/* Inline destination search */}
+        <div className="relative mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="absolute left-3 top-1/2 -translate-y-1/2">
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            value={customDest}
+            onChange={(e) => { setCustomDest(e.target.value); if (e.target.value) setSelectedIdx(null) }}
+            placeholder="Or type a destination..."
+            className="w-full rounded-xl border border-drift-border2 bg-drift-surface py-2.5 pl-9 pr-4 text-sm text-drift-text placeholder:text-drift-text3/50 focus:border-drift-gold/30 focus:outline-none transition-colors"
+          />
+          {customDest && (
+            <button onClick={() => setCustomDest('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-drift-text3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content area */}
@@ -311,9 +356,9 @@ export default function DestinationsPage() {
       <div className="shrink-0 px-6 pb-[calc(env(safe-area-inset-bottom)+16px)]">
         <button
           onClick={handleGenerate}
-          disabled={selectedIdx === null || generating}
+          disabled={!canConfirm || generating}
           className={`flex w-full items-center justify-center gap-2 rounded-[14px] px-6 py-4 text-xs font-extrabold uppercase tracking-widest transition-all duration-300 active:scale-[0.97] ${
-            selectedIdx !== null && !generating
+            canConfirm && !generating
               ? 'bg-drift-gold text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)]'
               : 'bg-drift-card text-drift-text3 cursor-not-allowed'
           }`}
@@ -323,6 +368,13 @@ export default function DestinationsPage() {
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-drift-bg/30 border-t-drift-bg" />
               Building your trip...
             </>
+          ) : hasCustom ? (
+            <>
+              Plan {customDest.trim()}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </>
           ) : (
             <>
               Confirm Destination
@@ -331,12 +383,6 @@ export default function DestinationsPage() {
               </svg>
             </>
           )}
-        </button>
-        <button
-          onClick={() => router.push('/m/plan/destination-input')}
-          className="mt-3 w-full text-center text-[12px] font-medium text-drift-text2 transition-colors active:text-drift-gold"
-        >
-          I have a destination in mind →
         </button>
       </div>
 
