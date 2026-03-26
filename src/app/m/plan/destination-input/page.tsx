@@ -28,17 +28,22 @@ export default function DestinationInputPage() {
 
   const isReady = value.trim().length > 1
 
+  // Vibes already picked from the vibes step
+  const existingVibes = onboarding.pickedVibes
+
   const handleConfirm = () => {
     if (!isReady) return
-    // Set default vibes based on destination hints
-    const v = value.toLowerCase()
-    const autoVibes = []
-    if (['bali', 'maldives', 'phuket', 'goa', 'santorini'].some(d => v.includes(d))) autoVibes.push('beach')
-    if (['paris', 'rome', 'istanbul'].some(d => v.includes(d))) autoVibes.push('culture')
-    if (['bangkok', 'tokyo', 'singapore', 'dubai', 'new york', 'london'].some(d => v.includes(d))) autoVibes.push('city')
-    if (['bali', 'paris', 'santorini', 'maldives'].some(d => v.includes(d))) autoVibes.push('romance')
-    if (autoVibes.length === 0) autoVibes.push('culture', 'foodie', 'adventure')
-    setVibes(autoVibes.slice(0, 3))
+    // Use vibes already picked in the vibes step — don't override
+    // Only set if somehow empty (shouldn't happen in normal flow)
+    if (!existingVibes.length) {
+      const v = value.toLowerCase()
+      const autoVibes: string[] = []
+      if (['bali', 'maldives', 'phuket', 'goa', 'santorini'].some(d => v.includes(d))) autoVibes.push('beach')
+      if (['paris', 'rome', 'istanbul'].some(d => v.includes(d))) autoVibes.push('culture')
+      if (['bangkok', 'tokyo', 'singapore', 'dubai', 'new york', 'london'].some(d => v.includes(d))) autoVibes.push('city')
+      if (autoVibes.length === 0) autoVibes.push('culture', 'foodie', 'adventure')
+      setVibes(autoVibes.slice(0, 3))
+    }
 
     // Build a Destination object for the store
     const parts = value.trim().split(',').map(s => s.trim())
@@ -55,7 +60,7 @@ export default function DestinationInputPage() {
       'chiang mai': 'Thailand', krabi: 'Thailand', pattaya: 'Thailand', uluwatu: 'Indonesia',
     }
     const country = parts[1] || countryMap[city.toLowerCase()] || ''
-    setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: autoVibes })
+    setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: existingVibes.length ? existingVibes : ['culture', 'foodie', 'adventure'] })
     trackEvent('plan_direct_destination', 'funnel', city)
     router.push('/m/loading')
   }
@@ -63,14 +68,22 @@ export default function DestinationInputPage() {
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
       <div className="mb-6">
-        <BackButton href="/m/plan/budget?direct=1" />
+        <BackButton href="/m/plan/destinations" />
       </div>
 
       <h1 className="mb-2 font-serif text-4xl font-light leading-tight">
         Where do you<br />
         <em className="font-normal italic text-drift-gold">want to go</em>?
       </h1>
-      <p className="mb-7 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">Type any destination</p>
+      <p className="mb-3 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">Type any destination</p>
+      {existingVibes.length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-1.5">
+          <span className="text-[9px] text-drift-text3 self-center mr-1">Your vibes:</span>
+          {existingVibes.map(v => (
+            <span key={v} className="rounded-full border border-drift-gold/15 bg-drift-gold-bg px-2.5 py-1 text-[9px] font-medium text-drift-gold">{v}</span>
+          ))}
+        </div>
+      )}
 
       {/* Input */}
       <div className="relative mb-7">

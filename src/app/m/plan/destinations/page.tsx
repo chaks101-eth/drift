@@ -332,11 +332,12 @@ export default function DestinationsPage() {
             </>
           )}
         </button>
-        <div className="mt-2 text-center text-[11px] text-drift-text3">
-          {selectedDest
-            ? `${selectedDest.city}${selectedDest.country ? `, ${selectedDest.country}` : ''}`
-            : 'Tap a destination to select'}
-        </div>
+        <button
+          onClick={() => router.push('/m/plan/destination-input')}
+          className="mt-3 w-full text-center text-[12px] font-medium text-drift-text2 transition-colors active:text-drift-gold"
+        >
+          I have a destination in mind →
+        </button>
       </div>
 
       {/* Toast */}
