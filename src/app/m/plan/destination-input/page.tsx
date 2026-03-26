@@ -43,7 +43,18 @@ export default function DestinationInputPage() {
     // Build a Destination object for the store
     const parts = value.trim().split(',').map(s => s.trim())
     const city = parts[0]
-    const country = parts[1] || ''
+    // Auto-detect country for popular destinations
+    const countryMap: Record<string, string> = {
+      bali: 'Indonesia', bangkok: 'Thailand', dubai: 'UAE', paris: 'France', tokyo: 'Japan',
+      istanbul: 'Turkey', phuket: 'Thailand', singapore: 'Singapore', maldives: 'Maldives',
+      goa: 'India', london: 'UK', rome: 'Italy', santorini: 'Greece', 'new york': 'USA',
+      barcelona: 'Spain', lisbon: 'Portugal', amsterdam: 'Netherlands', prague: 'Czech Republic',
+      vienna: 'Austria', berlin: 'Germany', seoul: 'South Korea', sydney: 'Australia',
+      'cape town': 'South Africa', marrakech: 'Morocco', cairo: 'Egypt', jaipur: 'India',
+      manali: 'India', delhi: 'India', mumbai: 'India', colombo: 'Sri Lanka', hanoi: 'Vietnam',
+      'chiang mai': 'Thailand', krabi: 'Thailand', pattaya: 'Thailand', uluwatu: 'Indonesia',
+    }
+    const country = parts[1] || countryMap[city.toLowerCase()] || ''
     setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: autoVibes })
     trackEvent('plan_direct_destination', 'funnel', city)
     router.push('/m/loading')
