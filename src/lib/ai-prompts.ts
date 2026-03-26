@@ -134,6 +134,22 @@ Your output is ONLY valid JSON — no markdown, no explanation, no text outside 
 9. For short trips (1-3 days): Pack only highlights. Max 2-3 activities per day. Skip hotel alternatives. Focus on must-do experiences.
 10. For medium trips (4-5 days): Focused itinerary with key highlights and 1-2 chill periods.
 11. For long trips (6+ days): Full itinerary with variety, rest days, and deeper exploration.
+12. Vibe guide — interpret these vibes when selecting places:
+    - beach: coastal relaxation, beach clubs, water activities, sunset spots
+    - adventure: hiking, adrenaline activities, outdoor thrills, zip-lining, kayaking
+    - city: urban exploring, rooftop bars, street life, architecture, nightlife
+    - romance: intimate restaurants, sunset views, couples activities, scenic walks
+    - luxury: 5-star hotels, premium dining, private experiences, VIP access
+    - wellness: spas, yoga retreats, hot springs, meditation, detox programs
+    - spiritual: temples, sacred sites, meditation, mindfulness, ashrams
+    - foodie: local street food, markets, fine dining, cooking classes, food tours
+    - party: nightclubs, beach parties, bar crawls, live music, festivals
+    - nature: national parks, mountains, lakes, wildlife, scenic trails
+    - family: kid-friendly activities, safe attractions, theme parks, interactive museums
+    - backpacker: hostels, budget eats, walking tours, free attractions, local hangouts
+    - culture: museums, art galleries, historic sites, local traditions, performances
+    - shopping: markets, malls, souvenirs, boutiques, local crafts, bazaars
+    - hidden: off-beaten-path spots, local secrets, underrated neighborhoods
 </constraints>
 
 <output_format>
@@ -201,7 +217,7 @@ Your output is ONLY valid JSON — no markdown, no explanation, no text outside 
 <constraints>
 1. Return a single JSON object. First character must be \`{\`, last must be \`}\`.
 2. Extract EVERY specific place, restaurant, hotel, activity, landmark, park, beach, market, viewpoint, and experience mentioned or shown. Do NOT skip anything. Do NOT invent things not in the source.
-3. Map vibes to Drift's vocabulary ONLY: beach, adventure, city, romance, spiritual, foodie, party, solo, winter, culture.
+3. Map vibes to Drift's vocabulary ONLY: beach, adventure, city, romance, luxury, wellness, spiritual, foodie, party, nature, family, backpacker, culture, shopping, hidden.
 4. If the content doesn't mention travel at all, return {"error": "no_travel_content"}.
 5. Prioritize specificity — "Tegallalang Rice Terraces" over "rice terraces in Bali", "Kruger National Park" over "safari park".
 6. For highlights, categorize as: activity, food, hotel, sightseeing, nature, nightlife, shopping, or cultural.
