@@ -176,8 +176,15 @@ Start each day with a "day" separator:
 - Each day separator MUST have metadata.day_insight: a short (1-2 sentence) opinionated comment about that day's plan — what makes it special, why you sequenced it this way, or a local tip. Write as Drift speaking directly to the traveler. Be specific to the actual places, not generic.
 - The FIRST day separator MUST also have metadata.trip_brief: 2-3 sentences explaining your overall strategy for this trip — why you chose this mix of activities, how you balanced the vibes, what makes this itinerary different from a generic tourist plan. Be opinionated and specific to the destination + vibes.
 
-Then outbound flight, hotel check-in, day-by-day activities/food, return flight.
+Order: outbound flight → hotel check-in → day-by-day activities/food → return flight.
 Use "transfer" for travel between locations.
+
+Hotel rules:
+- Place hotel items right AFTER the outbound flight (not before it).
+- Hotel price MUST include "/night" suffix (e.g., "$100/night").
+- For trips 1-4 nights: ONE hotel for the whole stay.
+- For trips 5+ nights: Consider 2 hotels if the destination has distinct areas worth exploring (e.g., Split old town 3 nights + coastal villa 3 nights). Place the second hotel on the day the traveler moves.
+- Always include metadata.reason explaining why you picked this hotel for these vibes.
 </output_format>`
 
 // ─── Destination Suggestion Prompt ───────────────────────────

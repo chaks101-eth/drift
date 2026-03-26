@@ -261,56 +261,71 @@ export default function BoardView({ trip, items }: BoardViewProps) {
               </button>
             )}
 
-            {/* Hotel — pinned "Your Stay" card, only on first day */}
-            {di === 0 && (() => {
-              const hotel = day.items.find(i => i.category === 'hotel') || items.find(i => i.category === 'hotel')
-              if (!hotel) return null
-              const hotelMeta = (hotel.metadata || {}) as ItemMetadata
-              const hotelRating = hotelMeta.rating as number | undefined
-              const isPerNight = (hotel.price || '').toLowerCase().includes('/night')
-              const perNightPrice = hotel.price || ''
-              const totalHotelCost = isPerNight
-                ? `${formatBudget(parseFloat((hotel.price || '0').replace(/[^0-9.]/g, '')) * nights)} total`
-                : hotel.price
-              return (
-                <button
-                  key={hotel.id}
-                  onClick={() => openDetail(hotel.id)}
-                  className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-drift-ok/20 bg-drift-ok/5 px-4 py-3 text-left transition-all active:scale-[0.98]"
-                >
-                  {hotel.image_url && (
-                    <img src={hotel.image_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-drift-ok">Your Stay · {nights} {nights === 1 ? 'night' : 'nights'}</span>
-                    </div>
-                    <div className="mt-0.5 truncate text-sm font-medium text-drift-text">{hotel.name}</div>
-                    <div className="mt-0.5 flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-drift-ok">{perNightPrice}</span>
-                      {isPerNight && <span className="text-[10px] text-drift-text3">· {totalHotelCost}</span>}
-                      {hotelRating && <span className="text-[10px] text-drift-text3">· ★ {hotelRating}</span>}
-                    </div>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              )
-            })()}
-
-            {/* Activities & Food — timeline */}
+            {/* Timeline — flights, hotels, activities, food in natural order */}
             <div className="ml-1.5 space-y-3 border-l border-drift-border2 pl-6">
-              {day.items.filter(i => i.category !== 'hotel').map((item, ii, filteredItems) => {
+              {day.items.map((item, ii) => {
                 if (item.category === 'flight') {
                   return <FlightCard key={item.id} item={item} onTap={() => openDetail(item.id)} />
                 }
                 if (item.category === 'transfer') return null
 
+                // Hotel — distinct card style within the timeline
+                if (item.category === 'hotel') {
+                  const hotelMeta = (item.metadata || {}) as ItemMetadata
+                  const hotelRating = hotelMeta.rating as number | undefined
+                  const isPerNight = (item.price || '').toLowerCase().includes('/night')
+                  const perNightPrice = item.price || ''
+                  // Calculate nights this hotel covers
+                  const hotelNights = (() => {
+                    // Find the next hotel in the trip to determine stay duration
+                    const allHotels = items.filter(i => i.category === 'hotel')
+                    const thisIdx = allHotels.findIndex(h => h.id === item.id)
+                    if (allHotels.length <= 1) return nights // only hotel = full trip
+                    if (thisIdx === allHotels.length - 1) {
+                      // Last hotel — stays until end
+                      const prevHotelDayIdx = days.findIndex(d => d.items.some(i => i.id === allHotels[thisIdx - 1]?.id))
+                      return Math.max(1, days.length - days.findIndex(d => d.items.some(i => i.id === item.id)))
+                    }
+                    // This hotel until next hotel
+                    const thisDayIdx = days.findIndex(d => d.items.some(i => i.id === item.id))
+                    const nextDayIdx = days.findIndex(d => d.items.some(i => i.id === allHotels[thisIdx + 1]?.id))
+                    return Math.max(1, nextDayIdx - thisDayIdx)
+                  })()
+                  const totalHotelCost = isPerNight
+                    ? `${formatBudget(parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) * hotelNights)} total`
+                    : item.price
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => openDetail(item.id)}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-drift-ok/20 bg-drift-ok/5 px-4 py-3 text-left transition-all active:scale-[0.98]"
+                    >
+                      {item.image_url && (
+                        <img src={item.image_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-drift-ok">
+                          Your Stay · {hotelNights} {hotelNights === 1 ? 'night' : 'nights'}
+                        </span>
+                        <div className="mt-0.5 truncate text-sm font-medium text-drift-text">{item.name}</div>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-drift-ok">{perNightPrice}</span>
+                          {isPerNight && hotelNights > 1 && <span className="text-[10px] text-drift-text3">· {totalHotelCost}</span>}
+                          {hotelRating && <span className="text-[10px] text-drift-text3">· ★ {hotelRating}</span>}
+                        </div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  )
+                }
+
                 const meta = (item.metadata || {}) as ItemMetadata
                 const travel = meta.travelToNext as { to: string; duration: string; distance: string; mode: string } | undefined
-                const nextItem = filteredItems[ii + 1]
-                const showTravel = travel && nextItem && nextItem.category !== 'transfer' && nextItem.category !== 'flight'
+                const nextItem = day.items[ii + 1]
+                const showTravel = travel && nextItem && nextItem.category !== 'transfer' && nextItem.category !== 'flight' && nextItem.category !== 'hotel'
 
                 return (
                   <div key={item.id}>
