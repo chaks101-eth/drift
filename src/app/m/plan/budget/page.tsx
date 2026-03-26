@@ -137,7 +137,11 @@ export default function BudgetPage() {
       <div className="flex-1" />
 
       <div className="pb-[calc(env(safe-area-inset-bottom)+16px)]">
-        <GoldButton onClick={() => router.push('/m/plan/vibes')}>
+        <GoldButton onClick={() => {
+          const params = new URLSearchParams(window.location.search)
+          const direct = params.get('direct')
+          router.push(direct ? '/m/plan/destination-input' : '/m/plan/vibes')
+        }}>
           Continue
         </GoldButton>
       </div>

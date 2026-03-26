@@ -20,11 +20,17 @@ const moods: Mood[] = [
   { id: 'adventure', name: 'Adventure', desc: 'Hikes, thrills, adrenaline', tags: ['Adventure', 'Nature', 'Outdoor'], img: 'https://images.unsplash.com/photo-1522163182402-834f871fd851?w=1200&h=1800&fit=crop&auto=format&q=90' },
   { id: 'city', name: 'City Nights', desc: 'Rooftops, lights, energy', tags: ['Urban', 'Nightlife', 'Shopping'], img: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1200&h=1800&fit=crop&auto=format&q=90' },
   { id: 'romance', name: 'Romance', desc: 'Sunsets, wine, intimacy', tags: ['Romance', 'Sunset', 'Wine'], img: 'https://images.unsplash.com/photo-1501426026826-31c667bdf23d?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'luxury', name: 'Luxury', desc: 'Five stars, private pools, VIP', tags: ['Luxury', 'Premium', 'Exclusive'], img: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'wellness', name: 'Wellness & Spa', desc: 'Detox, yoga, massages', tags: ['Wellness', 'Spa', 'Retreat'], img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1200&h=1800&fit=crop&auto=format&q=90' },
   { id: 'spiritual', name: 'Spiritual', desc: 'Peace, temples, mindfulness', tags: ['Temples', 'Wellness', 'Peace'], img: 'https://images.unsplash.com/photo-1512100356356-de1b84283e18?w=1200&h=1800&fit=crop&auto=format&q=90' },
   { id: 'foodie', name: 'Foodie Trail', desc: 'Street food & fine dining', tags: ['Food', 'Markets', 'Cuisine'], img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&h=1800&fit=crop&auto=format&q=90' },
   { id: 'party', name: 'Party Mode', desc: 'Clubs, festivals, all night', tags: ['Nightlife', 'Music', 'Festival'], img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'nature', name: 'Nature Escape', desc: 'Mountains, lakes, wildlife', tags: ['Nature', 'Wildlife', 'Scenic'], img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'family', name: 'Family Fun', desc: 'Kid-friendly, safe, memorable', tags: ['Family', 'Kids', 'Activities'], img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'backpacker', name: 'Backpacker', desc: 'Hostels, budget, freedom', tags: ['Budget', 'Backpacking', 'Solo'], img: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=1200&h=1800&fit=crop&auto=format&q=90' },
   { id: 'culture', name: 'Culture Deep Dive', desc: 'Art, history, local life', tags: ['Culture', 'History', 'Art'], img: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1200&h=1800&fit=crop&auto=format&q=90' },
-  { id: 'hidden', name: 'Hidden Gems', desc: 'Off-the-beaten-path spots only locals know about', tags: ['Adventure', 'Culture', 'Nature'], img: 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'shopping', name: 'Shop Till You Drop', desc: 'Markets, malls, souvenirs', tags: ['Shopping', 'Markets', 'Fashion'], img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&h=1800&fit=crop&auto=format&q=90' },
+  { id: 'hidden', name: 'Hidden Gems', desc: 'Off-the-beaten-path spots', tags: ['Adventure', 'Culture', 'Nature'], img: 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=1200&h=1800&fit=crop&auto=format&q=90' },
 ]
 
 export default function VibesPage() {

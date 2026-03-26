@@ -170,7 +170,11 @@ export default function DatesPage() {
       <div className="flex-1" />
 
       <div className="pb-[calc(env(safe-area-inset-bottom)+16px)]">
-        <GoldButton ready={!!isReady} onClick={() => router.push('/m/plan/budget')}>
+        <GoldButton ready={!!isReady} onClick={() => {
+          const params = new URLSearchParams(window.location.search)
+          const direct = params.get('direct')
+          router.push(direct ? '/m/plan/budget?direct=1' : '/m/plan/budget')
+        }}>
           Continue
         </GoldButton>
       </div>

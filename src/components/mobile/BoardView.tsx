@@ -247,9 +247,43 @@ export default function BoardView({ trip, items }: BoardViewProps) {
               </button>
             )}
 
-            {/* Items */}
+            {/* Hotel — pinned at top of each day */}
+            {(() => {
+              const hotel = day.items.find(i => i.category === 'hotel')
+              if (!hotel) return null
+              const hotelMeta = (hotel.metadata || {}) as ItemMetadata
+              const hotelRating = hotelMeta.rating as number | undefined
+              return (
+                <button
+                  key={hotel.id}
+                  onClick={() => openDetail(hotel.id)}
+                  className="mb-3 flex w-full items-center gap-3 rounded-xl border border-drift-ok/15 bg-drift-ok/5 px-3 py-2.5 text-left transition-all active:scale-[0.98]"
+                >
+                  {hotel.image_url && (
+                    <img src={hotel.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="1.5" className="shrink-0">
+                        <path d="M3 21V7a2 2 0 012-2h14a2 2 0 012 2v14" /><path d="M3 11h18" /><path d="M9 21V11" /><path d="M15 21V11" />
+                      </svg>
+                      <span className="truncate text-xs font-medium text-drift-text">{hotel.name}</span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-drift-ok">{hotel.price}</span>
+                      {hotelRating && <span className="text-[10px] text-drift-text3">★ {hotelRating}</span>}
+                    </div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )
+            })()}
+
+            {/* Activities & Food — timeline */}
             <div className="ml-1.5 space-y-3 border-l border-drift-border2 pl-6">
-              {day.items.map((item, ii) => {
+              {day.items.filter(i => i.category !== 'hotel').map((item, ii, filteredItems) => {
                 if (item.category === 'flight') {
                   return <FlightCard key={item.id} item={item} onTap={() => openDetail(item.id)} />
                 }
@@ -257,7 +291,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
 
                 const meta = (item.metadata || {}) as ItemMetadata
                 const travel = meta.travelToNext as { to: string; duration: string; distance: string; mode: string } | undefined
-                const nextItem = day.items[ii + 1]
+                const nextItem = filteredItems[ii + 1]
                 const showTravel = travel && nextItem && nextItem.category !== 'transfer' && nextItem.category !== 'flight'
 
                 return (
