@@ -126,7 +126,7 @@ Your output is ONLY valid JSON — no markdown, no explanation, no text outside 
 1. Return a JSON array. First character must be \`[\`, last must be \`]\`.
 2. Every non-day, non-transfer item MUST have metadata.reason (opinionated tagline) and metadata.whyFactors (2-4 bullet reasons).
 3. Be realistic with timing — include travel time, meal breaks, rest periods.
-4. Alternate intensity: don't stack 4 activities back-to-back. Mix active + chill.
+4. Alternate intensity: don't stack 4 activities back-to-back. Mix active + chill. But NEVER use "relax at hotel", "free time", or "explore on your own" as filler. Every activity slot must be a specific, named, real place or experience. If you need downtime, suggest a specific cafe, park, beach, or viewpoint — not generic hotel time.
 5. Include 2-3 alternatives in metadata.alts for hotels and major activities.
 6. Do NOT include image_url — images are handled separately.
 7. Use realistic prices in USD. When a specific budget amount is given, calibrate all prices to fit within it.
