@@ -30,7 +30,11 @@ export default function DestinationsPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [activeDot, setActiveDot] = useState(0)
   const [customDest, setCustomDest] = useState('')
+  const [customCountry, setCustomCountry] = useState('')
+  const [suggestions, setSuggestions] = useState<Array<{ city: string; country: string; description: string }>>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   // Show toast with auto-dismiss
   const showToast = useCallback((msg: string) => {
@@ -155,10 +159,9 @@ export default function DestinationsPage() {
   // Navigate to loading screen which handles generation
   const handleGenerate = () => {
     if (customDest.trim().length > 1) {
-      // User typed a custom destination
-      const parts = customDest.trim().split(',').map(s => s.trim())
-      const city = parts[0]
-      const country = parts[1] || countryMap[city.toLowerCase()] || ''
+      // User selected from autocomplete or typed a destination
+      const city = customDest.trim()
+      const country = customCountry || countryMap[city.toLowerCase()] || ''
       setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: pickedVibes })
       trackEvent('destination_custom', 'funnel', city)
       setGenerating(true)
@@ -189,22 +192,72 @@ export default function DestinationsPage() {
         </h1>
         <p className="mb-3 text-xs text-drift-text3">Based on your vibes, or type your own</p>
 
-        {/* Inline destination search */}
+        {/* Inline destination search with Google Places autocomplete */}
         <div className="relative mb-4">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="absolute left-3 top-1/2 -translate-y-1/2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="absolute left-3 top-[13px] z-10">
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
           </svg>
           <input
             type="text"
             value={customDest}
-            onChange={(e) => { setCustomDest(e.target.value); if (e.target.value) setSelectedIdx(null) }}
-            placeholder="Or type a destination..."
-            className="w-full rounded-xl border border-drift-border2 bg-drift-surface py-2.5 pl-9 pr-4 text-sm text-drift-text placeholder:text-drift-text3/50 focus:border-drift-gold/30 focus:outline-none transition-colors"
+            onChange={(e) => {
+              const val = e.target.value
+              setCustomDest(val)
+              setCustomCountry('')
+              if (val) setSelectedIdx(null)
+              // Fetch suggestions after 2+ chars with debounce
+              if (debounceRef.current) clearTimeout(debounceRef.current)
+              if (val.length >= 2) {
+                debounceRef.current = setTimeout(async () => {
+                  try {
+                    const res = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(val)}`)
+                    const data = await res.json()
+                    setSuggestions(data.predictions || [])
+                    setShowSuggestions(true)
+                  } catch { setSuggestions([]) }
+                }, 300)
+              } else {
+                setSuggestions([])
+                setShowSuggestions(false)
+              }
+            }}
+            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true) }}
+            onBlur={() => { setTimeout(() => setShowSuggestions(false), 200) }}
+            placeholder="Or search a destination..."
+            className="w-full rounded-xl border border-drift-border2 bg-drift-surface py-2.5 pl-9 pr-9 text-sm text-drift-text placeholder:text-drift-text3/50 focus:border-drift-gold/30 focus:outline-none transition-colors"
           />
           {customDest && (
-            <button onClick={() => setCustomDest('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-drift-text3">
+            <button onClick={() => { setCustomDest(''); setCustomCountry(''); setSuggestions([]); setShowSuggestions(false) }} className="absolute right-3 top-[13px] text-drift-text3 z-10">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
+          )}
+
+          {/* Autocomplete dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-drift-border2 bg-drift-card shadow-xl">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setCustomDest(s.city)
+                    setCustomCountry(s.country)
+                    setSuggestions([])
+                    setShowSuggestions(false)
+                    setSelectedIdx(null)
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-drift-surface2 active:bg-drift-surface2 border-b border-drift-border2 last:border-0"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" className="shrink-0">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-drift-text">{s.city}</div>
+                    <div className="truncate text-[10px] text-drift-text3">{s.country}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
