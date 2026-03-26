@@ -84,24 +84,54 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               unoptimized={!imgSrc.includes('unsplash.com') && !imgSrc.includes('googleusercontent.com') && !imgSrc.includes('googleapis.com')}
               onError={onImgError}
             />
+            {imgSrc.includes('unsplash.com') && (
+              <span className="absolute bottom-0.5 left-0.5 rounded bg-black/50 px-1 py-px text-[6px] text-white/50">
+                Illustration
+              </span>
+            )}
           </div>
 
           {/* Body */}
           <div className="flex flex-1 flex-col justify-center p-3">
-            <span className={`mb-1 inline-block self-start rounded-md px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider ${tag.cls}`}>
-              {tag.label}
-            </span>
+            <div className="mb-1 flex items-center gap-1">
+              <span className={`inline-block self-start rounded-md px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider ${tag.cls}`}>
+                {tag.label}
+              </span>
+              {meta.source && (
+                <span className={`inline-block rounded-md px-1 py-0.5 text-[6px] font-bold uppercase tracking-wider ${
+                  ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
+                    ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text3'
+                }`}>
+                  {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? 'Verified' : 'AI'}
+                </span>
+              )}
+            </div>
             <div className="text-[13px] font-semibold leading-tight text-drift-text line-clamp-1">
               {item.name}
             </div>
             <div className="mt-0.5 text-[10px] leading-snug text-drift-text3 line-clamp-1">
               {item.detail || ''}
             </div>
-            <div className="mt-1 text-xs font-bold text-drift-text">
-              {(() => {
-                const num = parsePrice(item.price)
-                return num === 0 ? 'Free' : formatBudget(num)
-              })()}
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs font-bold text-drift-text">
+                {(() => {
+                  const num = parsePrice(item.price)
+                  return num === 0 ? 'Free' : formatBudget(num)
+                })()}
+              </span>
+              {(meta.rating as number) > 0 && (
+                <span className="text-[10px] text-drift-text3">
+                  <span className="text-amber-400">★</span>{' '}
+                  {(meta.rating as number).toFixed(1)}
+                  {(meta.reviewCount as number) > 0 && (
+                    <span className="text-drift-text3/60">
+                      {' '}({(meta.reviewCount as number) >= 1000
+                        ? `${((meta.reviewCount as number) / 1000).toFixed(1)}K`
+                        : meta.reviewCount})
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
           </div>
         </div>

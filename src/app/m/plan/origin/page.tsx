@@ -14,12 +14,13 @@ export default function OriginPage() {
   const { onboarding, setOrigin, token } = useTripStore()
   const [value, setValue] = useState(onboarding.origin)
   const [selectedChip, setSelectedChip] = useState<string | null>(onboarding.origin || null)
+  const [isValidCity, setIsValidCity] = useState(!!onboarding.origin)
+  const [suggestions, setSuggestions] = useState<Array<{ city: string; country: string; description: string }>>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
-  useEffect(() => {
-    if (!token) router.replace('/m/login')
-  }, [token, router])
-
+  useEffect(() => { if (!token) router.replace('/m/login') }, [token, router])
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 400)
     return () => clearTimeout(t)
@@ -28,16 +29,44 @@ export default function OriginPage() {
   const handleChip = (city: string) => {
     setValue(city)
     setSelectedChip(city)
+    setIsValidCity(true)
     setOrigin(city)
+    setSuggestions([])
+    setShowSuggestions(false)
   }
 
   const handleInput = (v: string) => {
     setValue(v)
     setSelectedChip(null)
+    setIsValidCity(false)
     setOrigin(v)
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (v.length >= 2) {
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(v)}`)
+          const data = await res.json()
+          setSuggestions(data.predictions || [])
+          setShowSuggestions(true)
+        } catch { setSuggestions([]) }
+      }, 300)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
   }
 
-  const isReady = value.trim().length > 1
+  const handleSuggestionSelect = (s: { city: string; country: string }) => {
+    setValue(s.city)
+    setSelectedChip(null)
+    setIsValidCity(true)
+    setOrigin(s.city)
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  const isReady = value.trim().length > 1 && isValidCity
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
@@ -49,18 +78,46 @@ export default function OriginPage() {
       </h1>
       <p className="mb-7 text-[9px] font-bold uppercase tracking-[0.16em] text-drift-text3">Your home city</p>
 
-      {/* Input */}
+      {/* Input with autocomplete */}
       <div className="relative mb-7">
         <input
           ref={inputRef}
           type="text"
           value={value}
           onChange={(e) => handleInput(e.target.value)}
+          onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true) }}
+          onBlur={() => { setTimeout(() => setShowSuggestions(false), 200) }}
           onKeyDown={(e) => e.key === 'Enter' && isReady && router.push('/m/plan/dates')}
           placeholder="Delhi"
           className="w-full border-b border-drift-border2 bg-transparent pb-3 text-2xl font-light text-drift-text placeholder:text-drift-text3/40 focus:border-drift-gold/30 focus:outline-none transition-colors"
         />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-drift-gold/50 via-drift-gold/20 to-transparent opacity-0 transition-opacity focus-within:opacity-100" />
+
+        {/* Autocomplete dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-drift-border2 bg-drift-card shadow-xl">
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSuggestionSelect(s)}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-drift-surface2 active:bg-drift-surface2 border-b border-drift-border2 last:border-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" className="shrink-0">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                </svg>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-drift-text">{s.city}</div>
+                  <div className="truncate text-[10px] text-drift-text3">{s.country}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Hint when typing but not selected */}
+        {value.length > 2 && !isValidCity && !showSuggestions && (
+          <p className="mt-1 text-[10px] text-drift-warn">Pick a city from the suggestions for accurate flights</p>
+        )}
       </div>
 
       {/* Quick chips */}
@@ -89,11 +146,7 @@ export default function OriginPage() {
         {/* Reel shortcut */}
         <button
           onClick={() => {
-            if (!isReady) {
-              inputRef.current?.focus()
-              inputRef.current?.setAttribute('placeholder', 'Enter your city first ↑')
-              return
-            }
+            if (!isReady) { inputRef.current?.focus(); return }
             trackEvent('plan_reel_shortcut', 'funnel')
             router.push('/m/plan/url')
           }}

@@ -126,6 +126,13 @@ export default function BoardView({ trip, items }: BoardViewProps) {
 
   const totalCost = costs.flights + costs.hotels + costs.activities + costs.food
 
+  // Budget warning
+  const budgetDefaults: Record<string, number> = { budget: 1500, mid: 3000, luxury: 7000 }
+  const budgetTarget = budgetDefaults[trip.budget || 'mid'] || 3000
+  const overBudgetPct = totalCost > 0 && budgetTarget > 0
+    ? Math.round(((totalCost - budgetTarget) / budgetTarget) * 100)
+    : 0
+
   return (
     <div ref={scrollRef} className="h-full overflow-y-auto pb-24">
       {/* Header */}
@@ -192,6 +199,23 @@ export default function BoardView({ trip, items }: BoardViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Budget warning */}
+      {overBudgetPct > 15 && (
+        <div className="mx-5 mt-3 flex items-start gap-2.5 rounded-xl border border-drift-warn/20 bg-drift-warn/5 px-4 py-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0a500" strokeWidth="1.5" className="mt-0.5 shrink-0">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <div>
+            <p className="text-[11px] font-semibold text-drift-warn">~{overBudgetPct}% over budget</p>
+            <p className="mt-0.5 text-[10px] text-drift-text3">
+              Chat with Drift to find cheaper swaps.{' '}
+              <button onClick={() => openChat('Help me reduce the budget for this trip')} className="font-semibold text-drift-gold">Adjust →</button>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Day pills */}
       <div className="mt-5 flex gap-2 overflow-x-auto px-5 scrollbar-hide">

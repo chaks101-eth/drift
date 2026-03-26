@@ -7,11 +7,11 @@ import { supabase } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
 const steps = [
-  { text: 'Checking weather & searching flights', duration: 8000 },
-  { text: 'Finding the must-see spots for your vibes', duration: 15000 },
-  { text: 'Planning your day-by-day itinerary', duration: 25000 },
-  { text: 'Getting real venue photos & ratings', duration: 40000 },
-  { text: 'Adding the finishing touches', duration: 20000 },
+  { text: 'Searching flights & checking weather', duration: 6000 },
+  { text: 'Discovering the best spots for your vibes', duration: 10000 },
+  { text: 'Building your day-by-day itinerary', duration: 18000 },
+  { text: 'Fetching photos & ratings', duration: 28000 },
+  { text: 'Personalizing the finishing touches', duration: 12000 },
 ]
 
 // Destination-specific tips shown during loading
@@ -96,7 +96,12 @@ export default function LoadingPage() {
           }),
         })
 
-        if (!res.ok) throw new Error(`Generation failed (${res.status})`)
+        if (!res.ok) {
+          if (res.status === 429) throw new Error('rate_limit')
+          if (res.status === 401) throw new Error('auth_expired')
+          if (res.status >= 500) throw new Error('server_error')
+          throw new Error('generation_failed')
+        }
         const data = await res.json()
         if (!data.trip) throw new Error('No trip returned')
 
@@ -144,7 +149,17 @@ export default function LoadingPage() {
         // Navigate to board
         setTimeout(() => router.replace(`/m/board/${data.trip.id}`), 600)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Trip generation failed')
+        const code = err instanceof Error ? err.message : 'unknown'
+        const messages: Record<string, string> = {
+          rate_limit: 'Too many trips generated. Please wait a minute and try again.',
+          auth_expired: 'Your session expired. Please log in again.',
+          server_error: 'Our AI is temporarily busy. Please try again in a moment.',
+          generation_failed: 'Trip generation failed. Try a different destination or vibes.',
+          'No trip returned': 'Trip generation produced no results. Try different vibes.',
+          unknown: 'Something went wrong. Please try again.',
+        }
+        setError(messages[code] || messages.unknown)
+        trackEvent('generation_failed', 'error', code)
       }
     }
 
@@ -230,9 +245,19 @@ export default function LoadingPage() {
 
         {/* Error */}
         {error && (
-          <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-center">
+          <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 text-center">
             <p className="text-xs text-red-400">{error}</p>
-            <button onClick={() => router.back()} className="mt-2 text-xs font-semibold text-drift-gold">Go back</button>
+            <div className="mt-3 flex gap-2 justify-center">
+              <button
+                onClick={() => { setError(null); started.current = false; setActiveStep(0); setGenerationDone(false) }}
+                className="rounded-xl border border-drift-gold/20 bg-drift-gold-bg px-4 py-2 text-xs font-semibold text-drift-gold"
+              >
+                Retry
+              </button>
+              <button onClick={() => router.back()} className="rounded-xl border border-drift-border2 px-4 py-2 text-xs font-semibold text-drift-text3">
+                Go back
+              </button>
+            </div>
           </div>
         )}
 
