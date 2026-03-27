@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useUIStore } from '@/stores/ui-store'
 import { useTripStore } from '@/stores/trip-store'
@@ -89,13 +89,68 @@ export default function DetailSheet() {
     setActivePhoto(idx)
   }
 
+  // ─── Swipe-to-dismiss ──────────────────────────────
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const dragStartY = useRef(0)
+  const [dragOffset, setDragOffset] = useState(0)
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    // Only allow drag from near the top of the sheet (handle area)
+    const sheet = sheetRef.current
+    if (!sheet) return
+    const scrollTop = sheet.scrollTop
+    if (scrollTop > 5) return // don't drag if scrolled down
+    dragStartY.current = e.touches[0].clientY
+  }, [])
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStartY.current === 0) return
+    const dy = e.touches[0].clientY - dragStartY.current
+    if (dy > 0) { // only drag down
+      setDragOffset(dy)
+      e.preventDefault()
+    }
+  }, [])
+
+  const onTouchEnd = useCallback(() => {
+    if (dragOffset > 100) {
+      closeDetail() // dismiss if dragged > 100px
+    }
+    setDragOffset(0)
+    dragStartY.current = 0
+  }, [dragOffset, closeDetail])
+
+  // ─── Browser back button closes overlay ────────────
+  useEffect(() => {
+    if (!showDetail) return
+
+    // Push a fake history entry so back button can pop it
+    window.history.pushState({ overlay: 'detail' }, '')
+
+    const handlePopState = () => {
+      closeDetail()
+    }
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [showDetail, closeDetail])
+
   return (
     <div className={`fixed inset-0 z-[150] transition-opacity duration-300 ${showDetail ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       {/* Backdrop — closes on tap */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeDetail} onTouchEnd={closeDetail} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeDetail} />
 
-      <div className={`absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-2xl border-t border-drift-border2 bg-drift-card transition-transform duration-500 ease-[var(--ease-spring)] ${showDetail ? 'translate-y-0' : 'translate-y-full'}`}>
-        {/* Handle — tap to close */}
+      <div
+        ref={sheetRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className={`absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-2xl border-t border-drift-border2 bg-drift-card transition-transform duration-500 ease-[var(--ease-spring)] ${showDetail ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ transform: showDetail && dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined, opacity: dragOffset > 0 ? 1 - dragOffset / 300 : undefined }}
+      >
+        {/* Handle — tap or drag to close */}
         <div className="sticky top-0 z-10 flex justify-center bg-drift-card pt-3 pb-2 cursor-pointer" onClick={closeDetail}>
           <div className="h-1 w-9 rounded-full bg-white/25" />
         </div>

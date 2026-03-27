@@ -18,11 +18,13 @@ export default function HeroPage() {
   const token = useTripStore((s) => s.token)
   const userId = useTripStore((s) => s.userId)
   const [checked, setChecked] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
   // Redirect logged-in users with existing trips to their last trip
   useEffect(() => {
     if (!token || !userId || checked) return
     setChecked(true)
+    setRedirecting(true) // show loading while checking
 
     supabase
       .from('trips')
@@ -30,12 +32,26 @@ export default function HeroPage() {
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .then(({ data }) => {
-        if (data?.length) {
+      .then(({ data, error }) => {
+        if (!error && data?.length) {
           router.replace(`/m/board/${data[0].id}`)
+        } else {
+          setRedirecting(false) // no trips or error — show hero
         }
       })
   }, [token, userId, checked, router])
+
+  // Show loading screen while checking for existing trips
+  if (redirecting) {
+    return (
+      <div className="flex h-full items-center justify-center bg-drift-bg">
+        <div className="text-center">
+          <div className="mb-4 font-serif text-xl text-drift-gold opacity-80">Drift</div>
+          <div className="h-5 w-5 mx-auto animate-spin rounded-full border-2 border-drift-border2 border-t-drift-gold" />
+        </div>
+      </div>
+    )
+  }
 
   const handleStart = () => {
     router.push(token ? '/m/plan/origin' : '/m/login')

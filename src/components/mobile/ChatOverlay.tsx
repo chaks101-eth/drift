@@ -91,6 +91,15 @@ export default function ChatOverlay() {
   const messagesRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Browser back button closes chat overlay
+  useEffect(() => {
+    if (!showChat) return
+    window.history.pushState({ overlay: 'chat' }, '')
+    const handlePopState = () => closeChat()
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [showChat, closeChat])
+
   // Handle init message
   useEffect(() => {
     if (showChat && chatInitMessage) {
