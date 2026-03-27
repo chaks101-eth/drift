@@ -88,6 +88,21 @@ export default function BoardView({ trip, items }: BoardViewProps) {
   const briefText = tripBrief || getFallbackBrief(trip.vibes || [])
   const vibes = trip.vibes || []
   const stopCount = items.filter((i) => i.category !== 'day' && i.category !== 'transfer').length
+
+  // Empty trip state
+  if (items.length === 0 || stopCount === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-6">
+        <div className="text-center">
+          <div className="font-serif text-xl text-drift-text mb-2">Trip is empty</div>
+          <p className="text-xs text-drift-text3">This trip has no activities yet. Try generating a new one or chat with Drift to add items.</p>
+        </div>
+        <button onClick={() => openChat('Help me build an itinerary for this trip')} className="rounded-xl bg-drift-gold px-6 py-3 text-xs font-semibold text-drift-bg">
+          Chat with Drift
+        </button>
+      </div>
+    )
+  }
   const yr = trip.start_date ? new Date(trip.start_date + 'T00:00:00').getFullYear() : ''
 
   // Scroll to day
@@ -115,8 +130,9 @@ export default function BoardView({ trip, items }: BoardViewProps) {
       if (i.category === 'flight') c.flights += p
       else if (i.category === 'hotel') {
         // Hotel prices are per-night — multiply by nights
-        const isPerNight = (i.price || '').toLowerCase().includes('/night') || (i.price || '').toLowerCase().includes('per night')
-        c.hotels += isPerNight ? p * nights : p
+        const lower = (i.price || '').toLowerCase()
+        const isPN = lower.includes('/night') || lower.includes('per night') || lower.includes('/per')
+        c.hotels += isPN ? p * nights : p
       }
       else if (i.category === 'activity') c.activities += p
       else if (i.category === 'food') c.food += p
@@ -200,8 +216,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         </div>
       </div>
 
-      {/* Budget warning */}
-      {overBudgetPct > 15 && (
+      {/* Budget warning — only show when OVER budget, not under */}
+      {overBudgetPct > 15 && totalCost > budgetTarget && (
         <div className="mx-5 mt-3 flex items-start gap-2.5 rounded-xl border border-drift-warn/20 bg-drift-warn/5 px-4 py-3">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0a500" strokeWidth="1.5" className="mt-0.5 shrink-0">
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -298,8 +314,9 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                 if (item.category === 'hotel') {
                   const hotelMeta = (item.metadata || {}) as ItemMetadata
                   const hotelRating = hotelMeta.rating as number | undefined
-                  const isPerNight = (item.price || '').toLowerCase().includes('/night')
-                  const perNightPrice = item.price || ''
+                  const isPerNight = (item.price || '').toLowerCase().includes('/night') || (item.price || '').toLowerCase().includes('per night') || (item.price || '').toLowerCase().includes('/per')
+                  const perNightNum = parsePrice(item.price)
+                  const perNightPrice = perNightNum === 0 ? 'Free' : `${formatBudget(perNightNum)}/night`
                   // Calculate nights this hotel covers
                   const hotelNights = (() => {
                     // Find the next hotel in the trip to determine stay duration

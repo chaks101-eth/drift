@@ -313,7 +313,7 @@ export default function ChatOverlay() {
               }}
               placeholder="Ask about your trip..."
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-drift-border2 bg-transparent px-3.5 py-2.5 text-sm text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none"
+              className="flex-1 resize-none rounded-xl border border-drift-border2 bg-transparent px-3.5 py-2.5 text-sm text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none max-h-[100px] overflow-y-auto"
             />
             <button
               onClick={() => sendMessage(input)}

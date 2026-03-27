@@ -156,7 +156,7 @@ export default function DetailSheet() {
         </div>
 
         {/* Close button */}
-        <button onClick={closeDetail} aria-label="Close detail" className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
+        <button onClick={closeDetail} aria-label="Close detail" className="absolute right-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>

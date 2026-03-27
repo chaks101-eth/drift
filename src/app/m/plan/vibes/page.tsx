@@ -80,6 +80,8 @@ export default function VibesPage() {
   }, [currentIdx, picked, done, setVibes])
 
   const handleContinue = () => {
+    if (picked.length === 0) return // don't allow 0 vibes
+    setVibes(picked)
     router.push('/m/plan/destinations')
   }
 

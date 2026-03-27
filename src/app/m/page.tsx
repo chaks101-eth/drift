@@ -26,6 +26,9 @@ export default function HeroPage() {
     setChecked(true)
     setRedirecting(true) // show loading while checking
 
+    // Timeout: don't let user wait more than 5s
+    const timeout = setTimeout(() => setRedirecting(false), 5000)
+
     supabase
       .from('trips')
       .select('id')
@@ -33,12 +36,15 @@ export default function HeroPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .then(({ data, error }) => {
+        clearTimeout(timeout)
         if (!error && data?.length) {
           router.replace(`/m/board/${data[0].id}`)
         } else {
-          setRedirecting(false) // no trips or error — show hero
+          setRedirecting(false)
         }
       })
+
+    return () => clearTimeout(timeout)
   }, [token, userId, checked, router])
 
   // Show loading screen while checking for existing trips

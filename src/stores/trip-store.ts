@@ -239,7 +239,7 @@ export const useTripStore = create<TripStore>((set, get) => ({
   // Chat
   chatHistory: [],
   addChatMessage: (msg) =>
-    set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
+    set((s) => ({ chatHistory: [...s.chatHistory, msg].slice(-50) })), // cap at 50 messages
   updateLastChatMessage: (update) =>
     set((s) => {
       const history = [...s.chatHistory]
