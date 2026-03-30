@@ -132,9 +132,10 @@ export default function BoardView({ trip, items }: BoardViewProps) {
       let hotelNights = nights
       if (allHotels.length > 1) {
         const thisDayIdx = days.findIndex(d => d.items.some(i => i.id === hotel.id))
-        if (idx < allHotels.length - 1) {
+        if (thisDayIdx < 0) { /* hotel not in any day — use full trip */ }
+        else if (idx < allHotels.length - 1) {
           const nextDayIdx = days.findIndex(d => d.items.some(i => i.id === allHotels[idx + 1]?.id))
-          hotelNights = Math.max(1, nextDayIdx - thisDayIdx)
+          if (nextDayIdx > thisDayIdx) hotelNights = Math.max(1, nextDayIdx - thisDayIdx)
         } else {
           hotelNights = Math.max(1, days.length - thisDayIdx)
         }
@@ -373,8 +374,11 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                   const hData = hotels.find(h => h.id === item.id)
                   const hRating = hData?.rating
                   const hNights = hData?.hotelNights || nights
-                  const hPrice = hData ? (hData.isPN ? `${formatBudget(hData.perNightNum)}/night` : formatBudget(hData.perNightNum)) : item.price
-                  const hTotal = hData?.isPN && hNights > 1 ? formatBudget(hData.totalCost) : null
+                  const hPriceNum = hData?.perNightNum || parsePrice(item.price)
+                  const hIsPN = hData?.isPN ?? false
+                  const hPrice = hPriceNum > 0 ? (hIsPN ? `${formatBudget(hPriceNum)}/night` : formatBudget(hPriceNum)) : item.price || ''
+                  const hTotalNum = hIsPN ? hPriceNum * hNights : 0
+                  const hTotal = hIsPN && hNights > 1 && hTotalNum > 0 ? formatBudget(hTotalNum) : null
                   return (
                     <button
                       key={item.id}
