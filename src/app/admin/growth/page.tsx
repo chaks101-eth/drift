@@ -433,8 +433,7 @@ function VideoTab() {
       <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
         <h2 className="text-lg font-serif text-[#f0efe8] mb-4">Video / Reel Generator</h2>
         <p className="text-xs text-[#7a7a85] mb-4">
-          Generates short-form videos from real trip photos for Instagram Reels and TikTok.
-          Uses Creatomate ($12/mo) or Shotstack ($25/mo). Falls back to slide data for manual creation.
+          Generates cinematic reels from trip photos. Priority: Kling AI video clips ($0.21/clip) + ElevenLabs voiceover → Creatomate → Shotstack → slide data.
         </p>
         <div className="flex flex-wrap gap-4 items-end mb-4">
           <div>
@@ -459,26 +458,67 @@ function VideoTab() {
       {result && (
         <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6">
           <h3 className="text-sm font-medium text-[#f0efe8] mb-3 uppercase tracking-wider">Result</h3>
-          {result.videoUrl ? (
-            <div>
-              <p className="text-xs text-[#4ecdc4] mb-2">Video rendered via {result.renderer as string}</p>
-              <a href={result.videoUrl as string} target="_blank" rel="noopener" className="text-sm text-[#c8a44e] underline">{result.videoUrl as string}</a>
+
+          {/* Status */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`text-xs px-2 py-1 rounded ${result.rendered ? 'bg-[rgba(78,205,196,0.1)] text-[#4ecdc4]' : 'bg-[rgba(240,165,0,0.1)] text-[#f0a500]'}`}>
+              {String(result.renderer || 'none')}
             </div>
-          ) : (
-            <div>
-              <p className="text-xs text-[#f0a500] mb-2">{result.instructions as string}</p>
-              <div className="text-[10px] text-[#4a4a55] mb-2">Slides ({(result.slides as Array<unknown>)?.length || 0}):</div>
-              <div className="space-y-1">
-                {((result.slides as Array<Record<string, unknown>>) || []).map((s, i) => (
-                  <div key={i} className="flex items-center gap-3 text-xs text-[#7a7a85]">
-                    <span className="text-[#4a4a55] w-4">{i + 1}</span>
-                    {typeof s.imageUrl === 'string' && <img src={s.imageUrl} alt="" className="w-12 h-12 rounded object-cover" />}
-                    <span>{s.overlay as string}</span>
-                  </div>
-                ))}
+            {result.clipCount != null ? <span className="text-xs text-[#7a7a85]">{String(result.clipCount)} clips generated</span> : null}
+            {result.totalDuration != null ? <span className="text-xs text-[#7a7a85]">{String(result.totalDuration)}s duration</span> : null}
+          </div>
+
+          {/* Instructions */}
+          {typeof result.instructions === 'string' ? (
+            <p className="text-xs text-[#f0a500] mb-4">{result.instructions}</p>
+          ) : null}
+
+          {/* Script (for Kling pipeline) */}
+          {typeof result.script === 'string' ? (
+            <div className="mb-4">
+              <div className="text-[10px] text-[#4a4a55] uppercase tracking-wider mb-2">Narration Script</div>
+              <pre className="bg-[#08080c] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-xs text-[#a0a0a8] whitespace-pre-wrap">{result.script}</pre>
+            </div>
+          ) : null}
+
+          {/* Video URL */}
+          {((): React.ReactNode => {
+            const url = result.videoUrl as string | null
+            if (!url) return null
+            return (
+              <div className="mb-4">
+                <a href={url} target="_blank" rel="noopener" className="text-sm text-[#c8a44e] underline">{url}</a>
               </div>
+            )
+          })()}
+
+          {/* Slides */}
+          <div className="text-[10px] text-[#4a4a55] mb-2">Slides ({(result.slides as Array<unknown>)?.length || 0}):</div>
+          <div className="space-y-2">
+            {((result.slides as Array<Record<string, unknown>>) || []).map((s, i) => (
+              <div key={i} className="flex items-center gap-3 text-xs text-[#7a7a85] bg-[#08080c] rounded-lg px-3 py-2">
+                <span className="text-[#4a4a55] w-4 shrink-0">{i + 1}</span>
+                {typeof s.imageUrl === 'string' && <img src={s.imageUrl} alt="" className="w-12 h-12 rounded object-cover shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[#f0efe8] truncate">{String(s.name)}</div>
+                  <div className="text-[10px] text-[#4a4a55]">
+                    {String(s.price || '')}{s.rating ? ` · ★${String(s.rating)}` : ''}
+                    {s.videoClipUrl ? ' · 🎥 clip' : ''}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Env vars needed */}
+          {result.envVarsNeeded ? (
+            <div className="mt-4 border-t border-[rgba(255,255,255,0.06)] pt-4">
+              <div className="text-[10px] text-[#4a4a55] uppercase tracking-wider mb-2">API Keys Needed</div>
+              {Object.entries(result.envVarsNeeded as Record<string, string>).map(([k, v]) => (
+                <div key={k} className="text-xs text-[#7a7a85]"><code className="text-[#c8a44e]">{v}</code> — {k}</div>
+              ))}
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

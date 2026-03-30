@@ -62,6 +62,45 @@ export async function POST(req: NextRequest) {
   const dest = trip.destination as string
   const vibes = (trip.vibes as string[]) || []
 
+  // ─── Try Kling + ElevenLabs + Remotion pipeline ────
+
+  if (process.env.KLING_ACCESS_KEY || process.env.KLING_API_KEY) {
+    try {
+      const { runVideoPipeline } = await import('@/lib/video-pipeline')
+      const pipelineResult = await runVideoPipeline(dest, trip.id as string)
+
+      const videoSlides = pipelineResult.slides.map((s, i) => ({
+        index: i + 1,
+        name: s.name,
+        category: s.category,
+        price: s.price,
+        imageUrl: s.imageUrl,
+        videoClipUrl: s.videoClipUrl,
+        rating: s.rating,
+        description: s.description,
+        overlay: `${s.name}${s.price ? ` — ${s.price}` : ''}${s.rating ? ` ★${s.rating}` : ''}`,
+      }))
+
+      await saveVideoContent(db, dest, trip.id as string, videoSlides, null, 'kling+elevenlabs')
+
+      return NextResponse.json({
+        slides: videoSlides,
+        script: pipelineResult.script,
+        voiceoverUrl: pipelineResult.voiceoverUrl || null,
+        clipCount: pipelineResult.slides.filter(s => s.videoClipUrl).length,
+        totalDuration: pipelineResult.totalDuration,
+        rendered: true,
+        renderer: 'kling+elevenlabs',
+        instructions: pipelineResult.voiceoverUrl
+          ? 'Video clips + voiceover generated. Run Remotion to compose: npx remotion render DriftReel'
+          : 'Video clips generated. Add ELEVENLABS_API_KEY for voiceover.',
+      })
+    } catch (err) {
+      console.error('[Video] Kling pipeline failed:', err)
+      // Fall through to next renderer
+    }
+  }
+
   // ─── Try Creatomate ────────────────────────────────
 
   if (process.env.CREATOMATE_API_KEY) {
