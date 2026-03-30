@@ -20,12 +20,11 @@ export default function OriginPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
-  // Wait for anonymous session to initialize
-  if (!token) return null
   useEffect(() => {
+    if (!token) return
     const t = setTimeout(() => inputRef.current?.focus(), 400)
     return () => clearTimeout(t)
-  }, [])
+  }, [token])
 
   const handleChip = (city: string) => {
     setValue(city)
@@ -68,6 +67,8 @@ export default function OriginPage() {
   }
 
   const isReady = value.trim().length > 1 && isValidCity
+
+  if (!token) return null // wait for anonymous session
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">

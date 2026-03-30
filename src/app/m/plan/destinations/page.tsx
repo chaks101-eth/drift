@@ -20,8 +20,6 @@ export default function DestinationsPage() {
 
   const { origin, startDate, endDate, budgetLevel, budgetAmount, travelers, pickedVibes, occasion } = onboarding
 
-  if (token === null) return null // wait for anonymous session
-
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -178,6 +176,8 @@ export default function DestinationsPage() {
   const hasCustom = customDest.trim().length > 1
   const selectedDest = selectedIdx !== null ? destinations[selectedIdx] : null
   const canConfirm = hasCustom || selectedIdx !== null
+
+  if (token === null) return null // wait for anonymous session
 
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">

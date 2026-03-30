@@ -37,8 +37,6 @@ export default function VibesPage() {
   const router = useRouter()
   const { setVibes, token } = useTripStore()
 
-  if (token === null) return null // wait for anonymous session
-
   const [currentIdx, setCurrentIdx] = useState(0)
   const [picked, setPicked] = useState<string[]>([])
   const [done, setDone] = useState(false)
@@ -144,6 +142,8 @@ export default function VibesPage() {
     const idx = currentIdx + i
     if (idx < moods.length) visibleCards.push({ mood: moods[idx], stackPos: i })
   }
+
+  if (token === null) return null // wait for anonymous session
 
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">

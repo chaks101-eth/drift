@@ -51,7 +51,7 @@ export default function DatesPage() {
   const router = useRouter()
   const { onboarding, setDates, token } = useTripStore()
 
-  if (token === null) return null // wait for anonymous session
+  // token check moved after hooks
 
   // Pre-fill with "This Weekend" if no dates set
   const defaultDates = onboarding.startDate ? null : getQuickDates('weekend')
@@ -103,6 +103,8 @@ export default function DatesPage() {
     setDates(start, end)
     setError('')
   }
+
+  if (token === null) return null // wait for anonymous session
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">

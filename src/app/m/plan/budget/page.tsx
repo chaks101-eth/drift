@@ -16,7 +16,6 @@ export default function BudgetPage() {
   const router = useRouter()
   const { onboarding, setBudget, setTravelers, formatBudget, token } = useTripStore()
 
-  if (token === null) return null // wait for anonymous session
   const [level, setLevel] = useState(onboarding.budgetLevel)
   const [amount, setAmount] = useState(onboarding.budgetAmount)
   const [travelers, setTravelersLocal] = useState(onboarding.travelers)
@@ -41,6 +40,8 @@ export default function BudgetPage() {
   }
 
   const sliderPct = ((amount - 500) / (10000 - 500)) * 100
+
+  if (token === null) return null // wait for anonymous session
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">

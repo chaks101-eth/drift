@@ -20,7 +20,6 @@ export default function DestinationInputPage() {
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  if (!token) return null // wait for anonymous session
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 400)
     return () => clearTimeout(t)
@@ -64,6 +63,8 @@ export default function DestinationInputPage() {
     trackEvent('plan_direct_destination', 'funnel', city)
     router.push('/m/loading')
   }
+
+  if (!token) return null // wait for anonymous session
 
   return (
     <div className="flex h-full flex-col px-6 pt-[calc(env(safe-area-inset-top)+16px)] animate-[fadeUp_0.45s_var(--ease-smooth)]">
