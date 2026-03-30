@@ -25,10 +25,16 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       }
     })
 
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check initial session — if none, create anonymous session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setAuth(session.access_token, session.user.id, session.user.email || null)
+      } else {
+        // Auto-create anonymous session so user can plan without signing up
+        const { data, error } = await supabase.auth.signInAnonymously()
+        if (!error && data.session) {
+          setAuth(data.session.access_token, data.session.user.id, null)
+        }
       }
     })
 

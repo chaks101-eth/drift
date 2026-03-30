@@ -60,7 +60,7 @@ export default function HeroPage() {
   }
 
   const handleStart = () => {
-    router.push(token ? '/m/plan/origin' : '/m/login')
+    router.push('/m/plan/origin') // anonymous session created by layout
   }
 
   return (
@@ -113,7 +113,7 @@ export default function HeroPage() {
 
         {/* Reel CTA */}
         <button
-          onClick={() => router.push(token ? '/m/plan/url' : '/m/login')}
+          onClick={() => router.push('/m/plan/url')}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-[14px] border border-drift-gold/20 bg-transparent px-4 py-[15px] text-xs font-semibold tracking-wider text-drift-gold opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_1.7s_forwards] transition-all duration-200 active:scale-[0.97] active:bg-drift-gold/5"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

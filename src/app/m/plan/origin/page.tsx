@@ -20,7 +20,8 @@ export default function OriginPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
-  useEffect(() => { if (!token) router.replace('/m/login') }, [token, router])
+  // Wait for anonymous session to initialize
+  if (!token) return null
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 400)
     return () => clearTimeout(t)

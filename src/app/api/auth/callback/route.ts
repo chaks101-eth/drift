@@ -8,5 +8,5 @@ export async function GET(req: NextRequest) {
   const supabase = createServerClient()
   await supabase.auth.exchangeCodeForSession(code)
 
-  return NextResponse.redirect(new URL('/vibes', req.url))
+  return NextResponse.redirect(new URL('/m', req.url))
 }

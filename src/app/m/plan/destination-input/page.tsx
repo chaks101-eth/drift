@@ -20,7 +20,7 @@ export default function DestinationInputPage() {
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { if (!token) router.replace('/m/login') }, [token, router])
+  if (!token) return null // wait for anonymous session
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 400)
     return () => clearTimeout(t)

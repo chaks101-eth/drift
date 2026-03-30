@@ -16,7 +16,7 @@ export default function BudgetPage() {
   const router = useRouter()
   const { onboarding, setBudget, setTravelers, formatBudget, token } = useTripStore()
 
-  useEffect(() => { if (token === null) router.replace('/m/login') }, [token, router])
+  if (token === null) return null // wait for anonymous session
   const [level, setLevel] = useState(onboarding.budgetLevel)
   const [amount, setAmount] = useState(onboarding.budgetAmount)
   const [travelers, setTravelersLocal] = useState(onboarding.travelers)

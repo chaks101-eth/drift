@@ -106,6 +106,7 @@ interface TripStore {
   token: string | null
   userId: string | null
   userEmail: string | null
+  isAnonymous: boolean
   setAuth: (token: string | null, userId: string | null, email: string | null) => void
 
   // Currency
@@ -160,7 +161,8 @@ export const useTripStore = create<TripStore>((set, get) => ({
   token: null,
   userId: null,
   userEmail: null,
-  setAuth: (token, userId, email) => set({ token, userId, userEmail: email }),
+  isAnonymous: true,
+  setAuth: (token, userId, email) => set({ token, userId, userEmail: email, isAnonymous: !email }),
 
   // Currency
   currency: 'USD',

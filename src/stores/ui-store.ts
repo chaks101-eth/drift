@@ -32,6 +32,10 @@ interface UIStore {
   toggleShare: () => void
   closeShare: () => void
 
+  // Auth prompt
+  authPromptDismissed: boolean
+  dismissAuthPrompt: () => void
+
   // Toast
   toastText: string
   toastError: boolean
@@ -74,6 +78,10 @@ export const useUIStore = create<UIStore>((set) => ({
   showShare: false,
   toggleShare: () => set((s) => ({ showShare: !s.showShare })),
   closeShare: () => set({ showShare: false }),
+
+  // Auth prompt
+  authPromptDismissed: false,
+  dismissAuthPrompt: () => set({ authPromptDismissed: true }),
 
   // Toast
   toastText: '',

@@ -20,7 +20,7 @@ export default function DestinationsPage() {
 
   const { origin, startDate, endDate, budgetLevel, budgetAmount, travelers, pickedVibes, occasion } = onboarding
 
-  useEffect(() => { if (token === null) router.replace('/m/login') }, [token, router])
+  if (token === null) return null // wait for anonymous session
 
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)

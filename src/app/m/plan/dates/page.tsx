@@ -51,7 +51,7 @@ export default function DatesPage() {
   const router = useRouter()
   const { onboarding, setDates, token } = useTripStore()
 
-  useEffect(() => { if (token === null) router.replace('/m/login') }, [token, router])
+  if (token === null) return null // wait for anonymous session
 
   // Pre-fill with "This Weekend" if no dates set
   const defaultDates = onboarding.startDate ? null : getQuickDates('weekend')

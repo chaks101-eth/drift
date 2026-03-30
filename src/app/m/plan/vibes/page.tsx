@@ -37,7 +37,7 @@ export default function VibesPage() {
   const router = useRouter()
   const { setVibes, token } = useTripStore()
 
-  useEffect(() => { if (token === null) router.replace('/m/login') }, [token, router])
+  if (token === null) return null // wait for anonymous session
 
   const [currentIdx, setCurrentIdx] = useState(0)
   const [picked, setPicked] = useState<string[]>([])
