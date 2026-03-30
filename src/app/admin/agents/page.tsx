@@ -5,6 +5,11 @@ import { useState, useEffect } from 'react'
 let _secret = ''
 const getSecret = () => _secret
 const headers = () => ({ 'Content-Type': 'application/json', 'x-admin-secret': getSecret() })
+
+// Agent server: local execution server on port 3100
+const AGENT_SERVER = 'http://localhost:3100'
+const agentServerHeaders = () => ({ 'Content-Type': 'application/json', 'x-admin-secret': getSecret() })
+
 const api = (path: string) => {
   const url = new URL(path, window.location.origin)
   url.searchParams.set('secret', getSecret())
@@ -66,23 +71,70 @@ export default function AgentsDashboard() {
     } catch { /* ignore */ }
   }
 
+  const [agentServerOnline, setAgentServerOnline] = useState(false)
+  const [execLog, setExecLog] = useState('')
+
+  // Check if local agent server is running
+  useEffect(() => {
+    if (!authed) return
+    fetch(`${AGENT_SERVER}/health?secret=${getSecret()}`)
+      .then(r => r.json())
+      .then(d => setAgentServerOnline(d.status === 'ok'))
+      .catch(() => setAgentServerOnline(false))
+  }, [authed])
+
   async function executeAgent() {
     if (!selectedAgent || !taskInput) return
+
+    if (!agentServerOnline) {
+      setExecResult({ error: 'Local agent server not running. Start it with: npx tsx agent-server/server.ts' })
+      return
+    }
+
     setExecuting(true)
     setExecResult(null)
+    setExecLog('')
 
     try {
-      const res = await fetch(`/api/agents/${selectedAgent.id}/execute`, {
+      // Execute via local agent server
+      const res = await fetch(`${AGENT_SERVER}/execute`, {
         method: 'POST',
-        headers: headers(),
-        body: JSON.stringify({ taskDescription: taskInput }),
+        headers: agentServerHeaders(),
+        body: JSON.stringify({ agentId: selectedAgent.id, task: taskInput }),
       })
       const data = await res.json()
-      setExecResult(data)
-      loadRecentExecutions()
+
+      if (data.execId) {
+        // Poll for completion via SSE stream
+        const eventSource = new EventSource(`${AGENT_SERVER}/executions/${data.execId}/stream?secret=${getSecret()}`)
+        eventSource.onmessage = (event) => {
+          const msg = JSON.parse(event.data)
+          if (msg.type === 'output') {
+            setExecLog(prev => prev + msg.text)
+          }
+          if (msg.type === 'done') {
+            eventSource.close()
+            setExecResult({ status: msg.status, durationMs: msg.durationMs, execId: data.execId })
+            setExecuting(false)
+          }
+        }
+        eventSource.onerror = () => {
+          eventSource.close()
+          // Fallback: poll for result
+          setTimeout(async () => {
+            const r = await fetch(`${AGENT_SERVER}/executions/${data.execId}?secret=${getSecret()}`)
+            const d = await r.json()
+            setExecResult(d)
+            setExecLog(d.output || '')
+            setExecuting(false)
+          }, 2000)
+        }
+      } else {
+        setExecResult(data)
+        setExecuting(false)
+      }
     } catch (err) {
-      setExecResult({ error: String(err) })
-    } finally {
+      setExecResult({ error: `Failed to connect to agent server: ${err}` })
       setExecuting(false)
     }
   }
@@ -167,8 +219,23 @@ export default function AgentsDashboard() {
 
               <div className="text-[10px] text-[#4a4a55] mb-4">{selectedAgent.path}</div>
 
+              {/* Agent Server Status */}
+              <div className="border-t border-[rgba(255,255,255,0.06)] pt-4 mb-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={`h-2 w-2 rounded-full ${agentServerOnline ? 'bg-[#4ecdc4]' : 'bg-[#e74c3c]'}`} />
+                  <span className="text-[10px] text-[#7a7a85]">
+                    Agent Server {agentServerOnline ? 'online' : 'offline'}
+                  </span>
+                  {!agentServerOnline && (
+                    <code className="text-[9px] text-[#4a4a55] bg-[#08080c] px-2 py-0.5 rounded ml-1">
+                      npx tsx agent-server/server.ts
+                    </code>
+                  )}
+                </div>
+              </div>
+
               {/* Execute */}
-              <div className="border-t border-[rgba(255,255,255,0.06)] pt-4">
+              <div>
                 <label className="text-[10px] text-[#4a4a55] uppercase tracking-wider block mb-2">Task Description</label>
                 <textarea
                   value={taskInput}
@@ -179,12 +246,24 @@ export default function AgentsDashboard() {
                 />
                 <button
                   onClick={executeAgent}
-                  disabled={executing || !taskInput}
+                  disabled={executing || !taskInput || !agentServerOnline}
                   className="bg-[#c8a44e] text-[#08080c] px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
                 >
                   {executing ? 'Executing...' : 'Execute Agent'}
                 </button>
               </div>
+
+              {/* Live Execution Log */}
+              {execLog && (
+                <div className="mt-4 border-t border-[rgba(255,255,255,0.06)] pt-4">
+                  <div className="text-[10px] text-[#4a4a55] uppercase tracking-wider mb-2">
+                    {executing ? '● Live Output' : 'Output'}
+                  </div>
+                  <pre className="bg-[#08080c] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-xs text-[#a0a0a8] overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre-wrap font-mono">
+                    {execLog}
+                  </pre>
+                </div>
+              )}
 
               {/* Result */}
               {execResult && (
@@ -197,11 +276,13 @@ export default function AgentsDashboard() {
                     {(execResult.status as string) || 'unknown'}
                   </div>
                   {typeof execResult.durationMs === 'number' && (
-                    <span className="text-[10px] text-[#4a4a55] ml-2">{Math.round(execResult.durationMs / 1000)}s</span>
+                    <span className="text-[10px] text-[#4a4a55] ml-2">{Math.round((execResult.durationMs as number) / 1000)}s</span>
                   )}
-                  <pre className="mt-2 bg-[#08080c] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-xs text-[#7a7a85] overflow-x-auto max-h-[400px] overflow-y-auto whitespace-pre-wrap">
-                    {JSON.stringify(execResult.output || execResult.error || execResult, null, 2)}
-                  </pre>
+                  {execResult.error ? (
+                    <pre className="mt-2 bg-[rgba(231,76,60,0.05)] border border-[rgba(231,76,60,0.15)] rounded-xl p-4 text-xs text-[#e74c3c] overflow-x-auto max-h-[200px] overflow-y-auto whitespace-pre-wrap">
+                      {String(execResult.error as string)}
+                    </pre>
+                  ) : null}
                 </div>
               )}
             </div>
