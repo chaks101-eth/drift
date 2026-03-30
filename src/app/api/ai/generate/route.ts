@@ -14,7 +14,7 @@ import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
 import { buildItineraryMaps } from '@/lib/day-maps'
 import { addTravelTimesToItems } from '@/lib/google-routes'
 
-export const maxDuration = 60
+export const maxDuration = 120
 
 // POST /api/ai/generate — generate itinerary or destinations
 export async function POST(req: NextRequest) {
