@@ -63,7 +63,7 @@ export default function TripsTab() {
   }, [token])
 
   return (
-    <div className="px-5 pb-28 pt-2">
+    <div className="h-full overflow-y-auto px-5 pb-28 pt-2">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>

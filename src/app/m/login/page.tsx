@@ -95,11 +95,29 @@ export default function LoginPage() {
       <button
         onClick={async () => {
           setLoading(true)
-          const { error: err } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-          })
-          if (err) { setError(err.message); setLoading(false) }
+          // If anonymous user, link Google identity to preserve trips
+          const isAnon = useTripStore.getState().isAnonymous
+          if (isAnon) {
+            const { error: err } = await supabase.auth.linkIdentity({
+              provider: 'google',
+              options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+            })
+            if (err) {
+              // linkIdentity failed — fall back to regular OAuth
+              console.warn('[Login] linkIdentity failed, falling back:', err.message)
+              const { error: err2 } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+              })
+              if (err2) { setError(err2.message); setLoading(false) }
+            }
+          } else {
+            const { error: err } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+            })
+            if (err) { setError(err.message); setLoading(false) }
+          }
         }}
         disabled={loading}
         className="mb-4 flex w-full items-center justify-center gap-3 rounded-[14px] bg-white py-4 text-sm font-semibold text-[#1a1a1a] shadow-[0_2px_12px_rgba(0,0,0,0.1)] transition-all duration-200 active:scale-[0.97]"
