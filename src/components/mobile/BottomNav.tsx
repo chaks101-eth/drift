@@ -51,8 +51,18 @@ export default function BottomNav() {
   const setActiveTab = useUIStore((s) => s.setActiveTab)
   const openChat = useUIStore((s) => s.openChat)
   const resetOnboarding = useTripStore((s) => s.resetOnboarding)
+  const isAnonymous = useTripStore((s) => s.isAnonymous)
   const router = useRouter()
   const [showNewTrip, setShowNewTrip] = useState(false)
+
+  // Anonymous users tapping Trips/Profile get redirected to sign in
+  const handleAuthTab = (tab: Tab) => {
+    if (isAnonymous) {
+      router.push('/m/login')
+    } else {
+      setActiveTab(tab)
+    }
+  }
 
   const handleFromScratch = () => {
     setShowNewTrip(false)
@@ -156,7 +166,7 @@ export default function BottomNav() {
           role="tab"
           aria-selected={activeTab === 'trips'}
           aria-label="My Trips"
-          onClick={() => setActiveTab('trips')}
+          onClick={() => handleAuthTab('trips')}
           className={`relative flex h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-[14px] transition-all duration-300 ${
             activeTab === 'trips' ? 'bg-drift-gold-bg text-drift-gold' : 'text-drift-text3'
           }`}
@@ -172,7 +182,7 @@ export default function BottomNav() {
           role="tab"
           aria-selected={activeTab === 'profile'}
           aria-label="Profile"
-          onClick={() => setActiveTab('profile')}
+          onClick={() => handleAuthTab('profile')}
           className={`relative flex h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-[14px] transition-all duration-300 ${
             activeTab === 'profile' ? 'bg-drift-gold-bg text-drift-gold' : 'text-drift-text3'
           }`}
