@@ -291,48 +291,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         </div>
       )}
 
-      {/* Your Stays — Hotels separated from timeline */}
-      {hotels.length > 0 && (
-        <div className="mx-5 mt-4">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-drift-ok">
-            Your {hotels.length === 1 ? 'Stay' : 'Stays'}
-          </div>
-          <div className="space-y-2">
-            {hotels.map(h => (
-              <button
-                key={h.id}
-                onClick={() => openDetail(h.id)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-drift-ok/20 bg-drift-ok/5 px-4 py-3 text-left transition-all active:scale-[0.98]"
-              >
-                {h.image_url && (
-                  <img src={h.image_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-drift-text">{h.name}</div>
-                  <div className="mt-0.5 flex items-center gap-2 text-[10px]">
-                    <span className="font-semibold text-drift-ok">
-                      {h.isPN ? `${formatBudget(h.perNightNum)}/night` : formatBudget(h.perNightNum)}
-                    </span>
-                    {h.isPN && h.hotelNights > 1 && (
-                      <span className="text-drift-text3">· {formatBudget(h.totalCost)} total</span>
-                    )}
-                    {h.rating && <span className="text-drift-text3">· ★ {h.rating}</span>}
-                  </div>
-                  <div className="mt-0.5 text-[9px] text-drift-text3">
-                    Day {h.startDay}{h.endDay > h.startDay ? `–${h.endDay}` : ''} · {h.hotelNights} {h.hotelNights === 1 ? 'night' : 'nights'}
-                  </div>
-                </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Day pills */}
-      <div className="mt-5 flex gap-2 overflow-x-auto px-5 scrollbar-hide">
+      {/* Day pills — sticky on scroll */}
+      <div className="sticky top-0 z-30 mt-5 flex gap-2 overflow-x-auto bg-drift-bg/95 backdrop-blur-sm px-5 py-2 scrollbar-hide">
         {days.map((day, i) => (
           <button
             key={i}
@@ -408,8 +368,42 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                 }
                 if (item.category === 'transfer') return null
 
-                // Hotels shown in "Your Stays" section above — skip in timeline
-                if (item.category === 'hotel') return null
+                // Hotel — visually distinct from activities
+                if (item.category === 'hotel') {
+                  const hData = hotels.find(h => h.id === item.id)
+                  const hRating = hData?.rating
+                  const hNights = hData?.hotelNights || nights
+                  const hPrice = hData ? (hData.isPN ? `${formatBudget(hData.perNightNum)}/night` : formatBudget(hData.perNightNum)) : item.price
+                  const hTotal = hData?.isPN && hNights > 1 ? formatBudget(hData.totalCost) : null
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => openDetail(item.id)}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-drift-ok/25 bg-gradient-to-r from-drift-ok/8 to-drift-ok/3 px-4 py-3.5 text-left transition-all active:scale-[0.98]"
+                    >
+                      {item.image_url && (
+                        <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-drift-ok/20" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" className="shrink-0">
+                            <path d="M3 21h18M3 7v14M21 7v14M6 11h4v4H6zM14 11h4v4h-4zM10 3l2-2 2 2" />
+                          </svg>
+                          <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-drift-ok">Stay · {hNights} {hNights === 1 ? 'night' : 'nights'}</span>
+                        </div>
+                        <div className="truncate text-[13px] font-medium text-drift-text">{item.name}</div>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-drift-ok">{hPrice}</span>
+                          {hTotal && <span className="text-[10px] text-drift-text3">· {hTotal} total</span>}
+                          {hRating && <span className="text-[10px] text-drift-text3">· ★ {hRating}</span>}
+                        </div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  )
+                }
 
                 const meta = (item.metadata || {}) as ItemMetadata
                 const travel = meta.travelToNext as { to: string; duration: string; distance: string; mode: string } | undefined
@@ -425,16 +419,16 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       onMenu={() => openCardMenu(item.id)}
                     />
                     {showTravel && (
-                      <div className="flex items-center gap-2 py-1.5 pl-1">
-                        <div className="h-3 border-l border-dashed border-drift-border2" />
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="shrink-0">
+                      <div className="flex items-center gap-2 py-2 pl-1">
+                        <div className="h-4 border-l border-dashed border-drift-gold/30" />
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" className="shrink-0 opacity-70">
                           {travel.mode === 'walk'
                             ? <><circle cx="12" cy="5" r="2" /><path d="M10 22l2-7 4 1v-6l-4-1-2 3" /></>
                             : <><path d="M5 17h14l1-5H4l1 5z" /><circle cx="7.5" cy="17" r="2" /><circle cx="16.5" cy="17" r="2" /><path d="M5 12l1-4h12l1 4" /></>
                           }
                         </svg>
-                        <span className="text-[11px] text-drift-text3">{travel.duration}</span>
-                        <span className="text-[10px] text-drift-text3/40">{travel.distance}</span>
+                        <span className="text-[11px] font-medium text-drift-text2">{travel.duration}</span>
+                        <span className="text-[10px] text-drift-text3">{travel.distance}</span>
                       </div>
                     )}
                   </div>
