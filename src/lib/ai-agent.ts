@@ -496,9 +496,12 @@ interface DayOutline {
   dayNum: number
   date: string
   theme: string
-  places: string[] // place names planned for this day
+  neighborhood_focus?: string
+  places: string[]
+  food?: { lunch?: string; dinner?: string }
+  locked_today?: string[]
   dayInsight: string
-  tripBrief?: string // only on day 1
+  tripBrief?: string
 }
 
 export async function generateItinerary(params: {
@@ -545,6 +548,43 @@ export async function generateItinerary(params: {
     urlPlaces = `\nMUST include: ${mentioned.map(h => `${h.name} (${h.category})`).join(', ')}`
   }
 
+  // ─── STEP 0: Lock must-see experiences ────────────────────────
+  console.log(`[Generate] Step 0: Locking must-sees for ${params.destination}`)
+
+  let lockedItems: Array<{ name: string; category: string; why_locked: string; half_day: boolean }> = []
+  try {
+    await throttleLlm()
+    const lockRes = await withRetry(() => llm.chat.completions.create({
+      model,
+      max_tokens: 1024,
+      messages: [
+        { role: 'system', content: 'You are a local expert. Output ONLY valid JSON arrays. No markdown.' },
+        { role: 'user', content: `You have lived in ${params.destination}, ${params.country} for 10 years.
+
+What experiences would a ${vibeStr} traveler deeply regret skipping?
+
+Rules:
+- Maximum 5 items
+- Only destination-defining experiences (e.g. Grand Palace for Bangkok, Uluwatu Temple for Bali)
+- Must align with ${vibeStr} vibes — if they want "foodie", lock a legendary food spot not a museum
+- Be ruthless — exclude anything generic or available in any city
+- Format: [{"name": "Exact Place Name", "category": "activity|food|sightseeing", "why_locked": "One sentence why it's non-negotiable", "half_day": false}]
+
+JSON array only. First char [, last char ].` },
+      ],
+    }))
+    const lockText = (lockRes.choices[0].message.content || '[]').replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim()
+    const lockMatch = lockText.match(/\[[\s\S]*\]/)
+    lockedItems = JSON.parse(lockMatch ? lockMatch[0] : lockText)
+    console.log(`[Generate] Step 0 done — ${lockedItems.length} items locked: ${lockedItems.map(i => i.name).join(', ')}`)
+  } catch (e) {
+    console.warn(`[Generate] Step 0 failed (non-fatal): ${e}`)
+  }
+
+  const lockedContext = lockedItems.length > 0
+    ? `\nLOCKED MUST-HAVES (NON-NEGOTIABLE — build the plan AROUND these):\n${lockedItems.map(i => `- ${i.name} (${i.category}) — ${i.why_locked}${i.half_day ? ' [half-day]' : ''}`).join('\n')}`
+    : ''
+
   // ─── STEP 1: Generate trip outline ────────────────────────────
   console.log(`[Generate] Step 1: Outline for ${numDays}-day ${params.destination} trip`)
 
@@ -559,30 +599,38 @@ export async function generateItinerary(params: {
 
   const vibeStr = params.vibes.join(', ')
   const outlinePrompt = `You are planning the perfect ${numDays}-day ${params.destination}, ${params.country} trip for a traveler who wants: ${vibeStr}.
+${lockedContext}
 
-STEP 1 — Think about what's UNMISSABLE in ${params.destination} for someone who cares about ${vibeStr}:
-- What are the 3-5 landmarks/experiences that DEFINE ${params.destination} for these vibes?
-- What restaurants would a local ${vibeStr} enthusiast insist you visit?
-- What hotel neighborhood puts them closest to the ${vibeStr} action?
-- What's the one thing they'd regret skipping?
+ARRIVAL & DEPARTURE AWARENESS:
+- Day 1 is arrival day. If flying in, first activity should be late morning/afternoon (account for airport, immigration, hotel check-in — minimum 2h buffer).
+- Day ${numDays} is departure day. Last activity must end by early afternoon (account for hotel checkout, airport transfer — minimum 2.5h before flight).
+- Day 1 = lighter/settle-in day. Day ${numDays} = wrap-up day. Heavy activities go in the middle days.
 
-STEP 2 — Build the plan with these constraints:
+PLANNING RULES:
 - Budget: ${budgetLine} | Travelers: ${params.travelers}${occasionNote}
-- Group nearby places on the same day for efficient routing
-- Alternate intensity: don't stack 4 activities back-to-back${urlPlaces}${placeHints}
+- Group geographically proximate places on the same day — minimize cross-city commuting
+- Alternate intensity: heavy activity day → lighter/food-focused day → heavy → lighter
+- Every day MUST have at minimum: 1 lunch + 1 dinner spot (specific restaurant names)
+- Assign each LOCKED must-have to a specific day with enough time allocated${urlPlaces}${placeHints}
+
+HOTEL:
+- Pick ONE base hotel in the ${vibeStr}-optimal neighborhood for the full trip
+- Adventure vibes → eco-lodges near trails. City vibes → central boutique. Beach → beachfront.
 
 Return a JSON object:
 {
-  "hotel": { "name": "Specific Hotel Name", "detail": "why it fits ${vibeStr}", "price": "$X/night" },
+  "hotel": { "name": "Specific Hotel Name", "detail": "why it fits ${vibeStr}", "price": "$X/night", "neighborhood": "Area Name" },
   "days": [EXACTLY ${numDays} objects, each with:
-    { "dayNum": N, "date": "${dayDates[0]}", "theme": "3-5 word theme",
+    { "dayNum": N, "date": "${dayDates[0]}", "theme": "3-5 word theme", "neighborhood_focus": "Main area for this day",
       "places": ["3-5 SPECIFIC real place names — mix activities + restaurants"],
-      "dayInsight": "1-2 sentence opinionated Drift comment" }
+      "food": { "lunch": "Restaurant Name", "dinner": "Restaurant Name" },
+      "locked_today": ["names of any LOCKED items assigned to this day"],
+      "dayInsight": "1-2 sentence opinionated Drift comment with a local tip" }
   ],
   "tripBrief": "2-3 sentence strategy explaining why THIS mix for THESE vibes"
 }
 
-CRITICAL: Do NOT skip the consensus must-see experiences for ${vibeStr} vibes in ${params.destination}. If ${params.destination} is famous for something that matches their vibes, it MUST be in the plan.
+CRITICAL: Every LOCKED item MUST appear in exactly one day's "places" array. Do NOT skip them.
 JSON only. First char {, last char }.`
 
   const outlineRes = await withRetry(() => llm.chat.completions.create({
@@ -707,29 +755,49 @@ async function generateDayItems(
   day: DayOutline,
   hotel: { name: string },
 ): Promise<GeneratedItem[]> {
+  const lockedToday = (day as DayOutline & { locked_today?: string[] }).locked_today || []
+  const lockedNote = lockedToday.length > 0 ? `\nLOCKED items today (MUST appear, do not drop): ${lockedToday.join(', ')}` : ''
+  const foodPlan = (day as DayOutline & { food?: { lunch?: string; dinner?: string } }).food
+  const foodNote = foodPlan ? `\nFood plan: Lunch at ${foodPlan.lunch || 'TBD'}, Dinner at ${foodPlan.dinner || 'TBD'}` : ''
+
   const prompt = `Generate detailed itinerary items for Day ${day.dayNum} (${day.date}) in ${params.destination}, ${params.country}.
 Theme: ${day.theme}
 Places to include: ${day.places.join(', ')}
 Vibes: ${params.vibes.join(', ')} | Budget: ${params.budget}
-Hotel: ${hotel.name}
+Based at: ${hotel.name} (do NOT add hotel as an item — it's already shown on Day 1)${lockedNote}${foodNote}
 
-Return a JSON array of 4-7 items. Each item:
+FOOD RULES — MANDATORY:
+- Lunch: required. Must be a specific named restaurant near the day's activities.
+- Dinner: required. Can be a special spot worth traveling to.
+- Food items get dedicated time slots — never overlap with activity times.
+
+TRANSIT RULES — MANDATORY:
+- Between activity clusters in different areas, add a transit note in metadata.transport_to_next:
+  { "mode": "walk|metro|cab|tuk-tuk", "duration": "15 min", "cost": "$3", "tip": "Use Grab app" }
+- Walking if ≤15 min. Metro/MRT if same zone. Cab/Grab if cross-district.
+
+TIMING RULES:
+- Morning: 09:00-12:00. Lunch: 12:00-13:30. Afternoon: 14:00-17:00. Dinner: 19:00-21:00.
+- Each activity needs realistic duration — museums 1.5-2h, temples 45min, markets 1h, theme parks 4-6h.
+- Day 1 (arrival): first activity after 11:00. Last day (departure): nothing after 14:00.
+
+Return a JSON array of 5-8 items (activities + food). Each item:
 {
-  "category": "activity|food|transfer",
-  "name": "Place Name",
-  "detail": "Brief tagline",
-  "description": "One sentence description",
+  "category": "activity|food",
+  "name": "Exact Place Name (Google Maps searchable)",
+  "detail": "Brief tagline (under 60 chars)",
+  "description": "2 sentences: what makes it special + a local tip",
   "price": "$XX",
   "time": "HH:MM",
   "metadata": {
-    "reason": "Why Drift picked this — opinionated, specific to vibes",
-    "whyFactors": ["reason 1", "reason 2", "reason 3"],
-    "alts": [{"name": "Alt Name", "detail": "Why", "price": "$XX"}]
+    "reason": "Why Drift picked this — opinionated, connect to ${params.vibes.join('/')} vibes",
+    "whyFactors": ["Specific reason 1", "Connects to ${params.vibes[0] || 'your'} vibe", "Near today's other spots"],
+    "alts": [{"name": "Alt Name", "detail": "Why it's a good swap", "price": "$XX"}],
+    "transport_to_next": { "mode": "walk|metro|cab", "duration": "X min", "cost": "$X" }
   }
 }
 
-Include realistic timing (travel between spots, meal breaks). Alternate intensity.
-Use realistic USD prices. Include 1-2 alternatives for major activities.
+NEVER use filler: "relax at hotel", "free time", "explore on your own". Every slot = a specific named place.
 Return ONLY the JSON array. First char [, last char ].`
 
   // No throttle here — parallel calls are rate-safe on Gemini Tier 1 (2000 RPM)

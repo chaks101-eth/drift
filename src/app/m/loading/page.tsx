@@ -7,11 +7,12 @@ import { supabase } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
 const steps = [
-  { text: 'Searching flights & checking weather', duration: 6000 },
-  { text: 'Discovering the best spots for your vibes', duration: 10000 },
-  { text: 'Building your day-by-day itinerary', duration: 18000 },
-  { text: 'Fetching photos & ratings', duration: 28000 },
-  { text: 'Personalizing the finishing touches', duration: 12000 },
+  { text: 'Searching flights & checking weather', duration: 5000 },
+  { text: 'Locking in must-see experiences', duration: 8000 },
+  { text: 'Planning your day-by-day itinerary', duration: 18000 },
+  { text: 'Filling in restaurants, transit & local tips', duration: 22000 },
+  { text: 'Fetching photos & ratings', duration: 20000 },
+  { text: 'Personalizing the finishing touches', duration: 10000 },
 ]
 
 // Destination-specific tips shown during loading
