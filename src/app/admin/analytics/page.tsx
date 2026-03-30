@@ -9,8 +9,12 @@ const api = (path: string) => { const u = new URL(path, window.location.origin);
 type Analytics = {
   asOf: string
   summary: {
-    totalUsers: number; totalTrips: number; totalItems: number; totalChats: number
-    avgEvalScore: number; weeklyNewUsers: number; weeklyTrips: number; monthlyTrips: number
+    totalUsers: number; realUsers: number; anonUsers: number
+    convertedUsers: number; conversionRate: number
+    totalTrips: number; realTrips: number; anonTrips: number
+    totalItems: number; totalChats: number
+    avgEvalScore: number; weeklyNewUsers: number; weeklyRealUsers: number
+    weeklyTrips: number; monthlyTrips: number
     tripsWoW: number; chatEngagementRate: number; avgItemsPerTrip: number
   }
   dailyTrips: Array<{ date: string; count: number }>
@@ -111,14 +115,16 @@ export default function AnalyticsDashboard() {
       <div className="max-w-[1200px] mx-auto px-8 py-8 space-y-8">
         {/* ─── Key Metrics ──────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <StatCard label="Total Users" value={s.totalUsers} sub={`+${s.weeklyNewUsers} this week`} />
-          <StatCard label="Total Trips" value={s.totalTrips} sub={`+${s.weeklyTrips} this week`} />
+          <StatCard label="Real Users" value={s.realUsers} sub={`+${s.weeklyRealUsers} this week · ${s.anonUsers} anon`} color="text-[#4ecdc4]" />
+          <StatCard label="Total Trips" value={s.totalTrips} sub={`${s.realTrips} real · ${s.anonTrips} guest`} />
+          <StatCard label="Conversion" value={`${s.conversionRate}%`}
+            sub={`${s.convertedUsers} signed up`}
+            color={s.conversionRate >= 20 ? 'text-[#4ecdc4]' : s.conversionRate >= 10 ? 'text-[#c8a44e]' : 'text-[#e74c3c]'} />
           <StatCard label="WoW Growth" value={`${s.tripsWoW > 0 ? '+' : ''}${s.tripsWoW}%`}
             color={s.tripsWoW > 0 ? 'text-[#4ecdc4]' : s.tripsWoW < 0 ? 'text-[#e74c3c]' : 'text-[#7a7a85]'} />
           <StatCard label="Avg Quality" value={`${s.avgEvalScore}/100`}
             color={s.avgEvalScore >= 80 ? 'text-[#4ecdc4]' : s.avgEvalScore >= 60 ? 'text-[#c8a44e]' : 'text-[#e74c3c]'} />
           <StatCard label="Chat Rate" value={`${s.chatEngagementRate}%`} sub="of trips use chat" />
-          <StatCard label="Items/Trip" value={s.avgItemsPerTrip} sub={`${s.totalItems} total items`} />
         </div>
 
         {/* ─── Daily Trips Chart ────────────────────── */}

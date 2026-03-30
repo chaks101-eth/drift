@@ -20,6 +20,18 @@ export async function GET(req: NextRequest) {
   const monthAgo = new Date(now.getTime() - 30 * 86400000).toISOString()
   const prevWeek = new Date(now.getTime() - 14 * 86400000).toISOString()
 
+  // Get all users with anonymous flag via auth admin API
+  const authRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users?per_page=500`, {
+    headers: {
+      'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+    },
+  })
+  const authData = await authRes.json()
+  const allAuthUsers: Array<{ id: string; email: string; is_anonymous: boolean; created_at: string }> = authData.users || []
+  const anonUserIds = new Set(allAuthUsers.filter(u => u.is_anonymous).map(u => u.id))
+  const realUserIds = new Set(allAuthUsers.filter(u => !u.is_anonymous).map(u => u.id))
+
   // Run all queries in parallel
   const [
     tripsTotal,
@@ -87,9 +99,23 @@ export async function GET(req: NextRequest) {
 
   // ─── Compute Metrics ──────────────────────────────────
 
-  // Users
-  const uniqueUsers = new Set((usersTotal.data || []).map(t => t.user_id)).size
-  const weeklyNewUsers = new Set((usersThisWeek.data || []).map(t => t.user_id)).size
+  // Users — split by real vs anonymous
+  const allTripUserIds = new Set((usersTotal.data || []).map(t => t.user_id))
+  const uniqueUsers = allTripUserIds.size
+  const realUsers = [...allTripUserIds].filter(id => realUserIds.has(id)).length
+  const anonUsers = [...allTripUserIds].filter(id => anonUserIds.has(id)).length
+  const weeklyUserIds = new Set((usersThisWeek.data || []).map(t => t.user_id))
+  const weeklyNewUsers = weeklyUserIds.size
+  const weeklyRealUsers = [...weeklyUserIds].filter(id => realUserIds.has(id)).length
+
+  // Trips — split by real vs anonymous
+  const allTripData = (usersTotal.data || []) as Array<{ user_id: string }>
+  const realTrips = allTripData.filter(t => realUserIds.has(t.user_id)).length
+  const anonTrips = allTripData.filter(t => anonUserIds.has(t.user_id)).length
+
+  // Conversion: anonymous → signed up (users who were anon but later linked Google/email)
+  const convertedUsers = allAuthUsers.filter(u => !u.is_anonymous && u.email).length
+  const conversionRate = allAuthUsers.length > 0 ? Math.round((convertedUsers / allAuthUsers.length) * 100) : 0
 
   // Daily trip counts (last 30 days)
   const dailyCounts: Record<string, number> = {}
@@ -183,15 +209,22 @@ export async function GET(req: NextRequest) {
     // ─── Key Numbers ───────────────────────────
     summary: {
       totalUsers: uniqueUsers,
+      realUsers,
+      anonUsers,
+      convertedUsers,
+      conversionRate, // % of all users who signed up (anon → real)
       totalTrips: tripsTotal.count || 0,
+      realTrips,
+      anonTrips,
       totalItems: itemsTotal.count || 0,
       totalChats: chatTotal.count || 0,
       avgEvalScore,
       weeklyNewUsers,
+      weeklyRealUsers,
       weeklyTrips: tripsThisWeek.count || 0,
       monthlyTrips: tripsThisMonth.count || 0,
-      tripsWoW, // week-over-week % change
-      chatEngagementRate, // % of trips that used chat
+      tripsWoW,
+      chatEngagementRate,
       avgItemsPerTrip: tripsTotal.count ? Math.round((itemsTotal.count || 0) / tripsTotal.count) : 0,
     },
 
