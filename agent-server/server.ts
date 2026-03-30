@@ -11,11 +11,22 @@ import http from 'http'
 import { spawn, execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
+
+// Load .env.local
+dotenv.config({ path: path.resolve(__dirname, '..', '.env.local') })
 
 const PORT = parseInt(process.env.AGENT_PORT || '3100')
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 const AGENTS_DIR = path.join(PROJECT_ROOT, '.claude', 'agents')
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'drift-beta-s3cr3t-x7k9m2'
+
+// Supabase client for persisting executions
+const db = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+)
 
 // Find claude CLI
 function findClaude(): string {
@@ -110,7 +121,7 @@ const executions = new Map<string, {
 let execCounter = 0
 
 // Execute an agent
-function executeAgent(agentId: string, task: string): string {
+async function executeAgent(agentId: string, task: string): Promise<string> {
   const claudeBin = findClaude()
   const agentFile = findAgentFile(agentId)
 
@@ -118,19 +129,43 @@ function executeAgent(agentId: string, task: string): string {
     throw new Error(`Agent "${agentId}" not found`)
   }
 
-  const execId = `exec_${Date.now()}_${++execCounter}`
+  let execId = `exec_${Date.now()}_${++execCounter}`
   const agentName = agentFile
     .replace(AGENTS_DIR + '/', '')
     .replace('.md', '')
     .replace('/agents/', '/')
 
+  const startedAt = new Date().toISOString()
+
   executions.set(execId, {
     id: execId,
     agentId,
     status: 'running',
-    startedAt: new Date().toISOString(),
+    startedAt,
     output: '',
   })
+
+  // Persist to DB
+  const teamId = agentName.split('/')[0] || 'root'
+  const { data: dbExec } = await db.from('agent_executions').insert({
+    agent_id: agentId,
+    team_id: teamId,
+    status: 'running',
+    action: agentId,
+    task_description: task,
+    input_params: {},
+    started_at: startedAt,
+  }).select('id').single()
+
+  const dbId = dbExec?.id
+  // Update in-memory ID to match DB
+  if (dbId) {
+    const exec = executions.get(execId)!
+    executions.delete(execId)
+    exec.id = dbId
+    execId = dbId
+    executions.set(dbId, exec)
+  }
 
   const startTime = Date.now()
 
@@ -166,17 +201,29 @@ function executeAgent(agentId: string, task: string): string {
     errorOutput += data.toString()
   })
 
-  child.on('close', (code) => {
+  child.on('close', async (code) => {
     const durationMs = Date.now() - startTime
+    const status = code === 0 ? 'completed' : 'failed'
+    const completedAt = new Date().toISOString()
     const exec = executions.get(execId)
     if (exec) {
-      exec.status = code === 0 ? 'completed' : 'failed'
-      exec.completedAt = new Date().toISOString()
+      exec.status = status
+      exec.completedAt = completedAt
       exec.durationMs = durationMs
       exec.output = output
       if (code !== 0) exec.error = errorOutput.slice(0, 2000)
     }
-    console.log(`\n${code === 0 ? '✅' : '❌'} ${agentId} ${code === 0 ? 'completed' : 'failed'} in ${(durationMs / 1000).toFixed(1)}s`)
+
+    // Persist to DB
+    await db.from('agent_executions').update({
+      status,
+      output: { text: output.slice(0, 50000) }, // cap at 50KB
+      error: code !== 0 ? errorOutput.slice(0, 2000) : null,
+      completed_at: completedAt,
+      duration_ms: durationMs,
+    }).eq('id', execId).then(() => {}, () => {})
+
+    console.log(`\n${code === 0 ? '✅' : '❌'} ${agentId} ${status} in ${(durationMs / 1000).toFixed(1)}s`)
   })
 
   return execId

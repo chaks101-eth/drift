@@ -58,16 +58,25 @@ export default function AgentsDashboard() {
   }
 
   async function loadRecentExecutions() {
-    // Load from agent_executions
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/rest/v1/agent_executions?select=*&order=created_at.desc&limit=20`, {
-      headers: { 'apikey': getSecret(), 'x-admin-secret': getSecret() },
-    }).catch(() => null)
-
-    // Fallback: try via our admin endpoint
-    if (!res || !res.ok) return
+    // Try local agent server first (has in-memory + live data)
     try {
-      const data = await res.json()
-      if (Array.isArray(data)) setRecentExecs(data)
+      const res = await fetch(`${AGENT_SERVER}/executions?secret=${getSecret()}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.executions?.length) {
+          setRecentExecs(data.executions)
+          return
+        }
+      }
+    } catch { /* server offline, try DB */ }
+
+    // Fallback: load from Supabase via admin API
+    try {
+      const res = await fetch(api('/api/admin/agent-executions'), { headers: headers() })
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) setRecentExecs(data)
+      }
     } catch { /* ignore */ }
   }
 
