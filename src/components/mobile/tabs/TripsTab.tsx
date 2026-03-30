@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useTripStore } from '@/stores/trip-store'
+import { useUIStore } from '@/stores/ui-store'
 
 interface TripRow {
   id: string
@@ -32,6 +33,8 @@ function nightCount(start: string | null, end: string | null): number {
 export default function TripsTab() {
   const router = useRouter()
   const token = useTripStore((s) => s.token)
+  const loadTrip = useTripStore((s) => s.loadTrip)
+  const setActiveTab = useUIStore((s) => s.setActiveTab)
   const [trips, setTrips] = useState<TripRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -101,45 +104,45 @@ export default function TripsTab() {
 
       {/* Trip list */}
       {!loading && trips.length > 0 && (
-        <div className="flex flex-col">
+        <div className="space-y-3">
           {trips.map((t, i) => {
             const nights = nightCount(t.start_date, t.end_date)
             const dateStr = formatDateRange(t.start_date, t.end_date)
-            const meta = [
-              dateStr,
-              nights > 0 ? `${nights} night${nights > 1 ? 's' : ''}` : '',
-              t.travelers ? `${t.travelers} traveler${t.travelers > 1 ? 's' : ''}` : '',
-            ]
-              .filter(Boolean)
-              .join(' \u00B7 ')
 
             return (
-              <div
+              <button
                 key={t.id}
-                onClick={() => router.push(`/m/board/${t.id}`)}
-                className="flex items-center gap-3.5 py-3.5 border-b border-drift-border2 last:border-0 cursor-pointer active:opacity-70 transition-opacity"
-                style={{ animation: `fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.08}s both` }}
+                onClick={() => {
+                  // Navigate to trip and switch to board tab
+                  loadTrip(t.id)
+                  setActiveTab('board')
+                  router.push(`/m/board/${t.id}`)
+                }}
+                className="flex w-full items-center gap-4 rounded-2xl border border-drift-border2 bg-drift-card px-4 py-4 text-left transition-all active:scale-[0.98]"
+                style={{ animation: `fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
               >
-                {/* Avatar */}
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-drift-gold to-amber-700 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[15px] font-semibold text-drift-bg">
+                {/* Destination initial */}
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-drift-gold/20 to-drift-gold/5">
+                  <span className="font-serif text-lg text-drift-gold">
                     {t.destination?.[0]?.toUpperCase() || '?'}
                   </span>
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-medium text-drift-text truncate">
+                  <div className="text-[14px] font-semibold text-drift-text truncate">
                     {t.destination}
+                    {t.country && <span className="font-normal text-drift-text3">, {t.country}</span>}
                   </div>
-                  <div className="text-[11px] text-drift-text3 mt-0.5 truncate">{meta}</div>
+                  <div className="mt-1 flex items-center gap-2 text-[11px] text-drift-text3">
+                    {dateStr && <span>{dateStr}</span>}
+                    {nights > 0 && <span>· {nights}N</span>}
+                    {t.travelers && t.travelers > 1 && <span>· {t.travelers} pax</span>}
+                  </div>
                   {t.vibes && t.vibes.length > 0 && (
-                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    <div className="mt-1.5 flex gap-1.5">
                       {t.vibes.slice(0, 3).map((v) => (
-                        <span
-                          key={v}
-                          className="text-[10px] text-drift-gold bg-drift-gold/10 rounded-full px-2 py-0.5"
-                        >
+                        <span key={v} className="rounded-full bg-drift-gold/10 px-2 py-0.5 text-[9px] font-medium text-drift-gold">
                           {v}
                         </span>
                       ))}
@@ -147,19 +150,11 @@ export default function TripsTab() {
                   )}
                 </div>
 
-                {/* Chevron */}
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="text-drift-text3 flex-shrink-0"
-                >
-                  <path d="M9 18l6-6-6-6" />
+                {/* Arrow */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
+                  <polyline points="9 18 15 12 9 6" />
                 </svg>
-              </div>
+              </button>
             )
           })}
         </div>
