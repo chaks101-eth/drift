@@ -369,43 +369,23 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                 }
                 if (item.category === 'transfer') return null
 
-                // Hotel — visually distinct from activities
+                // Hotel — uses same ItemCard but with stay-specific detail override
                 if (item.category === 'hotel') {
                   const hData = hotels.find(h => h.id === item.id)
-                  const hRating = hData?.rating
                   const hNights = hData?.hotelNights || nights
                   const hPriceNum = hData?.perNightNum || parsePrice(item.price)
                   const hIsPN = hData?.isPN ?? false
-                  const hPrice = hPriceNum > 0 ? (hIsPN ? `${formatBudget(hPriceNum)}/night` : formatBudget(hPriceNum)) : item.price || ''
                   const hTotalNum = hIsPN ? hPriceNum * hNights : 0
-                  const hTotal = hIsPN && hNights > 1 && hTotalNum > 0 ? formatBudget(hTotalNum) : null
+                  const hotelDetail = `${hNights} ${hNights === 1 ? 'night' : 'nights'}${hIsPN && hTotalNum > 0 ? ` · ${formatBudget(hTotalNum)} total` : ''}`
+                  const hotelItem = { ...item, detail: hotelDetail }
                   return (
-                    <button
+                    <ItemCard
                       key={item.id}
-                      onClick={() => openDetail(item.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl border border-drift-ok/25 bg-gradient-to-r from-drift-ok/8 to-drift-ok/3 px-4 py-3.5 text-left transition-all active:scale-[0.98]"
-                    >
-                      {item.image_url && (
-                        <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-drift-ok/20" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" className="shrink-0">
-                            <path d="M3 21h18M3 7v14M21 7v14M6 11h4v4H6zM14 11h4v4h-4zM10 3l2-2 2 2" />
-                          </svg>
-                          <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-drift-ok">Stay · {hNights} {hNights === 1 ? 'night' : 'nights'}</span>
-                        </div>
-                        <div className="truncate text-[13px] font-medium text-drift-text">{item.name}</div>
-                        <div className="mt-0.5 flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-drift-ok">{hPrice}</span>
-                          {hTotal && <span className="text-[10px] text-drift-text3">· {hTotal} total</span>}
-                          {hRating && <span className="text-[10px] text-drift-text3">· ★ {hRating}</span>}
-                        </div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a55" strokeWidth="1.5" className="shrink-0">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
+                      item={hotelItem}
+                      tripVibes={vibes}
+                      onTap={() => openDetail(item.id)}
+                      onMenu={() => openCardMenu(item.id)}
+                    />
                   )
                 }
 
