@@ -39,7 +39,7 @@ type PipelineRun = {
   catalog_destinations?: { city: string; country: string }
 }
 
-type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add' | 'eval' | 'agents' | 'growth'
+type Tab = 'overview' | 'catalog' | 'quality' | 'pipeline' | 'add' | 'eval' | 'agents' | 'growth' | 'analytics'
 
 // ─── Dashboard Shell ────────────────────────────────────────
 
@@ -124,6 +124,7 @@ export default function AdminDashboard() {
     { key: 'eval', label: 'Eval System', icon: '⚡' },
     { key: 'agents', label: 'Agents', icon: '🤖' },
     { key: 'growth', label: 'Growth Engine', icon: '📈' },
+    { key: 'analytics', label: 'Analytics', icon: '📊' },
   ]
 
   return (
@@ -203,6 +204,16 @@ export default function AdminDashboard() {
                   <p className="text-sm text-[#7a7a85] mb-6">Video generation, email campaigns, learning loop, cron automation.</p>
                   <a href="/admin/growth" className="inline-block bg-[#c8a44e] text-[#08080c] px-8 py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
                     Open Growth Dashboard &rarr;
+                  </a>
+                </div>
+              )}
+              {tab === 'analytics' && (
+                <div className="py-20 text-center">
+                  <h2 className="font-serif text-2xl text-[#c8a44e] mb-4">Analytics</h2>
+                  <p className="text-sm text-[#7a7a85] mb-2">Users, trips, funnel, quality scores, growth metrics — all from Supabase.</p>
+                  <p className="text-sm text-[#7a7a85] mb-6">Daily trends, destination breakdown, vibe popularity, budget distribution.</p>
+                  <a href="/admin/analytics" className="inline-block bg-[#c8a44e] text-[#08080c] px-8 py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                    Open Analytics Dashboard &rarr;
                   </a>
                 </div>
               )}
