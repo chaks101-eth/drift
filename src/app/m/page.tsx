@@ -59,8 +59,11 @@ export default function HeroPage() {
     )
   }
 
+  const [starting, setStarting] = useState(false)
   const handleStart = () => {
-    router.push('/m/plan/origin') // anonymous session created by layout
+    if (starting) return
+    setStarting(true)
+    router.push('/m/plan/origin')
   }
 
   return (
@@ -102,13 +105,23 @@ export default function HeroPage() {
         {/* CTA */}
         <button
           onClick={handleStart}
-          className="relative mb-0 flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-[14px] bg-drift-gold px-6 py-[19px] text-[13px] font-bold uppercase tracking-widest text-drift-bg shadow-[0_16px_48px_rgba(200,164,78,0.18)] opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_1.4s_forwards] transition-transform duration-200 active:scale-[0.97]"
+          disabled={starting}
+          className={"relative mb-0 flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-[14px] px-6 py-[19px] text-[13px] font-bold uppercase tracking-widest opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_1.4s_forwards] transition-transform duration-200 " + (starting ? "bg-drift-gold/50 text-drift-text3" : "bg-drift-gold text-drift-bg shadow-[0_16px_48px_rgba(200,164,78,0.18)] active:scale-[0.97]")}
         >
-          Start Planning
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-          <span className="absolute left-[-100%] top-0 h-full w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shine_5s_ease-in-out_3s_infinite]" />
+          {starting && (
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-current/25 border-t-current" />
+          )}
+          {!starting && (
+            <span className="flex items-center gap-2.5">
+              Start Planning
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </span>
+          )}
+          {!starting && (
+            <span className="absolute left-[-100%] top-0 h-full w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shine_5s_ease-in-out_3s_infinite]" />
+          )}
         </button>
 
         {/* Reel CTA */}
