@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/ui-store'
 import { useTripStore } from '@/stores/trip-store'
 import { supabase } from '@/lib/supabase'
 import { parsePrice } from '@/lib/parse-price'
+import { trackEvent } from '@/lib/analytics'
 import type { ItemMetadata } from '@/stores/trip-store'
 
 function generateFallbackReason(item: { name: string; category: string }, vibes: string[]): string {
@@ -259,19 +260,19 @@ export default function DetailSheet() {
           {/* Booking / Maps */}
           <div className="mt-4 flex gap-2">
             {bookingUrl ? (
-              <a href={bookingUrl} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
+              <a href={bookingUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|${item.category}`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
                 Book Now
               </a>
             ) : item.category === 'hotel' ? (
-              <a href={`https://www.booking.com/search.html?ss=${searchName}`} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
+              <a href={`https://www.booking.com/search.html?ss=${searchName}`} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|hotel`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
                 Find on Booking.com
               </a>
             ) : item.category === 'activity' ? (
-              <a href={`https://www.viator.com/searchResults/all?text=${searchName}`} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
+              <a href={`https://www.viator.com/searchResults/all?text=${searchName}`} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|activity`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
                 Find on Viator
               </a>
             ) : item.category === 'food' ? (
-              <a href={`https://www.google.com/maps/search/${searchName}`} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
+              <a href={`https://www.google.com/maps/search/${searchName}`} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|food`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
                 View on Maps
               </a>
             ) : null}

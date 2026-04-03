@@ -7,6 +7,7 @@ import type { Trip, ItineraryItem, ItemMetadata } from '@/stores/trip-store'
 import { parsePrice } from '@/lib/parse-price'
 import FlightCard from '@/components/mobile/cards/FlightCard'
 import ItemCard from '@/components/mobile/cards/ItemCard'
+import { trackEvent } from '@/lib/analytics'
 
 interface DayWeatherData {
   tempMax: number
@@ -50,9 +51,36 @@ interface BoardViewProps {
 
 export default function BoardView({ trip, items }: BoardViewProps) {
   const { openDetail, openCardMenu, openChat, authPromptDismissed, dismissAuthPrompt } = useUIStore()
-  const { formatBudget, isAnonymous } = useTripStore()
+  const { formatBudget, isAnonymous, token } = useTripStore()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeDay, setActiveDay] = useState(0)
+  const [sharing, setSharing] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+
+  const handleShare = async () => {
+    if (sharing) return
+    setSharing(true)
+    try {
+      const res = await fetch('/api/trips/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tripId: trip.id }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        const fullUrl = `${window.location.origin}${data.url}`
+        setShareUrl(fullUrl)
+        trackEvent('funnel_trip_shared', 'conversion', trip.destination || '')
+        if (navigator.share) {
+          await navigator.share({ title: `${trip.destination} Trip — Drift`, url: fullUrl })
+        } else {
+          await navigator.clipboard.writeText(fullUrl)
+          useUIStore.getState().toast('Share link copied!')
+        }
+      }
+    } catch { /* user cancelled share or error */ }
+    setSharing(false)
+  }
 
   // Parse days from items
   const { days, tripBrief, weatherSummary } = useMemo(() => {
@@ -191,8 +219,17 @@ export default function BoardView({ trip, items }: BoardViewProps) {
           {/* Actions */}
           <div className="flex gap-2">
             <button
+              onClick={handleShare}
+              disabled={sharing}
+              aria-label="Share trip"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-drift-border2 bg-drift-surface text-drift-text2 disabled:opacity-50"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+            </button>
+            <button
               onClick={() => {
-                const token = useTripStore.getState().token
                 if (token) window.open(`/api/trips/${trip.id}/calendar?token=${token}`, '_blank')
               }}
               aria-label="Export to Calendar"

@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drift — Seed Deck 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08080c;
+    --surface: #101017;
+    --surface-hover: #16161f;
+    --gold: #c8a44e;
+    --gold-muted: #a08340;
+    --gold-bg: rgba(200,164,78,0.08);
+    --gold-border: rgba(200,164,78,0.18);
+    --text: #eeeee8;
+    --text-secondary: #8a8a94;
+    --text-muted: #55555f;
+    --border: rgba(255,255,255,0.06);
+    --green: #3dd68c;
+    --red: #e05252;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── SLIDES ─── */
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 72px 96px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+  }
+
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  .slide.center-content {
+    align-items: center;
+    text-align: center;
+  }
+
+  /* ─── TYPOGRAPHY ─── */
+  .slide-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+  }
+
+  .slide-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(36px, 3.8vw, 56px);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    max-width: 720px;
+    margin-bottom: 24px;
+  }
+
+  .slide-subtitle {
+    font-size: clamp(16px, 1.3vw, 19px);
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 560px;
+  }
+
+  .gold-text { color: var(--gold); }
+
+  /* ─── HERO ─── */
+  .hero-wordmark {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(72px, 9vw, 130px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .hero-oneliner {
+    font-size: clamp(17px, 1.6vw, 22px);
+    font-weight: 400;
+    color: var(--text-secondary);
+    max-width: 500px;
+    line-height: 1.5;
+  }
+
+  .hero-meta {
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 56px;
+  }
+
+  /* ─── LAYOUT ─── */
+  .split {
+    display: flex;
+    gap: 72px;
+    align-items: center;
+    width: 100%;
+    max-width: 1120px;
+  }
+
+  .split-left { flex: 1.1; }
+  .split-right { flex: 0.9; display: flex; justify-content: center; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 1000px;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 1060px;
+  }
+
+  .four-col {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 1060px;
+  }
+
+  .content-wrap {
+    width: 100%;
+    max-width: 1060px;
+  }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 24px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+
+  .card-body {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .card-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+
+  .card-accent {
+    border-color: var(--gold-border);
+    background: var(--gold-bg);
+  }
+
+  /* ─── STATS ─── */
+  .stat-row {
+    display: flex;
+    gap: 48px;
+    margin-top: 32px;
+  }
+
+  .stat-block { min-width: 0; }
+
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(40px, 4vw, 52px);
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-weight: 400;
+  }
+
+  /* ─── BARS ─── */
+  .bar-chart { max-width: 580px; margin-top: 20px; }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .bar-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    width: 130px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 24px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    min-width: 40px;
+  }
+
+  .bar-fill span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bg);
+  }
+
+  .bar-fill-dim { background: var(--text-muted); }
+
+  /* ─── PHONE MOCKUPS ─── */
+  .phone {
+    border-radius: 28px;
+    border: 2px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+    flex-shrink: 0;
+  }
+
+  .phone img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .phone-lg { width: 260px; height: 520px; }
+  .phone-md { width: 210px; height: 420px; border-radius: 24px; }
+  .phone-sm { width: 170px; height: 340px; border-radius: 20px; }
+
+  .phone-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─── TABLE ─── */
+  .comp-table {
+    width: 100%;
+    max-width: 960px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 28px;
+  }
+
+  .comp-table th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comp-table th.hl {
+    color: var(--gold);
+    background: var(--gold-bg);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+  }
+
+  .comp-table td {
+    padding: 12px 18px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+
+  .comp-table td:first-child {
+    font-weight: 500;
+    color: var(--text);
+    width: 180px;
+  }
+
+  .comp-table td.hl {
+    background: rgba(200,164,78,0.04);
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table tr:last-child td.hl { border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--red); opacity: 0.6; }
+
+  /* ─── QUADRANT ─── */
+  .quadrant {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    border-left: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .quadrant-label-x {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .quadrant-label-y {
+    position: absolute;
+    left: -28px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .q-dot {
+    position: absolute;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .q-dot.hero {
+    background: var(--gold);
+    color: var(--bg);
+    font-weight: 700;
+    border-color: var(--gold);
+    box-shadow: 0 0 24px rgba(200,164,78,0.3);
+  }
+
+  /* ─── FLYWHEEL ─── */
+  .flywheel {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 28px;
+  }
+
+  .fw-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    text-align: center;
+  }
+
+  .fw-node-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .fw-node-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  .fw-node-gold {
+    border-color: var(--gold-border);
+    background: var(--gold-bg);
+  }
+
+  .fw-node-gold .fw-node-label { color: var(--gold); }
+
+  .fw-arrow {
+    color: var(--gold-muted);
+    font-size: 18px;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  /* ─── REVENUE LAYERS ─── */
+  .layer {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .layer-marker {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .layer-content { flex: 1; }
+
+  .layer-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .layer-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .layer-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  .tag-live { background: rgba(61,214,140,0.15); color: var(--green); }
+  .tag-next { background: rgba(200,164,78,0.15); color: var(--gold); }
+  .tag-later { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+
+  /* ─── TIMELINE ─── */
+  .timeline {
+    display: flex;
+    width: 100%;
+    max-width: 1000px;
+    margin-top: 32px;
+  }
+
+  .tl-item {
+    flex: 1;
+    padding: 0 16px;
+    border-left: 2px solid var(--border);
+    position: relative;
+  }
+
+  .tl-item:first-child { border-left-color: var(--gold); }
+
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  .tl-item:first-child::before { background: var(--gold); }
+
+  .tl-period {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .tl-item:first-child .tl-period { color: var(--gold); }
+
+  .tl-heading {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .tl-body {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ─── USE OF FUNDS ─── */
+  .funds-bar {
+    display: flex;
+    height: 32px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 24px 0 20px;
+    max-width: 700px;
+  }
+
+  .funds-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bg);
+  }
+
+  .funds-legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .funds-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ─── NAV ─── */
+  .nav {
+    position: fixed;
+    bottom: 28px;
+    right: 36px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .nav button {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav button:hover {
+    border-color: var(--gold-border);
+    color: var(--gold);
+    background: var(--gold-bg);
+  }
+
+  .counter {
+    position: fixed;
+    bottom: 34px;
+    left: 36px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    z-index: 100;
+    letter-spacing: 1px;
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: var(--gold);
+    transition: width 0.35s ease;
+    z-index: 100;
+  }
+
+  /* ─── BULLETS ─── */
+  .bullet-list { list-style: none; margin-top: 16px; }
+
+  .bullet-list li {
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    padding: 7px 0 7px 20px;
+    position: relative;
+  }
+
+  .bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--gold);
+  }
+
+  .bullet-list li strong { color: var(--text); font-weight: 600; }
+
+  /* ─── INLINE TAG ─── */
+  .inline-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .slide { padding: 40px 28px; }
+    .split { flex-direction: column; gap: 36px; }
+    .two-col, .three-col, .four-col { grid-template-columns: 1fr; }
+    .phone-row { flex-wrap: wrap; }
+    .quadrant { width: 280px; height: 280px; }
+    .timeline { flex-direction: column; gap: 20px; }
+    .tl-item { border-left: none; border-top: 2px solid var(--border); padding: 16px 0 0; }
+    .tl-item::before { top: -5px; left: 0; }
+  }
+
+  /* ─── KEYFRAMES ─── */
+  @keyframes subtleFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide.active .fi { animation: subtleFadeIn 0.5s ease both; }
+  .slide.active .fi-1 { animation-delay: 0.05s; }
+  .slide.active .fi-2 { animation-delay: 0.12s; }
+  .slide.active .fi-3 { animation-delay: 0.2s; }
+  .slide.active .fi-4 { animation-delay: 0.28s; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="counter" id="counter"></div>
+
+<div class="deck" id="deck">
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 01 — TITLE                                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide center-content active">
+  <div class="hero-wordmark fi fi-1">Drift</div>
+  <div class="hero-oneliner fi fi-2">Turns travel content into bookable trips<br>and travelers into creators.</div>
+  <div class="hero-meta fi fi-3">Seed Round &middot; March 2026</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 02 — PROBLEM                                        -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">The Problem</div>
+    <div class="slide-title fi fi-2">You watch a Bali reel, then spend 8 hours across 38 tabs trying to recreate it.</div>
+    <div class="two-col fi fi-3" style="margin-top: 32px;">
+      <div class="card">
+        <div class="card-title">AI tools hallucinate</div>
+        <div class="card-body">ChatGPT recommends restaurants that closed 2 years ago. Gemini invents hotels that don't exist. No traveler trusts AI output enough to book from it.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Generic itineraries for everyone</div>
+        <div class="card-body">TripAdvisor gives you the same top-10. Booking.com gives you the cheapest. Nobody gives you the vibe. "Romantic foodie trip" and "adventure solo trip" get the same Bali.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Content inspires but can't deliver</div>
+        <div class="card-body">500M+ travel posts per year on Instagram. Every one shows the dream but none give you the plan. Content-to-commerce doesn't exist yet.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Planning is fragmented</div>
+        <div class="card-body">Flights on Skyscanner. Hotels on Booking. Activities on TripAdvisor. Budget in a spreadsheet. No single product owns the trip.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 03 — SOLUTION                                       -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="split">
+    <div class="split-left">
+      <div class="slide-label fi fi-1">The Solution</div>
+      <div class="slide-title fi fi-2">Tell us your vibe.<br>Get a bookable trip<br>in <span class="gold-text">30 seconds.</span></div>
+      <ul class="bullet-list fi fi-3">
+        <li><strong>Vibe-first planning</strong> — swipe through moods, not star ratings. "Beach chill + foodie" produces a fundamentally different trip than "adventure + nightlife"</li>
+        <li><strong>Every recommendation is verified</strong> — Google Places, Amadeus flights, real opening hours. 100% place validity. Zero hallucinations.</li>
+        <li><strong>AI that explains itself</strong> — every item tells you why it's there: vibe match, crowd timing, price-to-comfort ratio</li>
+        <li><strong>Paste a reel, get a trip</strong> — Instagram, YouTube, TikTok, blog. AI extracts the trip and maps it to real bookable places</li>
+      </ul>
+    </div>
+    <div class="split-right fi fi-4">
+      <div class="phone phone-lg">
+        <img src="/design-reference/09-board-itinerary.png" alt="Trip board">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 04 — PRODUCT DEMO                                   -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide center-content">
+  <div class="slide-label fi fi-1">Product</div>
+  <div class="slide-title fi fi-2" style="text-align: center; max-width: 600px;">Five inputs. One intelligent trip board.</div>
+  <div class="phone-row fi fi-3" style="margin-top: 36px; gap: 16px;">
+    <div style="text-align: center;">
+      <div class="phone phone-sm"><img src="/design-reference/03-origin-step1.png" alt="Origin"></div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">Origin</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="phone phone-sm"><img src="/design-reference/04-dates-step2.png" alt="Dates"></div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">Dates</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="phone phone-sm"><img src="/design-reference/05-budget-step3.png" alt="Budget"></div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">Budget</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="phone phone-md" style="box-shadow: 0 32px 64px rgba(200,164,78,0.15), 0 0 0 1px rgba(200,164,78,0.1); border-color: var(--gold-border);"><img src="/design-reference/06-vibes-step4.png" alt="Vibes"></div>
+      <div style="font-size: 11px; color: var(--gold); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">Vibes</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="phone phone-sm"><img src="/design-reference/07-destination-picker.png" alt="Destinations"></div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">Match</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="phone phone-sm"><img src="/design-reference/08-loading.png" alt="Loading"></div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">Generate</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 05 — PRODUCT: BOARD + CHAT                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="split">
+    <div class="split-left">
+      <div class="slide-label fi fi-1">The Trip Board</div>
+      <div class="slide-title fi fi-2">An itinerary you can<br>actually <span class="gold-text">talk to.</span></div>
+      <ul class="bullet-list fi fi-3">
+        <li><strong>Day-by-day layout</strong> with flights, hotels, activities, restaurants — all with real prices and booking links</li>
+        <li><strong>"Why this?"</strong> on every item — AI explains vibe alignment, crowd timing, and alternatives</li>
+        <li><strong>One-tap swap</strong> — replace any item, the rest of the trip adjusts around it</li>
+        <li><strong>Agentic chat</strong> — 8 AI tools modify your trip live. "Make day 2 more relaxed" actually works.</li>
+        <li><strong>Share as a link</strong> — read-only public trip boards for social proof</li>
+      </ul>
+    </div>
+    <div class="split-right fi fi-4">
+      <div class="phone-row" style="gap: 16px;">
+        <div class="phone phone-md"><img src="/design-reference/09-board-itinerary.png" alt="Board"></div>
+        <div class="phone phone-md" style="margin-top: 32px;"><img src="/design-reference/14-destination-detail.png" alt="Detail"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 06 — WHY NOW                                        -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">Why Now</div>
+    <div class="slide-title fi fi-2">Four tailwinds converging.</div>
+    <div class="two-col fi fi-3" style="margin-top: 28px;">
+      <div class="card">
+        <div class="card-title">AI agents crossed the quality threshold</div>
+        <div class="card-body">LLMs can now reason about multi-day itineraries, handle tool-use, and process video. But raw LLM output still hallucinates 30% of places. The verification layer is what unlocks commerce.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">40% of travelers used AI tools in 2025</div>
+        <div class="card-body">Demand is proven. But no AI travel tool has crossed from "planning" to "booking" because trust is missing. Verified data is the unlock.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">India's outbound travel is exploding</div>
+        <div class="card-body">Passport issuances doubled in 2024. International departures up 15% YoY. 380M Indians will travel by 2030 — mobile-first, AI-native, price-conscious. No product serves them.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Content-to-commerce doesn't exist</div>
+        <div class="card-body">500M+ travel posts/year on Instagram alone. Each one is an unmonetized trip. Instagram shows the dream but can't give you the plan. We're the bridge.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 07 — MARKET                                         -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">Market</div>
+    <div class="slide-title fi fi-2">Large market. Specific wedge.</div>
+    <div class="stat-row fi fi-3">
+      <div class="stat-block">
+        <div class="stat-value">$800B</div>
+        <div class="stat-label">TAM — global online travel bookings</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-value">$360B</div>
+        <div class="stat-label">SAM — AI-ready travelers (45%)</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-value">$3.6B</div>
+        <div class="stat-label">SOM — 1% of AI-ready market</div>
+      </div>
+    </div>
+    <div class="two-col fi fi-4" style="margin-top: 32px;">
+      <div class="card card-accent">
+        <div class="card-title">Wedge: India to Southeast Asia</div>
+        <div class="card-body">50M young Indian travelers spending avg $800/trip. Top corridors: Bali, Bangkok, Dubai, Singapore, Maldives — our 5 strongest catalog destinations. We start here, expand to global.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Creator economy in travel is untapped</div>
+        <div class="card-body">Every travel creator monetizes through brand deals and affiliate links in bios. None monetize the trip itself. Drift makes the trip the product.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 08 — BUSINESS MODEL                                 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">Business Model</div>
+    <div class="slide-title fi fi-2">Five revenue layers. <span class="gold-text">$75+ per booked trip.</span></div>
+    <div style="margin-top: 28px;" class="fi fi-3">
+      <div class="layer">
+        <div class="layer-marker">1</div>
+        <div class="layer-content">
+          <div class="layer-title">Affiliate & Booking Commission <span class="inline-tag tag-next">Ready</span></div>
+          <div class="layer-desc">Hotels (3-8%), flights (CPA), activities (8-12%), insurance (15-30%), eSIM, forex. Avg trip = $1,500 spend. 5% blended = $75/trip + $10-15 ancillaries.</div>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-marker">2</div>
+        <div class="layer-content">
+          <div class="layer-title">Creator Economy — Public Trips & Live Intel <span class="inline-tag tag-next">+3 Mo</span></div>
+          <div class="layer-desc">Public trip boards as social proof. "Ask a Traveler" paid Q&A ($2-5/question, 70/30 split). Live trip updates subscription ($1-3). Monetizing freshness.</div>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-marker">3</div>
+        <div class="layer-content">
+          <div class="layer-title">Content-to-Trip Engine <span class="inline-tag tag-live">Live</span></div>
+          <div class="layer-desc">Turn any reel, video, or blog into a bookable trip. Every influencer becomes a distribution channel. Creator gets attribution + affiliate cut. Already live — YouTube, Instagram, TikTok, travel blogs.</div>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-marker">4</div>
+        <div class="layer-content">
+          <div class="layer-title">Smart Pay — Card & Loyalty Optimization <span class="inline-tag tag-later">+9 Mo</span></div>
+          <div class="layer-desc">"Pay with HDFC Infinia for 5X points on Booking.com." Card issuer bounties ($30-100/application). $48T in loyalty rewards go unused globally.</div>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-marker">5</div>
+        <div class="layer-content">
+          <div class="layer-title">B2B API & Concierge <span class="inline-tag tag-later">+12 Mo</span></div>
+          <div class="layer-desc">White-label itinerary engine for travel agencies and corporate travel. Concierge tier ($49-99) for complex trips. Higher ACV, longer cycle.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 09 — MOAT                                           -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="split">
+    <div class="split-left">
+      <div class="slide-label fi fi-1">Moat</div>
+      <div class="slide-title fi fi-2">Real places only.<br><span class="gold-text">Verified by design.</span></div>
+      <div class="slide-subtitle fi fi-3" style="margin-bottom: 28px;">Every place is cross-referenced with Google Places and our curated catalog. 100/100 place validity across all evaluated trips. We benchmark against raw LLM output across 7 quality dimensions.</div>
+      <div class="bar-chart fi fi-4">
+        <div class="bar-row">
+          <div class="bar-label">Place validity</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%"><span>100</span></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Vibe must-haves</div>
+          <div class="bar-track"><div class="bar-fill" style="width:88%"><span>88</span></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Vibe match</div>
+          <div class="bar-track"><div class="bar-fill" style="width:86%"><span>86</span></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Price realism</div>
+          <div class="bar-track"><div class="bar-fill" style="width:84%"><span>84</span></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Day balance</div>
+          <div class="bar-track"><div class="bar-fill" style="width:80%"><span>80</span></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="font-style: italic; color: var(--text-muted);">Raw LLM (avg)</div>
+          <div class="bar-track"><div class="bar-fill bar-fill-dim" style="width:70%"><span style="color: var(--text);">70</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="split-right fi fi-4" style="flex-direction: column; gap: 16px; align-items: stretch;">
+      <div class="card">
+        <div class="card-title">Catalog pipeline</div>
+        <div class="card-body">370+ verified places with GPS, hours, reviews, honest takes. Multi-source: SerpAPI + Google Places + AI enrichment. Not rebuildable overnight.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Trip intelligence</div>
+        <div class="card-body">GPS proximity analysis, opening-hour validation, pacing optimization, gap detection. Every itinerary is physically possible.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Multi-LLM resilience</div>
+        <div class="card-body">Gemini 2.5 Flash primary. Groq Llama 3.3 fallback. No single-vendor lock. Automatic failover with retry + throttling. Cost-optimized.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 10 — TRACTION                                       -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">Traction</div>
+    <div class="slide-title fi fi-2">Built, shipped, and used. <span class="gold-text">In 4 weeks.</span></div>
+    <div class="four-col fi fi-3" style="margin-top: 28px;">
+      <div class="card" style="text-align: center;">
+        <div class="card-number">200+</div>
+        <div class="card-body" style="font-size: 12.5px;">Trips generated</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div class="card-number">59</div>
+        <div class="card-body" style="font-size: 12.5px;">Destinations covered</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div class="card-number">370+</div>
+        <div class="card-body" style="font-size: 12.5px;">Verified catalog items</div>
+      </div>
+      <div class="card card-accent" style="text-align: center;">
+        <div class="card-number">100%</div>
+        <div class="card-body" style="font-size: 12.5px;">Place validity score</div>
+      </div>
+    </div>
+    <div class="three-col fi fi-4" style="margin-top: 16px;">
+      <div class="card">
+        <div class="card-title">Early user signal</div>
+        <div class="card-body">62 users, 26 signed up (email + Google OAuth), 36 anonymous sessions. 200+ trips across 59 destinations — growing organically with zero ad spend.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quality is measurable</div>
+        <div class="card-body">7-dimension eval system. 81/100 avg vs 70 raw LLM. Quality-gated content pipeline. Not vibes — data.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Growth engine operational</div>
+        <div class="card-body">Instagram API integrated. First reel posted. Content auto-generated from trip data + eval scores. Reddit pending approval.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 11 — COMPETITION                                    -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="split" style="gap: 48px;">
+    <div class="split-left" style="flex: 1.3;">
+      <div class="slide-label fi fi-1">Competition</div>
+      <div class="slide-title fi fi-2" style="font-size: clamp(30px, 3vw, 44px);">They optimize for cheapest booking.<br>We optimize for <span class="gold-text">best trip.</span></div>
+      <table class="comp-table fi fi-3">
+        <tr>
+          <th></th>
+          <th class="hl">Drift</th>
+          <th>Mindtrip</th>
+          <th>Booking / MMT</th>
+          <th>ChatGPT</th>
+        </tr>
+        <tr>
+          <td>Verified places</td>
+          <td class="hl"><span class="check">Yes</span></td>
+          <td>Partial</td>
+          <td>Yes</td>
+          <td><span class="cross">No</span></td>
+        </tr>
+        <tr>
+          <td>Hallucination rate</td>
+          <td class="hl">0%</td>
+          <td>~10%</td>
+          <td>N/A</td>
+          <td>~30%</td>
+        </tr>
+        <tr>
+          <td>Vibe matching</td>
+          <td class="hl"><span class="check">Yes</span></td>
+          <td>Basic</td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+        </tr>
+        <tr>
+          <td>Explains "why"</td>
+          <td class="hl"><span class="check">Per item</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+          <td>Generic</td>
+        </tr>
+        <tr>
+          <td>Reel / video to trip</td>
+          <td class="hl"><span class="check">Yes</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+        </tr>
+        <tr>
+          <td>Creator economy</td>
+          <td class="hl"><span class="check">Planned</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+        </tr>
+        <tr>
+          <td>Live flight prices</td>
+          <td class="hl"><span class="check">Amadeus</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="check">Yes</span></td>
+          <td><span class="cross">No</span></td>
+        </tr>
+      </table>
+    </div>
+    <div class="split-right fi fi-4" style="flex: 0.7;">
+      <div class="quadrant">
+        <div class="quadrant-label-x">Planning intelligence</div>
+        <div class="quadrant-label-y">Personalization depth</div>
+        <div class="q-dot" style="left: 20%; bottom: 65%;">Mindtrip</div>
+        <div class="q-dot" style="left: 55%; bottom: 18%;">Booking.com</div>
+        <div class="q-dot" style="left: 10%; bottom: 25%;">Skyscanner</div>
+        <div class="q-dot" style="left: 32%; bottom: 40%;">ChatGPT</div>
+        <div class="q-dot" style="left: 42%; bottom: 32%;">Thrillophilia</div>
+        <div class="q-dot hero" style="left: 65%; bottom: 78%;">Drift</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 12 — GROWTH                                         -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">Growth</div>
+    <div class="slide-title fi fi-2">Two flywheels. Zero paid ads.</div>
+    <div class="two-col fi fi-3" style="margin-top: 28px;">
+      <div class="card card-accent">
+        <div class="card-title" style="color: var(--gold);">Content-to-Trip flywheel</div>
+        <div class="card-body">Influencer posts reel. Viewer pastes URL into Drift. Gets bookable trip. Shares with friends. Friends sign up. Every travel creator becomes a distribution channel — without knowing it.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Creator flywheel</div>
+        <div class="card-body">User completes trip. Makes it public. Appears on destination feed. New user discovers it. Creates their own. Posts live updates. Followers pay for intel. Creator earns. Creates more content.</div>
+      </div>
+    </div>
+    <div class="flywheel fi fi-4">
+      <div class="fw-node fw-node-gold">
+        <div class="fw-node-label">Travel reel</div>
+        <div class="fw-node-detail">500M+ / year</div>
+      </div>
+      <div class="fw-arrow">&rarr;</div>
+      <div class="fw-node">
+        <div class="fw-node-label">Paste into Drift</div>
+      </div>
+      <div class="fw-arrow">&rarr;</div>
+      <div class="fw-node">
+        <div class="fw-node-label">Bookable trip</div>
+        <div class="fw-node-detail">30 seconds</div>
+      </div>
+      <div class="fw-arrow">&rarr;</div>
+      <div class="fw-node">
+        <div class="fw-node-label">User books</div>
+        <div class="fw-node-detail">$75 rev / trip</div>
+      </div>
+      <div class="fw-arrow">&rarr;</div>
+      <div class="fw-node">
+        <div class="fw-node-label">Shares trip</div>
+      </div>
+      <div class="fw-arrow">&rarr;</div>
+      <div class="fw-node fw-node-gold">
+        <div class="fw-node-label">Friends sign up</div>
+      </div>
+    </div>
+    <div class="two-col fi fi-4" style="margin-top: 20px;">
+      <div class="card">
+        <div class="card-title">India-first distribution</div>
+        <div class="card-body">WhatsApp-native sharing. Instagram reels dominate travel discovery. SEO for "best [city] itinerary." The acquisition channel is the product itself.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">AI content engine (operational)</div>
+        <div class="card-body">Auto-generate Instagram reels, Reddit trip reports, and blog posts from real trip data. Authentic because it's from real itineraries, not marketing copy.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 13 — ROADMAP                                        -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">Roadmap</div>
+    <div class="slide-title fi fi-2">From AI planner to travel platform.</div>
+    <div class="timeline fi fi-3">
+      <div class="tl-item">
+        <div class="tl-period">Now</div>
+        <div class="tl-heading">Launch</div>
+        <div class="tl-body">11 destinations, 370+ items, agentic chat, flight search, eval system, Instagram growth engine. Affiliate bookings live.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-period">+3 Months</div>
+        <div class="tl-heading">Social layer</div>
+        <div class="tl-body">Public trip boards, destination feeds, user profiles. Affiliate revenue from public boards. 50 destinations.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-period">+6 Months</div>
+        <div class="tl-heading">Creator economy</div>
+        <div class="tl-body">"Ask a Traveler" Q&A, live trip updates, creator payouts. Reel/YouTube/blog to trip at scale. 10K users.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-period">+9 Months</div>
+        <div class="tl-heading">Smart Pay</div>
+        <div class="tl-body">Card optimization, loyalty points, visa assistance, insurance. Bank partnerships. Ancillary revenue live.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-period">+12 Months</div>
+        <div class="tl-heading">Platform</div>
+        <div class="tl-body">B2B API, concierge tier, multi-city trips. 100+ destinations. Series A position.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 14 — THE ASK                                        -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="content-wrap">
+    <div class="slide-label fi fi-1">The Ask</div>
+    <div class="slide-title fi fi-2">Seed round to capture the window.</div>
+    <div class="stat-row fi fi-3" style="margin-bottom: 8px;">
+      <div class="stat-block">
+        <div class="stat-value">$500K</div>
+        <div class="stat-label">Seed round &middot; 18 months runway</div>
+      </div>
+    </div>
+    <div class="funds-bar fi fi-3" style="max-width: 600px;">
+      <div class="funds-segment" style="width: 40%; background: var(--gold);">40%</div>
+      <div class="funds-segment" style="width: 25%; background: var(--gold-muted);">25%</div>
+      <div class="funds-segment" style="width: 20%; background: #6b6040;">20%</div>
+      <div class="funds-segment" style="width: 15%; background: #44402e;">15%</div>
+    </div>
+    <div class="funds-legend fi fi-3">
+      <div class="funds-legend-item"><div class="legend-dot" style="background: var(--gold);"></div>Catalog & destinations — 11 to 100+</div>
+      <div class="funds-legend-item"><div class="legend-dot" style="background: var(--gold-muted);"></div>Engineering — booking, multi-city, creator features</div>
+      <div class="funds-legend-item"><div class="legend-dot" style="background: #6b6040;"></div>Growth — content engine, influencer, SEO</div>
+      <div class="funds-legend-item"><div class="legend-dot" style="background: #44402e;"></div>Infrastructure — LLM, hosting, APIs</div>
+    </div>
+    <div class="two-col fi fi-4" style="margin-top: 28px;">
+      <div class="card">
+        <div class="card-title">Milestones at 18 months</div>
+        <div class="card-body">100+ destinations. 10K+ users. Creator economy live. $50K+ MRR from affiliate + marketplace. Series A ready.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Unit economics support scale</div>
+        <div class="card-body">$75 revenue per booked trip + $10-15 ancillary. Cost per trip generation: $0.05-0.08. At 1,000 bookings/month = $90K MRR. LLM + infra costs ~$4K/month at that scale.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- 15 — CLOSING                                        -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="slide center-content">
+  <div class="hero-wordmark fi fi-1">Drift</div>
+  <div class="slide-title fi fi-2" style="text-align: center; max-width: 640px;">Travel content into bookable trips.<br>Travelers into creators.</div>
+  <div class="slide-subtitle fi fi-3" style="text-align: center; margin-top: 12px;">
+    Verified data. Zero hallucinations. Five revenue layers.<br>
+    The AI travel platform people actually trust enough to book.
+  </div>
+  <div style="display: flex; gap: 48px; margin-top: 48px;" class="fi fi-4">
+    <div>
+      <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;">Try it</div>
+      <div style="font-size: 17px; font-weight: 600; color: var(--gold);">driftntravel.com</div>
+    </div>
+    <div>
+      <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;">Contact</div>
+      <div style="font-size: 17px; font-weight: 600; color: var(--text);">founders@driftntravel.com</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button onclick="prev()" aria-label="Previous slide">&larr;</button>
+  <button onclick="next()" aria-label="Next slide">&rarr;</button>
+</div>
+
+<script>
+let cur = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const counter = document.getElementById('counter');
+const progress = document.getElementById('progress');
+
+function go(n) {
+  cur = Math.max(0, Math.min(n, total - 1));
+  slides.forEach(s => s.classList.remove('active'));
+  slides[cur].classList.add('active');
+  counter.textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+  progress.style.width = ((cur + 1) / total * 100) + '%';
+}
+
+function next() { go(cur + 1); }
+function prev() { go(cur - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  if (e.key === 'Home') go(0);
+  if (e.key === 'End') go(total - 1);
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+document.addEventListener('touchend', e => {
+  const d = tx - e.changedTouches[0].clientX;
+  if (Math.abs(d) > 50) d > 0 ? next() : prev();
+});
+
+go(0);
+</script>
+
+</body>
+</html>
