@@ -296,7 +296,9 @@ export default function DetailSheet() {
                       <button
                         onClick={async (e) => {
                           e.stopPropagation()
-                          if (!item) return
+                          const btn = e.currentTarget
+                          if (btn.disabled || !item) return
+                          btn.disabled = true
                           const prevName = item.name
                           const updates = { name: alt.name, detail: alt.detail, price: alt.price, image_url: alt.image_url || item.image_url }
                           updateItem(item.id, updates)
@@ -304,7 +306,7 @@ export default function DetailSheet() {
                           closeDetail()
                           useUIStore.getState().toast(`Swapped ${prevName} → ${alt.name}`)
                         }}
-                        className="rounded-lg bg-drift-gold px-2.5 py-1 text-[9px] font-bold text-drift-bg"
+                        className="rounded-lg bg-drift-gold px-2.5 py-1 text-[9px] font-bold text-drift-bg disabled:opacity-50"
                       >Swap</button>
                     </div>
                   </div>

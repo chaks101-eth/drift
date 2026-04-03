@@ -273,9 +273,9 @@ export default function UrlPage() {
           <div className="pb-[calc(env(safe-area-inset-bottom)+16px)]">
             <button
               onClick={handleExtract}
-              disabled={!url.trim()}
+              disabled={!url.trim() || step === 'extracting'}
               className={`w-full rounded-[14px] py-4 text-xs font-extrabold uppercase tracking-widest transition-all duration-300 ${
-                url.trim()
+                url.trim() && step !== 'extracting'
                   ? 'bg-drift-gold text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)]'
                   : 'bg-drift-gold/30 text-drift-text3 cursor-not-allowed'
               }`}
@@ -534,14 +534,19 @@ export default function UrlPage() {
           <div className="shrink-0 border-t border-drift-border2 px-6 py-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
             <button
               onClick={handleGenerate}
-              disabled={!inputOrigin || !inputStartDate || !inputEndDate}
-              className={`w-full rounded-[14px] py-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
-                inputOrigin && inputStartDate && inputEndDate
+              disabled={!inputOrigin || !inputStartDate || !inputEndDate || step === 'generating'}
+              className={`flex w-full items-center justify-center gap-2 rounded-[14px] py-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
+                inputOrigin && inputStartDate && inputEndDate && step !== 'generating'
                   ? 'bg-drift-gold text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)] active:scale-[0.97]'
                   : 'bg-drift-gold/30 text-drift-text3 cursor-not-allowed'
               }`}
             >
-              Build My Trip
+              {step === 'generating' ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-drift-bg/30 border-t-drift-bg" />
+                  Building...
+                </>
+              ) : 'Build My Trip'}
             </button>
             <button
               onClick={() => setStep('review')}
