@@ -63,6 +63,7 @@ export default function UrlPage() {
   const [inputTravelers, setInputTravelers] = useState(onboarding.travelers || 2)
   const [inputStartDate, setInputStartDate] = useState('')
   const [inputEndDate, setInputEndDate] = useState('')
+  const [generating, setGenerating] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -128,7 +129,8 @@ export default function UrlPage() {
   }
 
   const handleGenerate = async () => {
-    if (!extracted || !token) return
+    if (!extracted || !token || generating) return
+    setGenerating(true)
     setStep('generating')
 
     // Use user-provided inputs from the inputs step
@@ -273,9 +275,9 @@ export default function UrlPage() {
           <div className="pb-[calc(env(safe-area-inset-bottom)+16px)]">
             <button
               onClick={handleExtract}
-              disabled={!url.trim() || step === 'extracting'}
+              disabled={!url.trim()}
               className={`w-full rounded-[14px] py-4 text-xs font-extrabold uppercase tracking-widest transition-all duration-300 ${
-                url.trim() && step !== 'extracting'
+                url.trim()
                   ? 'bg-drift-gold text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)]'
                   : 'bg-drift-gold/30 text-drift-text3 cursor-not-allowed'
               }`}
@@ -534,14 +536,14 @@ export default function UrlPage() {
           <div className="shrink-0 border-t border-drift-border2 px-6 py-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
             <button
               onClick={handleGenerate}
-              disabled={!inputOrigin || !inputStartDate || !inputEndDate || step === 'generating'}
+              disabled={!inputOrigin || !inputStartDate || !inputEndDate || generating}
               className={`flex w-full items-center justify-center gap-2 rounded-[14px] py-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
-                inputOrigin && inputStartDate && inputEndDate && step !== 'generating'
+                inputOrigin && inputStartDate && inputEndDate && !generating
                   ? 'bg-drift-gold text-drift-bg shadow-[0_12px_36px_rgba(200,164,78,0.18)] active:scale-[0.97]'
                   : 'bg-drift-gold/30 text-drift-text3 cursor-not-allowed'
               }`}
             >
-              {step === 'generating' ? (
+              {generating ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-drift-bg/30 border-t-drift-bg" />
                   Building...
