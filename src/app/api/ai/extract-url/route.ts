@@ -321,7 +321,7 @@ async function extractInstagramContent(url: string): Promise<{ text: string; thu
           const shortcode = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[2]
           if (shortcode) {
             const embedRes = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
-              headers: { 'User-Agent': 'Mozilla/5.0' },
+              headers: { 'User-Agent': BROWSER_UA },
               signal: AbortSignal.timeout(5000),
             })
             if (embedRes.ok) {
@@ -353,7 +353,7 @@ async function extractInstagramContent(url: string): Promise<{ text: string; thu
 
   try {
     const res = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
+      headers: { 'User-Agent': BROWSER_UA },
       signal: AbortSignal.timeout(10000),
     })
     if (res.ok) {
@@ -406,39 +406,22 @@ async function extractYouTubeContent(url: string): Promise<string> {
 
   const apiKey = process.env.GEMINI_API_KEY
 
-  // PRIMARY: Gemini direct video analysis — watches the actual video frame by frame
-  if (apiKey) {
-    try {
+  // PRIMARY: Download video via Cobalt → Gemini video analysis
+  const videoBuffer = await downloadVideoViaCobalt(url)
+  if (videoBuffer) {
+    const fileUri = await uploadToGeminiFileAPI(videoBuffer)
+    if (fileUri) {
       console.log(`[ExtractURL] Analyzing YouTube video via Gemini video understanding: ${videoId}`)
-      const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-      const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: 'Watch this travel video carefully. For every frame, identify: destinations, hotels, restaurants, activities, landmarks, beaches, temples, markets, viewpoints, and any text/signs shown. List EVERY specific place name you can identify from the visuals and audio. Include the category (hotel/food/activity/sightseeing) for each.' },
-              { fileData: { mimeType: 'video/mp4', fileUri: url } },
-            ],
-          }],
-        }),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        const videoAnalysis = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-        if (videoAnalysis.length > 100) {
-          console.log(`[ExtractURL] Video analysis: ${videoAnalysis.length} chars`)
-          const title = await fetchYouTubeTitle(url)
-          return `Source: YouTube Video (analyzed frame by frame)\n${title ? `Title: ${title}\n` : ''}URL: ${url}\n\nVideo content analysis:\n${videoAnalysis}`
-        }
+      const analysis = await analyzeVideoWithGemini(fileUri)
+      if (analysis.length > 100) {
+        const title = await fetchYouTubeTitle(url)
+        return `Source: YouTube Video (analyzed frame by frame)\n${title ? `Title: ${title}\n` : ''}URL: ${url}\n\nVideo content analysis:\n${analysis}`
       }
-    } catch (e) {
-      console.warn(`[ExtractURL] Video analysis failed, trying transcript: ${e}`)
     }
   }
 
   // FALLBACK 1: Transcript
+  console.log(`[ExtractURL] YouTube video download unavailable, trying transcript for: ${videoId}`)
   const parts: string[] = []
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -459,6 +442,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
   // FALLBACK 2: Grounded search
   if (apiKey) {
     try {
+      console.log(`[ExtractURL] No transcript, trying grounded search for: ${videoId}`)
       const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
       const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
         method: 'POST',
@@ -477,7 +461,7 @@ async function extractYouTubeContent(url: string): Promise<string> {
   }
 
   if (parts.length > 0) return parts.join('\n\n')
-  throw new Error('Could not extract content from this YouTube video.')
+  throw new Error('Could not extract content from this YouTube video. Try a video with captions enabled.')
 }
 
 async function fetchYouTubeTitle(url: string): Promise<string> {
@@ -528,7 +512,7 @@ async function extractTikTokContent(url: string): Promise<string> {
 
       try {
         const pageRes = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          headers: { 'User-Agent': BROWSER_UA },
           signal: AbortSignal.timeout(8000),
           redirect: 'follow',
         })
@@ -550,18 +534,44 @@ async function extractTikTokContent(url: string): Promise<string> {
 
 // ─── Article Extraction ─────────────────────────────────────────
 
-async function extractArticleContent(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html',
-    },
-    signal: AbortSignal.timeout(10000),
-  })
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 
-  if (!res.ok) throw new Error(`Failed to fetch URL: ${res.status}`)
+async function extractArticleContent(url: string): Promise<string> {
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers: {
+        'User-Agent': BROWSER_UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+      },
+      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+    })
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      throw new Error('This site took too long to respond. Try a different URL or a direct blog link.')
+    }
+    throw new Error('Could not connect to this site. Check the URL and try again.')
+  }
+
+  if (res.status === 403) {
+    throw new Error(`This site (${new URL(url).hostname}) blocks automated access. Try pasting a YouTube or Instagram link instead.`)
+  }
+  if (res.status === 401 || res.status === 402) {
+    throw new Error('This content is behind a paywall or login. Try a publicly accessible link.')
+  }
+  if (!res.ok) {
+    throw new Error(`This site returned an error (${res.status}). Try a different URL.`)
+  }
 
   const html = await res.text()
+
+  // Detect paywall indicators in HTML
+  const paywallSignals = ['paywall', 'subscribe to read', 'premium content', 'sign in to continue', 'create an account to read']
+  const htmlLower = html.toLowerCase()
+  const isPaywalled = paywallSignals.some(s => htmlLower.includes(s)) && html.length < 5000
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
   const title = titleMatch ? titleMatch[1].trim() : ''
@@ -579,6 +589,10 @@ async function extractArticleContent(url: string): Promise<string> {
     .replace(/&[a-z]+;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+
+  if (isPaywalled && text.length < 500) {
+    throw new Error('This content appears to be behind a paywall. Try a publicly accessible travel blog or video link.')
+  }
 
   return `Title: ${title}\nDescription: ${ogDesc}\n\nContent:\n${text}`
 }

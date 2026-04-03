@@ -223,7 +223,7 @@ export default function UrlPage() {
           Paste a <em className="font-normal italic text-drift-gold">link</em>
         </h1>
         <p className="mb-5 text-xs text-drift-text3">
-          YouTube, Instagram reel, blog post — we&apos;ll build a trip from it
+          YouTube, Instagram, TikTok, or travel blog — we&apos;ll build a trip from it
         </p>
       </div>
 
@@ -261,7 +261,7 @@ export default function UrlPage() {
 
           {/* Supported sources */}
           <div className="mb-6 flex flex-wrap gap-2">
-            {['YouTube', 'Instagram Reels', 'Blog Posts', 'TripAdvisor'].map((s) => (
+            {['YouTube', 'Instagram Reels', 'TikTok', 'Travel Blogs'].map((s) => (
               <span key={s} className="rounded-full border border-drift-border2 bg-drift-surface px-3 py-1.5 text-[10px] text-drift-text3">
                 {s}
               </span>
