@@ -148,15 +148,10 @@ export default function OriginPage() {
         {/* Reel shortcut */}
         <button
           onClick={() => {
-            if (!isReady) { inputRef.current?.focus(); return }
             trackEvent('plan_reel_shortcut', 'funnel')
             router.push('/m/plan/url')
           }}
-          className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-[12px] font-semibold transition-all active:scale-[0.98] ${
-            isReady
-              ? 'border-drift-gold/20 bg-drift-gold/5 text-drift-gold'
-              : 'border-drift-border2 text-drift-text3'
-          }`}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-drift-gold/20 bg-drift-gold/5 py-3 text-[12px] font-semibold text-drift-gold transition-all active:scale-[0.98]"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 2a10 10 0 100 20 10 10 0 000-20z" /><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
