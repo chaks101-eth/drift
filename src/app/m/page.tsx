@@ -19,6 +19,7 @@ export default function HeroPage() {
   const userId = useTripStore((s) => s.userId)
   const [checked, setChecked] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  const [starting, setStarting] = useState(false)
 
   // Redirect logged-in users with existing trips to their last trip
   useEffect(() => {
@@ -59,7 +60,6 @@ export default function HeroPage() {
     )
   }
 
-  const [starting, setStarting] = useState(false)
   const handleStart = () => {
     if (starting) return
     setStarting(true)
