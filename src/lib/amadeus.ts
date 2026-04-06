@@ -503,9 +503,9 @@ export async function searchGroundedTransport(params: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `List 3 real transport options from ${origin} to ${destination} India. Include trains and buses. Return ONLY a JSON array:
-[{"mode":"train","serviceName":"Vande Bharat","departureStation":"New Delhi","arrivalStation":"Chandigarh","duration":"4h","priceUSD":15,"class":"AC Chair Car"}]
-Real names, real stations, realistic prices in USD. JSON only, no other text.` }] }],
+        contents: [{ parts: [{ text: `List 3 real transport options from ${origin} to ${destination} India on ${departureDate}. Include trains and buses. Return ONLY a JSON array:
+[{"mode":"train","serviceName":"Vande Bharat","serviceNumber":"22457","departureStation":"New Delhi","arrivalStation":"Chandigarh","duration":"4h","priceUSD":15,"class":"AC Chair Car","bookingUrl":"https://www.irctc.co.in/nget/train-search"}]
+Use real booking URLs: irctc.co.in for trains, redbus.in for buses (with route in URL like /bus-tickets/delhi-to-manali). Real names, prices in USD. JSON only.` }] }],
       }),
       signal: AbortSignal.timeout(20000),
     })
@@ -549,9 +549,9 @@ Real names, real stations, realistic prices in USD. JSON only, no other text.` }
       duration: t.duration || '',
       price: `$${typeof price === 'number' ? price : 10}`,
       class: t.class || undefined,
-      bookingUrl: isBus
+      bookingUrl: t.bookingUrl || (isBus
         ? `https://www.redbus.in/bus-tickets/${originSlug}-to-${destSlug}`
-        : 'https://www.irctc.co.in/nget/train-search',
+        : `https://www.irctc.co.in/nget/train-search`),
     }})
   } catch (e) {
     console.warn(`[Transport] Grounded search failed: ${e}`)

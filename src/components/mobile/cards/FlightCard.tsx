@@ -108,7 +108,7 @@ export default function FlightCard({ item, onTap }: FlightCardProps) {
                   </span>
                   <span className="text-[11px] text-drift-text2 line-clamp-1">{alt.detail}</span>
                 </div>
-                <span className="text-[11px] font-semibold text-drift-gold shrink-0 ml-2">{alt.price}</span>
+                <span className="text-[11px] font-semibold text-drift-gold shrink-0 ml-2">{(() => { const n = parsePrice(alt.price); return n === 0 ? '' : formatBudget(n) })()}</span>
               </a>
             ))}
           </div>
