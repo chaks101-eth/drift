@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase'
 import type { CurrencyCode } from '@/lib/currency'
 import { detectCurrencyFromOrigin, formatPrice } from '@/lib/currency'
@@ -161,7 +162,9 @@ const defaultOnboarding: OnboardingState = {
   destination: null,
 }
 
-export const useTripStore = create<TripStore>((set, get) => ({
+export const useTripStore = create<TripStore>()(
+  persist(
+    (set, get) => ({
   // Auth
   token: null,
   userId: null,
@@ -257,4 +260,22 @@ export const useTripStore = create<TripStore>((set, get) => ({
       return { chatHistory: history }
     }),
   clearChat: () => set({ chatHistory: [] }),
-}))
+    }),
+    {
+      name: 'drift-trip-store',
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' ? sessionStorage : {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        }
+      ),
+      partialize: (state) => ({
+        onboarding: state.onboarding,
+        currency: state.currency,
+        // Don't persist: token, userId, currentTrip, currentItems, chatHistory
+        // Those come from Supabase auth listener and DB
+      }),
+    }
+  )
+)

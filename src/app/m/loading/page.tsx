@@ -255,7 +255,7 @@ export default function LoadingPage() {
               >
                 Retry
               </button>
-              <button onClick={() => router.back()} className="rounded-xl border border-drift-border2 px-4 py-2 text-xs font-semibold text-drift-text3">
+              <button onClick={() => router.push('/m/plan/destinations')} className="rounded-xl border border-drift-border2 px-4 py-2 text-xs font-semibold text-drift-text3">
                 Go back
               </button>
             </div>
