@@ -368,6 +368,25 @@ export async function POST(req: NextRequest) {
           metadata: (item.metadata || {}) as Record<string, unknown>,
         }))
 
+      // ─── Dedup: remove repeated restaurants/activities across days ──
+      const seenNames = new Set<string>()
+      const originalCount = nonFlightItems.length
+      nonFlightItems = nonFlightItems.filter(item => {
+        if (item.category === 'day' || item.category === 'hotel') return true // keep all day headers + hotels
+        const key = item.name.toLowerCase().trim()
+        if (seenNames.has(key)) {
+          console.log(`[Generate] Dedup: removing repeated "${item.name}" (pos ${item.position})`)
+          return false
+        }
+        seenNames.add(key)
+        return true
+      })
+      if (nonFlightItems.length < originalCount) {
+        console.log(`[Generate] Dedup: removed ${originalCount - nonFlightItems.length} repeated items`)
+        // Reindex positions
+        nonFlightItems.forEach((item, idx) => { item.position = idx })
+      }
+
       // Enrich LLM items with catalog data (images, booking URLs, GPS, hours, alts)
       if (catalogData) {
         nonFlightItems = enrichItemsWithCatalog(nonFlightItems, catalogData, body.vibes)

@@ -133,20 +133,25 @@ HARD RULES (never violate):
 4. All prices in USD. Hotel prices MUST include "/night" suffix (e.g., "$100/night").
 5. When catalog/grounded data is provided, PREFER those exact names for photo/GPS matching.
 
+VARIETY RULES (critical — travelers hate repetition):
+6. NEVER repeat the same restaurant, cafe, or food spot across different days. Every meal must be a DIFFERENT place. If a city only has 5 famous restaurants but the trip is 7 days, find lesser-known local gems for the remaining meals — street stalls, neighborhood joints, bakeries, rooftop cafes. Variety > fame.
+7. NEVER repeat the same activity or attraction across days, UNLESS it genuinely warrants a second visit (e.g., a temple at dawn vs sunset — but use a different name/detail to make the distinction clear).
+8. Across the whole trip, aim for maximum variety: different cuisines, different neighborhoods, different types of experiences each day.
+
 PACING RULES:
-6. 4-5 items per day (activities + food). Never fewer than 3, never more than 6.
-7. Alternate intensity: active → meal → active → chill → meal. Don't stack 4 activities back-to-back.
-8. Morning activities by 09:00-10:00, lunch 12:00-13:00, afternoon activities 14:00-16:00, dinner 19:00-20:00.
-9. Short trips (1-3 days): Only highlights, no filler. Medium (4-5 days): Focused + 1 chill day. Long (6+ days): Variety + rest days.
+9. 4-5 items per day (activities + food). Never fewer than 3, never more than 6.
+10. Alternate intensity: active → meal → active → chill → meal. Don't stack 4 activities back-to-back.
+11. Morning activities by 09:00-10:00, lunch 12:00-13:00, afternoon activities 14:00-16:00, dinner 19:00-20:00.
+12. Short trips (1-3 days): Only highlights, no filler. Medium (4-5 days): Focused + 1 chill day. Long (6+ days): Variety + rest days.
 
 HOTEL RULES:
-10. Place hotel AFTER outbound flight, not before.
-11. For 1-4 nights: ONE hotel. For 5+ nights: Consider 2 hotels if destination has distinct areas.
-12. Pick hotels that match the vibes — adventure vibes get eco-lodges near trails, not city business hotels.
+13. Place hotel AFTER outbound flight, not before.
+14. For 1-4 nights: ONE hotel. For 5+ nights: Consider 2 hotels if destination has distinct areas.
+15. Pick hotels that match the vibes — adventure vibes get eco-lodges near trails, not city business hotels.
 
 BUDGET RULES:
-13. When a budget amount is given, total trip cost (flights + hotel×nights + activities + food) MUST stay within 110% of it.
-14. Budget tier guide: "budget" = hostels/$15 meals/$10 activities. "mid" = 3-4 star/$30 meals/$25 activities. "luxury" = 5-star/$60 meals/$50+ activities.
+16. When a budget amount is given, total trip cost (flights + hotel×nights + activities + food) MUST stay within 110% of it.
+17. Budget tier guide: "budget" = hostels/$15 meals/$10 activities. "mid" = 3-4 star/$30 meals/$25 activities. "luxury" = 5-star/$60 meals/$50+ activities.
 
 VIBE INTERPRETATION (pick places that genuinely match — don't just tag them):
 - beach: coastal spots, beach clubs, water activities, sunset bars
