@@ -573,6 +573,7 @@ export function transportToItineraryItem(transport: TransportOption, position: n
 
   return {
     category: 'flight' as const,
+    image_url: '',
     name: `${transport.departureStation} → ${transport.arrivalStation}`,
     detail: `${transport.operatorName}${transport.serviceNumber ? ` ${transport.serviceNumber}` : ''}`,
     description: `${modeLabel} from ${transport.departureStation} to ${transport.arrivalStation}. ${transport.duration}, ${transport.class || ''}.`,
