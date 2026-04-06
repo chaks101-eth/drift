@@ -35,11 +35,19 @@ const moods: Mood[] = [
 
 export default function VibesPage() {
   const router = useRouter()
-  const { setVibes, token } = useTripStore()
+  const { setVibes, token, onboarding } = useTripStore()
 
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const [picked, setPicked] = useState<string[]>([])
-  const [done, setDone] = useState(false)
+  // Restore previously picked vibes if returning to this page
+  const savedVibes = onboarding.pickedVibes
+  const [currentIdx, setCurrentIdx] = useState(() => {
+    if (savedVibes.length >= 3) return moods.length // all done
+    // Skip past already-picked vibes
+    return savedVibes.length > 0
+      ? moods.findIndex(m => !savedVibes.includes(m.id)) || 0
+      : 0
+  })
+  const [picked, setPicked] = useState<string[]>(savedVibes.length > 0 ? [...savedVibes] : [])
+  const [done, setDone] = useState(savedVibes.length >= 3)
   const dragRef = useRef({ on: false, x0: 0, y0: 0, dx: 0 })
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const swipeTimerRef = useRef<ReturnType<typeof setTimeout>>(null)

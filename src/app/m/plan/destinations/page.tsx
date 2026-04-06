@@ -108,9 +108,25 @@ export default function DestinationsPage() {
     setTimeout(() => setToast(null), 3500)
   }, [])
 
-  // Fetch destinations on mount
+  // Fetch destinations on mount — use session cache if same inputs
   useEffect(() => {
+    const cacheKey = `drift-dests-${(origin || 'Delhi').toLowerCase()}-${pickedVibes.sort().join(',')}-${budgetLevel}`
+
     async function fetchDestinations() {
+      // Check session cache first
+      try {
+        const cached = sessionStorage.getItem(cacheKey)
+        if (cached) {
+          const { destinations: dests, originCountry: oc } = JSON.parse(cached)
+          if (dests?.length) {
+            setDestinations(dests)
+            if (oc) setOriginCountry(oc)
+            setLoading(false)
+            return
+          }
+        }
+      } catch { /* cache miss, fetch fresh */ }
+
       setLoading(true)
       setError(null)
       try {
@@ -138,6 +154,8 @@ export default function DestinationsPage() {
           setError('No destinations found for your vibes. Try different vibes or check back soon.')
         } else {
           setDestinations(dests)
+          // Cache for back/forward navigation
+          try { sessionStorage.setItem(cacheKey, JSON.stringify({ destinations: dests, originCountry: data.originCountry })) } catch { /* quota */ }
         }
       } catch {
         setError('Couldn\u2019t load destinations.')
