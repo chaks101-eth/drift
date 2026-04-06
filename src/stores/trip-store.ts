@@ -273,8 +273,7 @@ export const useTripStore = create<TripStore>()(
       partialize: (state) => ({
         onboarding: state.onboarding,
         currency: state.currency,
-        chatHistory: state.chatHistory.slice(-20), // persist last 20 messages
-        // Don't persist: token, userId, currentTrip, currentItems
+        // Don't persist: token, userId, currentTrip, currentItems, chatHistory
         // Those come from Supabase auth listener and DB
       }),
     }
