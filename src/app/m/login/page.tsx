@@ -21,7 +21,12 @@ export default function LoginPage() {
   // Redirect if already logged in (with real account, not anonymous)
   const userEmail = useTripStore((s) => s.userEmail)
   useEffect(() => {
-    if (token && userEmail) router.replace('/m')
+    if (token && userEmail) {
+      // Return to previous page if available, otherwise hero
+      const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
+      sessionStorage.removeItem('drift-login-return')
+      router.replace(returnTo || '/m')
+    }
   }, [token, userEmail, router])
 
   // Auto-focus email

@@ -43,8 +43,7 @@ export default function HeroPage() {
         } else {
           setRedirecting(false)
         }
-      })
-      .catch(() => { clearTimeout(timeout); setRedirecting(false) })
+      }, () => { clearTimeout(timeout); setRedirecting(false) })
 
     return () => clearTimeout(timeout)
   }, [token, userId, checked, router])

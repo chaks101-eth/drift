@@ -228,9 +228,11 @@ export default function DestinationsPage() {
   // Navigate to loading screen which handles generation
   const handleGenerate = () => {
     if (customDest.trim().length > 1) {
-      // User selected from autocomplete or typed a destination
       const city = customDest.trim()
       const country = customCountry || countryMap[city.toLowerCase()] || ''
+      if (!country) {
+        showToast('Pick a city from suggestions for best results')
+      }
       setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: pickedVibes })
       trackEvent('destination_custom', 'funnel', city)
       setGenerating(true)
@@ -318,6 +320,7 @@ export default function DestinationsPage() {
                     setSuggestions([])
                     setShowSuggestions(false)
                     setSelectedDest(null)
+                    ;(document.activeElement as HTMLElement)?.blur() // dismiss keyboard
                   }}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-drift-surface2 active:bg-drift-surface2 border-b border-drift-border2 last:border-0"
                 >
@@ -349,12 +352,20 @@ export default function DestinationsPage() {
         {!loading && error && (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
             <p className="text-center text-[13px] text-drift-text2">{error}</p>
-            <button
-              onClick={handleRetry}
-              className="rounded-xl border border-drift-gold/15 bg-drift-gold-bg px-5 py-2.5 text-[11px] font-semibold text-drift-gold"
-            >
-              Try Again
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleRetry}
+                className="rounded-xl border border-drift-gold/15 bg-drift-gold-bg px-5 py-2.5 text-[11px] font-semibold text-drift-gold"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => router.push('/m/plan/vibes')}
+                className="rounded-xl border border-drift-border2 px-5 py-2.5 text-[11px] font-semibold text-drift-text3"
+              >
+                Change Vibes
+              </button>
+            </div>
           </div>
         )}
 

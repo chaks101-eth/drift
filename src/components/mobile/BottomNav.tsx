@@ -58,6 +58,7 @@ export default function BottomNav() {
   // Anonymous users tapping Trips/Profile get redirected to sign in
   const handleAuthTab = (tab: Tab) => {
     if (isAnonymous) {
+      try { sessionStorage.setItem('drift-login-return', window.location.pathname) } catch {}
       router.push('/m/login')
     } else {
       setActiveTab(tab)

@@ -20,6 +20,13 @@ export default function BudgetPage() {
   const [amount, setAmount] = useState(onboarding.budgetAmount)
   const [travelers, setTravelersLocal] = useState(onboarding.travelers)
 
+  // Sync from store when hydrating from sessionStorage
+  useEffect(() => {
+    if (onboarding.budgetAmount !== amount) setAmount(onboarding.budgetAmount)
+    if (onboarding.budgetLevel !== level) setLevel(onboarding.budgetLevel)
+    if (onboarding.travelers !== travelers) setTravelersLocal(onboarding.travelers)
+  }, [onboarding.budgetAmount, onboarding.budgetLevel, onboarding.travelers]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleTier = (tier: typeof tiers[number]) => {
     setLevel(tier.id)
     setAmount(tier.defaultAmount)

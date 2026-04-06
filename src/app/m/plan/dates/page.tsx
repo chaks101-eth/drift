@@ -68,6 +68,14 @@ export default function DatesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Sync from store when hydrating from sessionStorage
+  useEffect(() => {
+    if (onboarding.startDate && !startDate) {
+      setStartDate(onboarding.startDate)
+      setEndDate(onboarding.endDate)
+    }
+  }, [onboarding.startDate, onboarding.endDate]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const today = new Date().toISOString().split('T')[0]
   const isReady = startDate && endDate && endDate >= startDate
 

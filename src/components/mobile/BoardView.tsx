@@ -501,6 +501,22 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         </button>
         <p className="mt-2 text-center text-[8px] text-drift-text3">We redirect you to each provider. No markup.</p>
       </div>
+
+      {/* Plan another trip */}
+      <div className="mx-5 mt-4 mb-4">
+        <button
+          onClick={() => {
+            useTripStore.getState().resetOnboarding()
+            window.location.href = '/m/plan/origin'
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-drift-border2 py-3 text-[11px] font-semibold text-drift-text3 transition-all active:scale-[0.98]"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Plan Another Trip
+        </button>
+      </div>
     </div>
   )
 }

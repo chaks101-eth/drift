@@ -74,6 +74,7 @@ export default function OriginPage() {
     setOrigin(s.city)
     setSuggestions([])
     setShowSuggestions(false)
+    inputRef.current?.blur() // dismiss keyboard
   }
 
   const isReady = value.trim().length > 1 && isValidCity
