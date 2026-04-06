@@ -14,6 +14,7 @@ import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
 import { buildItineraryMaps } from '@/lib/day-maps'
 import { addTravelTimesToItems } from '@/lib/google-routes'
 import { detectCountry, isDomesticTrip } from '@/lib/country-detection'
+import { matchDestinations } from '@/lib/destination-library'
 
 export const maxDuration = 120
 
@@ -44,6 +45,24 @@ export async function POST(req: NextRequest) {
 
       // Detect origin country for domestic/international split
       const originCountry = detectCountry(body.origin || 'Delhi')
+
+      // ─── FAST PATH: Pre-seeded library (instant, no API calls) ──
+      const libraryMatches = matchDestinations({ vibes: userVibes, originCountry, count: MAX_DESTINATIONS })
+      if (libraryMatches.length >= 6) {
+        // Library has enough matches — skip grounded search entirely
+        const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
+        console.log(`[Generate] Fast path: ${libraryMatches.length} destinations from library in ${elapsed}s`)
+        return NextResponse.json({
+          destinations: libraryMatches.map(d => ({
+            ...d,
+            match: Math.min((d.match || 75) + 10, 99), // small boost for library quality
+            price_usd: undefined,
+          })),
+          source: 'library',
+          originCountry,
+        })
+      }
+      console.log(`[Generate] Library has ${libraryMatches.length} matches (need 6+), using full search`)
 
       // Run catalog query + grounded search IN PARALLEL (catalog ~100ms, grounded ~2-3s)
       const { createClient } = await import('@supabase/supabase-js')

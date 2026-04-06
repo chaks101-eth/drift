@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTripStore } from '@/stores/trip-store'
+import { useUIStore } from '@/stores/ui-store'
 import { supabase } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
@@ -272,10 +273,15 @@ export default function LoadingPage() {
 
         {/* Cancel / timeout warning */}
         {!error && elapsed >= 30 && (
-          <div className="mt-6 text-[11px] text-drift-text3">
+          <div className="mt-6 text-center text-[11px] text-drift-text3">
             {elapsed >= 60
-              ? <>This is taking longer than expected ({elapsed}s). <button onClick={() => router.push('/m/plan/destinations')} className="font-semibold text-drift-err">Cancel & go back</button></>
-              : <>Taking a moment... <button onClick={() => router.push('/m/plan/destinations')} className="font-semibold text-drift-gold">Cancel</button></>
+              ? <>This is taking longer than expected ({elapsed}s).<br/>
+                <button onClick={() => {
+                  useUIStore.getState().toast('Trip is generating in the background. Check your Trips tab.')
+                  router.push('/m')
+                }} className="mt-1 font-semibold text-drift-gold">Continue in background</button>
+              </>
+              : <>Taking a moment — your trip is almost ready</>
             }
           </div>
         )}
