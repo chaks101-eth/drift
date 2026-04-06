@@ -7,8 +7,8 @@ import BackButton from '@/components/mobile/BackButton'
 import { useTripStore, type Destination } from '@/stores/trip-store'
 import { trackEvent } from '@/lib/analytics'
 
-function DestCard({ dest, isSelected, onSelect, formatBudget, rank }: {
-  dest: Destination; isSelected: boolean; onSelect: () => void; formatBudget: (n: number) => string; rank: number
+function DestCard({ dest, isSelected, onSelect, rank }: {
+  dest: Destination; isSelected: boolean; onSelect: () => void; rank: number
 }) {
   const matchVal = dest.match || 85
   return (
@@ -33,8 +33,9 @@ function DestCard({ dest, isSelected, onSelect, formatBudget, rank }: {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.95)] via-[rgba(8,8,12,0.55)_40%] via-[rgba(8,8,12,0.08)_60%] to-transparent" />
       </div>
-      <span className="absolute left-3 top-3 z-[3] rounded-[10px] border border-white/10 bg-[rgba(8,8,12,0.5)] px-2.5 py-1 text-[9px] font-semibold tracking-wide text-drift-gold backdrop-blur-xl">
-        #{rank} {rank === 1 ? 'Top Pick' : 'Match'}
+      {/* Match badge */}
+      <span className="absolute left-3 top-3 z-[3] rounded-[10px] border border-drift-gold/25 bg-drift-gold/15 px-2.5 py-1 text-[10px] font-bold text-drift-gold backdrop-blur-xl">
+        {matchVal}% match
       </span>
       <div
         className={`absolute right-3 top-3 z-[3] flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all duration-300 ${
@@ -53,8 +54,13 @@ function DestCard({ dest, isSelected, onSelect, formatBudget, rank }: {
           {dest.city}
         </div>
         <div className="mb-1.5 text-[11px] tracking-wide text-drift-text/55">{dest.country || ''}</div>
+        {dest.tagline && (
+          <div className="mb-2.5 line-clamp-2 text-[11px] leading-relaxed text-drift-text/70">
+            {dest.tagline}
+          </div>
+        )}
         {dest.vibes && dest.vibes.length > 0 && (
-          <div className="mb-2.5 flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1">
             {dest.vibes.slice(0, 3).map((tag) => (
               <span key={tag} className="rounded-full border border-white/10 bg-white/[0.07] px-2 py-0.5 text-[9px] font-medium text-white/80 backdrop-blur-lg">
                 {tag}
@@ -62,15 +68,6 @@ function DestCard({ dest, isSelected, onSelect, formatBudget, rank }: {
             ))}
           </div>
         )}
-        <div className="flex items-center justify-between">
-          <div className="text-lg font-light text-drift-gold">
-            {dest.price_usd ? formatBudget(dest.price_usd) : dest.price || ''}
-            <span className="ml-1 text-[9px] font-normal text-drift-text/45">/ person</span>
-          </div>
-          <span className="rounded-lg border border-drift-gold/25 bg-drift-gold/15 px-2 py-0.5 text-[10px] font-semibold text-drift-gold">
-            {matchVal}%
-          </span>
-        </div>
       </div>
     </div>
   )
@@ -84,7 +81,6 @@ export default function DestinationsPage() {
     setCurrentTrip,
     setCurrentItems,
     setDestination,
-    formatBudget,
   } = useTripStore()
 
   const { origin, startDate, endDate, budgetLevel, budgetAmount, travelers, pickedVibes, occasion } = onboarding
@@ -382,7 +378,7 @@ export default function DestinationsPage() {
                 </div>
                 <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 scrollbar-none pb-2" style={{ scrollSnapType: 'x mandatory' }}>
                   {domesticDests.map((dest, idx) => (
-                    <DestCard key={`d-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} formatBudget={formatBudget} rank={idx + 1} />
+                    <DestCard key={`d-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} rank={idx + 1} />
                   ))}
                 </div>
               </div>
@@ -398,7 +394,7 @@ export default function DestinationsPage() {
                 </div>
                 <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 scrollbar-none pb-2" style={{ scrollSnapType: 'x mandatory' }}>
                   {internationalDests.map((dest, idx) => (
-                    <DestCard key={`i-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} formatBudget={formatBudget} rank={idx + 1} />
+                    <DestCard key={`i-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} rank={idx + 1} />
                   ))}
                 </div>
               </div>
@@ -408,7 +404,7 @@ export default function DestinationsPage() {
             {domesticDests.length === 0 && internationalDests.length === 0 && destinations.length > 0 && (
               <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 scrollbar-none pb-2" style={{ scrollSnapType: 'x mandatory' }}>
                 {destinations.map((dest, idx) => (
-                  <DestCard key={`a-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} formatBudget={formatBudget} rank={idx + 1} />
+                  <DestCard key={`a-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} rank={idx + 1} />
                 ))}
               </div>
             )}
