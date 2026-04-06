@@ -316,8 +316,8 @@ export async function POST(req: NextRequest) {
             country: body.country || '',
             name: p.name,
             category: p.category || 'activity',
-            price_hint: p.priceRange || null,
-            rating_hint: p.rating || null,
+            price_hint: p.price || null,
+            rating_hint: p.rating ? parseFloat(p.rating) || null : null,
             source: 'grounded_search',
           }))
           // Upsert — increment trip_count if place already discovered
