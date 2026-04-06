@@ -306,6 +306,32 @@ export async function POST(req: NextRequest) {
         : ''
       if (groundedResult?.places?.length) {
         console.log(`[Generate] Grounded search: ${groundedResult.places.length} places found`)
+
+        // ─── Discovery Cache: save grounded places for catalog growth ──
+        try {
+          const { createClient: createAdmin } = await import('@supabase/supabase-js')
+          const adminDb = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+          const discoveries = groundedResult.places.map(p => ({
+            destination: body.destination,
+            country: body.country || '',
+            name: p.name,
+            category: p.category || 'activity',
+            price_hint: p.priceRange || null,
+            rating_hint: p.rating || null,
+            source: 'grounded_search',
+          }))
+          // Upsert — increment trip_count if place already discovered
+          for (const d of discoveries) {
+            await adminDb.rpc('upsert_discovered_place', d).catch(() => {
+              // Table or function may not exist yet — silently skip
+            })
+          }
+          // Fallback: try simple insert if rpc doesn't exist
+          await adminDb.from('discovered_places').upsert(
+            discoveries.map(d => ({ ...d, trip_count: 1, discovered_at: new Date().toISOString() })),
+            { onConflict: 'destination,name', ignoreDuplicates: true }
+          ).catch(() => { /* table may not exist yet */ })
+        } catch { /* discovery cache is best-effort */ }
       }
 
       const tripWeatherData = weatherAndGps.weather
@@ -407,19 +433,25 @@ export async function POST(req: NextRequest) {
       }
 
       // ─── Create trip in DB ────────────────────────────────────
+      const tripInsert: Record<string, unknown> = {
+        user_id: user.id,
+        destination: body.destination,
+        country: body.country,
+        vibes: body.vibes,
+        start_date: body.start_date,
+        end_date: body.end_date,
+        travelers,
+        budget,
+        status: 'planning',
+      }
+      // Save onboarding inputs for eval + analytics (columns may not exist yet)
+      if (origin) tripInsert.origin_city = origin
+      if (body.budgetAmount) tripInsert.budget_amount = body.budgetAmount
+      if (body.occasion) tripInsert.occasion = body.occasion
+
       const { data: trip, error: tripError } = await supabase
         .from('trips')
-        .insert({
-          user_id: user.id,
-          destination: body.destination,
-          country: body.country,
-          vibes: body.vibes,
-          start_date: body.start_date,
-          end_date: body.end_date,
-          travelers,
-          budget,
-          status: 'planning',
-        })
+        .insert(tripInsert)
         .select()
         .single()
 
