@@ -437,7 +437,7 @@ export async function POST(req: NextRequest) {
       }
 
       // ─── Create trip in DB ────────────────────────────────────
-      const tripInsert: Record<string, unknown> = {
+      const baseTripData = {
         user_id: user.id,
         destination: body.destination,
         country: body.country,
@@ -448,16 +448,30 @@ export async function POST(req: NextRequest) {
         budget,
         status: 'planning',
       }
-      // Save onboarding inputs for eval + analytics (columns may not exist yet)
-      if (origin) tripInsert.origin_city = origin
-      if (body.budgetAmount) tripInsert.budget_amount = body.budgetAmount
-      if (body.occasion) tripInsert.occasion = body.occasion
 
-      const { data: trip, error: tripError } = await supabase
+      // Try with extended columns first, fall back to base if columns don't exist
+      let tripResult = await supabase
         .from('trips')
-        .insert(tripInsert)
+        .insert({
+          ...baseTripData,
+          ...(origin ? { origin_city: origin } : {}),
+          ...(body.budgetAmount ? { budget_amount: body.budgetAmount } : {}),
+          ...(body.occasion ? { occasion: body.occasion } : {}),
+        })
         .select()
         .single()
+
+      // If extended columns fail (not migrated yet), retry with base only
+      if (tripResult.error?.message?.includes('column')) {
+        console.warn(`[Generate] Extended trip columns not available, using base: ${tripResult.error.message}`)
+        tripResult = await supabase
+          .from('trips')
+          .insert(baseTripData)
+          .select()
+          .single()
+      }
+
+      const { data: trip, error: tripError } = tripResult
 
       if (tripError) {
         console.error(`[Generate] Trip creation failed: ${tripError.message}`)
