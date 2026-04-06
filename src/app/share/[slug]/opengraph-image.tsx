@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
 
+export const runtime = 'edge'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -39,7 +40,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
         display: 'flex', flexDirection: 'column', background: '#08080c',
         width: '100%', height: '100%', padding: 60, justifyContent: 'center',
       }}>
-        <div style={{ fontSize: 22, color: '#c8a44e', letterSpacing: 6, textTransform: 'uppercase' as const, fontFamily: 'Georgia, serif' }}>
+        <div style={{ fontSize: 22, color: '#c8a44e', letterSpacing: 6, textTransform: 'uppercase' as const }}>
           DRIFT
         </div>
         <div style={{ fontSize: 64, color: '#f0efe8', marginTop: 16, fontWeight: 300, lineHeight: 1.1 }}>
@@ -60,7 +61,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
           <span>{trip.travelers} travelers</span>
         </div>
         <div style={{ marginTop: 40, fontSize: 14, color: '#4a4a55', letterSpacing: 2 }}>
-          Every place verified on Google Maps · driftntravel.com
+          driftntravel.com
         </div>
       </div>
     ),

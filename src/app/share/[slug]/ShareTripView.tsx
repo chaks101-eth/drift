@@ -1,7 +1,8 @@
 'use client'
 import { parsePrice } from '@/lib/parse-price'
+import { trackEvent } from '@/lib/analytics'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 type Trip = {
@@ -34,6 +35,10 @@ const FALLBACK_IMAGES: Record<string, string> = {
 export default function ShareTripView({ trip, items }: { trip: Trip; items: Item[] }) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    trackEvent('share_page_view', 'engagement', trip.destination)
+  }, [trip.destination])
 
   // Parse days
   const days: { label: string; items: Item[]; insight?: string; mapUrl?: string; weather?: Record<string, unknown> }[] = []
