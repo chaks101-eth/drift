@@ -528,27 +528,31 @@ Real names, real stations, realistic prices in USD. JSON only, no other text.` }
       return []
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as Array<{
-      mode: string; operatorName: string; serviceNumber?: string; serviceName?: string
-      departureStation: string; arrivalStation: string; duration: string; priceUSD: number; class?: string
-    }>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, any>>
 
     const originSlug = origin.toLowerCase().replace(/\s+/g, '-')
     const destSlug = destination.toLowerCase().replace(/\s+/g, '-')
 
-    return parsed.slice(0, 4).map(t => ({
-      mode: (t.mode === 'bus' ? 'bus' : 'train') as 'train' | 'bus',
-      operatorName: t.serviceName || t.operatorName || (t.mode === 'train' ? 'Indian Railways' : 'Bus'),
-      serviceNumber: t.serviceNumber,
-      departureStation: t.departureStation,
-      arrivalStation: t.arrivalStation,
-      duration: t.duration,
-      price: `$${t.priceUSD || 10}`,
-      class: t.class,
-      bookingUrl: t.mode === 'train'
-        ? 'https://www.irctc.co.in/nget/train-search'
-        : `https://www.redbus.in/bus-tickets/${originSlug}-to-${destSlug}`,
-    }))
+    console.log(`[Transport] Parsed ${parsed.length} transport options`)
+
+    return parsed.slice(0, 4).map(t => {
+      const mode = String(t.mode || 'bus')
+      const isBus = mode.includes('bus')
+      const price = t.priceUSD || t.price || 10
+      return {
+      mode: (isBus ? 'bus' : 'train') as 'train' | 'bus',
+      operatorName: t.serviceName || t.name || t.operatorName || (isBus ? 'Bus' : 'Indian Railways'),
+      serviceNumber: t.serviceNumber || t.trainNumber || undefined,
+      departureStation: t.departureStation || origin,
+      arrivalStation: t.arrivalStation || destination,
+      duration: t.duration || '',
+      price: `$${typeof price === 'number' ? price : 10}`,
+      class: t.class || undefined,
+      bookingUrl: isBus
+        ? `https://www.redbus.in/bus-tickets/${originSlug}-to-${destSlug}`
+        : 'https://www.irctc.co.in/nget/train-search',
+    }})
   } catch (e) {
     console.warn(`[Transport] Grounded search failed: ${e}`)
     return []
