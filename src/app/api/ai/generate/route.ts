@@ -407,6 +407,9 @@ export async function POST(req: NextRequest) {
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)
 
       // ─── Attach transport alternatives for domestic trips ─────
+      if (tripIsDomestic) {
+        console.log(`[Generate] Domestic transport results: ${domesticTransport.length} options found`)
+      }
       if (domesticTransport.length > 0) {
         const transportAlts = domesticTransport.map(t => ({
           mode: t.mode,

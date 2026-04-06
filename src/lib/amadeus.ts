@@ -523,18 +523,27 @@ Return ONLY a JSON array, no other text:
 }]
 
 Use real train names, real stations, realistic durations and prices. Prices in USD.` }] }],
-        tools: [{ google_search: {} }],
       }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     })
 
-    if (!res.ok) return []
+    if (!res.ok) {
+      console.warn(`[Transport] Gemini returned ${res.status}`)
+      return []
+    }
 
     const data = await res.json()
-    const text = data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || ''
+    const rawText = data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || ''
+    // Strip markdown code fences
+    const text = rawText.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim()
+
+    console.log(`[Transport] Got ${text.length} chars response`)
 
     const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) return []
+    if (!jsonMatch) {
+      console.warn(`[Transport] No JSON array found in response: ${text.slice(0, 200)}`)
+      return []
+    }
 
     const parsed = JSON.parse(jsonMatch[0]) as Array<{
       mode: string; operatorName: string; serviceNumber?: string; serviceName?: string
