@@ -503,28 +503,11 @@ export async function searchGroundedTransport(params: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Find 3-4 real train and bus options from ${origin} to ${destination} in India for travel on ${departureDate}.
-
-Include:
-- Indian Railways trains (Rajdhani, Shatabdi, Duronto, Garib Rath, Vande Bharat, superfast, express)
-- Major bus operators (state transport like KSRTC/RSRTC/UPSRTC, private Volvo AC sleeper/seater)
-
-Return ONLY a JSON array, no other text:
-[{
-  "mode": "train" or "bus",
-  "operatorName": "Indian Railways" or bus operator name,
-  "serviceNumber": "train number or empty",
-  "serviceName": "Rajdhani Express" etc,
-  "departureStation": "station name",
-  "arrivalStation": "station name",
-  "duration": "5h 30m",
-  "priceUSD": 15,
-  "class": "AC 3-Tier" or "Volvo AC Sleeper" etc
-}]
-
-Use real train names, real stations, realistic durations and prices. Prices in USD.` }] }],
+        contents: [{ parts: [{ text: `List 3 real transport options from ${origin} to ${destination} India. Include trains and buses. Return ONLY a JSON array:
+[{"mode":"train","serviceName":"Vande Bharat","departureStation":"New Delhi","arrivalStation":"Chandigarh","duration":"4h","priceUSD":15,"class":"AC Chair Car"}]
+Real names, real stations, realistic prices in USD. JSON only, no other text.` }] }],
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
     })
 
     if (!res.ok) {
