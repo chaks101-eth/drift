@@ -271,6 +271,7 @@ export interface GroundedDestination {
   tagline: string
   image_url: string
   from_catalog: boolean
+  isDomestic?: boolean
 }
 
 /**
@@ -283,31 +284,40 @@ export async function groundedDestinationSuggestions(params: {
   origin: string
   days: number
   count?: number
+  originCountry?: string
 }): Promise<GroundedDestination[]> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return []
 
-  const { vibes, budget, origin, days, count = 6 } = params
+  const { vibes, budget, origin, days, count = 8, originCountry } = params
 
-  const prompt = `Suggest exactly ${count} travel destinations that perfectly match these vibes: ${vibes.join(', ')}.
+  const domesticCount = Math.ceil(count / 2)
+  const intlCount = Math.floor(count / 2)
+  const domesticInstruction = originCountry
+    ? `Suggest exactly ${count} travel destinations: ${domesticCount} DOMESTIC destinations within ${originCountry} and ${intlCount} INTERNATIONAL destinations outside ${originCountry}.`
+    : `Suggest exactly ${count} travel destinations.`
+
+  const prompt = `${domesticInstruction}
+All must match these vibes: ${vibes.join(', ')}.
 Budget level: ${budget}
 Trip duration: ${days} days
-Flying from: ${origin}
+Traveling from: ${origin}${originCountry ? `, ${originCountry}` : ''}
 
 For each destination, provide:
 1. City name
 2. Country
-3. A vibe match percentage (how well it matches the requested vibes, 60-95%)
-4. Estimated total trip cost per person in USD for ${days} days at ${budget} level
-5. Top 3 matching vibes from: beach, adventure, city, romance, spiritual, foodie, party, solo, winter, culture
-6. A compelling 1-sentence tagline that captures why this destination matches their vibes
+3. Type: DOMESTIC or INTERNATIONAL
+4. A vibe match percentage (how well it matches the requested vibes, 60-95%)
+5. Estimated total trip cost per person in USD for ${days} days at ${budget} level
+6. Top 3 matching vibes from: beach, adventure, city, romance, spiritual, foodie, party, solo, winter, culture
+7. A compelling 1-sentence tagline that captures why this destination matches their vibes
 
 Format as a numbered list:
-1. **City, Country** (Match: XX%) — $X,XXX total
+1. **City, Country** [DOMESTIC] (Match: XX%) — $X,XXX total
    Vibes: vibe1, vibe2, vibe3
    Tagline: Your compelling tagline here
 
-Be opinionated. Don't suggest generic popular cities unless they genuinely match. Mix well-known and hidden gems. Consider flight accessibility from ${origin}.`
+Be opinionated. Don't suggest generic popular cities unless they genuinely match. Mix well-known and hidden gems.${originCountry ? ` For domestic ${originCountry} destinations, include both popular and offbeat places. For international, consider travel accessibility from ${origin}.` : ''}`
 
   try {
     console.log(`[Grounding] Searching for destinations matching: ${vibes.join(', ')}`)
@@ -358,25 +368,26 @@ function parseGroundedDestinations(text: string): GroundedDestination[] {
     const trimmed = line.trim()
     if (!trimmed) continue
 
-    // Match destination line: "1. **City, Country** (Match: XX%) — $X,XXX total"
-    // or variations like "1. **City**, **Country** (XX% match) — $X,XXX"
+    // Match destination line: "1. **City, Country** [DOMESTIC] (Match: XX%) — $X,XXX total"
     const destMatch = trimmed.match(
-      /^\d+\.\s*\*?\*?([^*,(]+?)\s*[,]\s*([^*,(]+?)\*?\*?\s*\(?(?:Match:\s*)?(\d+)%?\)?\s*[—\-–]\s*\$?([\d,]+)/i
+      /^\d+\.\s*\*?\*?([^*,([\]]+?)\s*[,]\s*([^*,([\]]+?)\*?\*?\s*(?:\[(\w+)\]\s*)?\(?(?:Match:\s*)?(\d+)%?\)?\s*[—\-–]\s*\$?([\d,]+)/i
     )
     if (destMatch) {
       // Save previous destination
       if (currentDest?.city) {
         destinations.push(finalizeDest(currentDest))
       }
+      const typeTag = (destMatch[3] || '').toLowerCase()
       currentDest = {
         city: destMatch[1].replace(/\*\*/g, '').trim(),
         country: destMatch[2].replace(/\*\*/g, '').trim(),
-        match: parseInt(destMatch[3]) || 75,
-        price_usd: parseInt(destMatch[4].replace(/,/g, '')) || 1500,
+        match: parseInt(destMatch[4]) || 75,
+        price_usd: parseInt(destMatch[5].replace(/,/g, '')) || 1500,
         vibes: [],
         tagline: '',
         image_url: '',
         from_catalog: false,
+        isDomestic: typeTag === 'domestic' ? true : typeTag === 'international' ? false : undefined,
       }
       continue
     }

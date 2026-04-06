@@ -7,6 +7,75 @@ import BackButton from '@/components/mobile/BackButton'
 import { useTripStore, type Destination } from '@/stores/trip-store'
 import { trackEvent } from '@/lib/analytics'
 
+function DestCard({ dest, isSelected, onSelect, formatBudget, rank }: {
+  dest: Destination; isSelected: boolean; onSelect: () => void; formatBudget: (n: number) => string; rank: number
+}) {
+  const matchVal = dest.match || 85
+  return (
+    <div
+      data-dest-card
+      onClick={onSelect}
+      className={`relative flex flex-shrink-0 cursor-pointer snap-center flex-col overflow-hidden rounded-[20px] transition-all duration-300 active:scale-[0.98] ${
+        isSelected
+          ? 'border-2 border-drift-gold shadow-[0_0_0_1px_rgba(200,164,78,0.3),0_12px_40px_rgba(200,164,78,0.15)]'
+          : 'border-2 border-transparent'
+      }`}
+      style={{ flex: '0 0 78%', maxWidth: 310, height: 320 }}
+    >
+      <div className="relative flex-1 overflow-hidden">
+        <Image
+          src={dest.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=90'}
+          alt={dest.city}
+          fill
+          className="object-cover"
+          sizes="78vw"
+          unoptimized={!dest.image_url?.includes('unsplash.com') && !dest.image_url?.includes('googleusercontent.com')}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.95)] via-[rgba(8,8,12,0.55)_40%] via-[rgba(8,8,12,0.08)_60%] to-transparent" />
+      </div>
+      <span className="absolute left-3 top-3 z-[3] rounded-[10px] border border-white/10 bg-[rgba(8,8,12,0.5)] px-2.5 py-1 text-[9px] font-semibold tracking-wide text-drift-gold backdrop-blur-xl">
+        #{rank} {rank === 1 ? 'Top Pick' : 'Match'}
+      </span>
+      <div
+        className={`absolute right-3 top-3 z-[3] flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+          isSelected
+            ? 'border-drift-gold bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.35)]'
+            : 'border-white/25 bg-transparent'
+        }`}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#080810" strokeWidth="3"
+          className={`transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 z-[3] px-4 pb-4">
+        <div className="font-serif text-[24px] font-normal leading-tight tracking-tight text-drift-text drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+          {dest.city}
+        </div>
+        <div className="mb-1.5 text-[11px] tracking-wide text-drift-text/55">{dest.country || ''}</div>
+        {dest.vibes && dest.vibes.length > 0 && (
+          <div className="mb-2.5 flex flex-wrap gap-1">
+            {dest.vibes.slice(0, 3).map((tag) => (
+              <span key={tag} className="rounded-full border border-white/10 bg-white/[0.07] px-2 py-0.5 text-[9px] font-medium text-white/80 backdrop-blur-lg">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <div className="text-lg font-light text-drift-gold">
+            {dest.price_usd ? formatBudget(dest.price_usd) : dest.price || ''}
+            <span className="ml-1 text-[9px] font-normal text-drift-text/45">/ person</span>
+          </div>
+          <span className="rounded-lg border border-drift-gold/25 bg-drift-gold/15 px-2 py-0.5 text-[10px] font-semibold text-drift-gold">
+            {matchVal}%
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DestinationsPage() {
   const router = useRouter()
   const {
@@ -21,17 +90,16 @@ export default function DestinationsPage() {
   const { origin, startDate, endDate, budgetLevel, budgetAmount, travelers, pickedVibes, occasion } = onboarding
 
   const [destinations, setDestinations] = useState<Destination[]>([])
+  const [originCountry, setOriginCountry] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
+  const [selectedDest, setSelectedDest] = useState<Destination | null>(null)
   const [generating, setGenerating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  const [activeDot, setActiveDot] = useState(0)
   const [customDest, setCustomDest] = useState('')
   const [customCountry, setCustomCountry] = useState('')
   const [suggestions, setSuggestions] = useState<Array<{ city: string; country: string; description: string }>>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   // Show toast with auto-dismiss
@@ -64,6 +132,7 @@ export default function DestinationsPage() {
 
         const data = await res.json()
         const dests: Destination[] = data.destinations || []
+        if (data.originCountry) setOriginCountry(data.originCountry)
 
         if (dests.length === 0) {
           setError('No destinations found for your vibes. Try different vibes or check back soon.')
@@ -80,28 +149,12 @@ export default function DestinationsPage() {
     fetchDestinations()
   }, [token, pickedVibes, budgetLevel, origin])
 
-  // Scroll-based dot tracking
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el || destinations.length === 0) return
-
-    const handleScroll = () => {
-      const card = el.querySelector<HTMLElement>('[data-dest-card]')
-      if (!card) return
-      const cardW = card.offsetWidth + 14 // gap
-      const idx = Math.round(el.scrollLeft / cardW)
-      setActiveDot(Math.min(idx, destinations.length - 1))
-    }
-
-    el.addEventListener('scroll', handleScroll, { passive: true })
-    return () => el.removeEventListener('scroll', handleScroll)
-  }, [destinations])
 
   // Select a destination
-  const handleSelect = (idx: number) => {
-    setSelectedIdx(idx)
-    setDestination(destinations[idx])
-    trackEvent('destination_selected', 'onboarding', destinations[idx].city)
+  const handleSelect = (dest: Destination) => {
+    setSelectedDest(dest)
+    setDestination(dest)
+    trackEvent('destination_selected', 'onboarding', dest.city)
   }
 
   // Retry fetch
@@ -166,16 +219,18 @@ export default function DestinationsPage() {
       router.push('/m/loading')
       return
     }
-    if (selectedIdx === null) return
-    const dest = destinations[selectedIdx]
-    setDestination(dest)
+    if (!selectedDest) return
+    setDestination(selectedDest)
     setGenerating(true)
     router.push('/m/loading')
   }
 
   const hasCustom = customDest.trim().length > 1
-  const selectedDest = selectedIdx !== null ? destinations[selectedIdx] : null
-  const canConfirm = hasCustom || selectedIdx !== null
+  const canConfirm = hasCustom || selectedDest !== null
+
+  // Split destinations into domestic/international
+  const domesticDests = destinations.filter(d => d.isDomestic)
+  const internationalDests = destinations.filter(d => !d.isDomestic)
 
   if (token === null) return null // wait for anonymous session
 
@@ -204,7 +259,7 @@ export default function DestinationsPage() {
               const val = e.target.value
               setCustomDest(val)
               setCustomCountry('')
-              if (val) setSelectedIdx(null)
+              if (val) setSelectedDest(null)
               // Fetch suggestions after 2+ chars with debounce
               if (debounceRef.current) clearTimeout(debounceRef.current)
               if (val.length >= 2) {
@@ -244,7 +299,7 @@ export default function DestinationsPage() {
                     setCustomCountry(s.country)
                     setSuggestions([])
                     setShowSuggestions(false)
-                    setSelectedIdx(null)
+                    setSelectedDest(null)
                   }}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-drift-surface2 active:bg-drift-surface2 border-b border-drift-border2 last:border-0"
                 >
@@ -285,123 +340,50 @@ export default function DestinationsPage() {
           </div>
         )}
 
-        {/* Destination cards carousel */}
+        {/* Destination cards — split into domestic/international sections */}
         {!loading && !error && destinations.length > 0 && (
-          <>
-            <div
-              ref={scrollRef}
-              className="flex flex-1 snap-x snap-mandatory gap-3.5 overflow-x-auto px-6 scrollbar-none"
-              style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
-            >
-              {destinations.map((dest, idx) => {
-                const isSelected = selectedIdx === idx
-                const matchVal = dest.match || 85
-                const rankLabel = idx === 0 ? '#1 Top Pick' : `#${idx + 1} Match`
+          <div className="flex-1 overflow-y-auto scrollbar-none">
+            {/* Domestic section */}
+            {domesticDests.length > 0 && (
+              <div className="mb-4">
+                <div className="mb-2 px-6">
+                  <h2 className="font-serif text-lg text-drift-text">
+                    Explore <em className="italic text-drift-gold">{originCountry || 'nearby'}</em>
+                  </h2>
+                </div>
+                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 scrollbar-none pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+                  {domesticDests.map((dest, idx) => (
+                    <DestCard key={`d-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} formatBudget={formatBudget} rank={idx + 1} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-                return (
-                  <div
-                    key={`${dest.city}-${idx}`}
-                    data-dest-card
-                    onClick={() => handleSelect(idx)}
-                    className={`relative flex flex-shrink-0 cursor-pointer snap-center flex-col overflow-hidden rounded-[20px] transition-all duration-300 active:scale-[0.98] ${
-                      isSelected
-                        ? 'border-2 border-drift-gold shadow-[0_0_0_1px_rgba(200,164,78,0.3),0_12px_40px_rgba(200,164,78,0.15)]'
-                        : 'border-2 border-transparent'
-                    }`}
-                    style={{ flex: '0 0 82%', maxWidth: 340, minHeight: 0 }}
-                  >
-                    {/* Image */}
-                    <div className="relative flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-                      <Image
-                        src={dest.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=90'}
-                        alt={dest.city}
-                        fill
-                        className="object-cover"
-                        sizes="82vw"
-                        unoptimized={!dest.image_url?.includes('unsplash.com') && !dest.image_url?.includes('googleusercontent.com')}
-                      />
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.95)] via-[rgba(8,8,12,0.55)_40%] via-[rgba(8,8,12,0.08)_60%] to-transparent" />
-                    </div>
+            {/* International section */}
+            {internationalDests.length > 0 && (
+              <div className="mb-4">
+                <div className="mb-2 px-6">
+                  <h2 className="font-serif text-lg text-drift-text">
+                    Go <em className="italic text-drift-gold">international</em>
+                  </h2>
+                </div>
+                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 scrollbar-none pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+                  {internationalDests.map((dest, idx) => (
+                    <DestCard key={`i-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} formatBudget={formatBudget} rank={idx + 1} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-                    {/* Rank badge */}
-                    <span className="absolute left-3.5 top-3.5 z-[3] rounded-[10px] border border-white/10 bg-[rgba(8,8,12,0.5)] px-3 py-1.5 text-[10px] font-semibold tracking-wide text-drift-gold backdrop-blur-xl">
-                      {rankLabel}
-                    </span>
-
-                    {/* Selection indicator */}
-                    <div
-                      className={`absolute right-3.5 top-3.5 z-[3] flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all duration-300 ${
-                        isSelected
-                          ? 'border-drift-gold bg-drift-gold shadow-[0_4px_16px_rgba(200,164,78,0.35)]'
-                          : 'border-white/25 bg-transparent'
-                      }`}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#080810"
-                        strokeWidth="3"
-                        className={`transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0'}`}
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </div>
-
-                    {/* Card info */}
-                    <div className="absolute inset-x-0 bottom-0 z-[3] px-5 pb-5">
-                      <div className="font-serif text-[28px] font-normal leading-tight tracking-tight text-drift-text drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
-                        {dest.city}
-                      </div>
-                      <div className="mb-2 text-xs tracking-wide text-drift-text/55">
-                        {dest.country || ''}
-                      </div>
-                      {dest.tagline && (
-                        <div className="mb-3 line-clamp-2 text-[11.5px] leading-relaxed text-drift-text/70">
-                          {dest.tagline}
-                        </div>
-                      )}
-                      {dest.vibes && dest.vibes.length > 0 && (
-                        <div className="mb-3 flex flex-wrap gap-1.5">
-                          {dest.vibes.slice(0, 4).map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-lg"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div className="text-xl font-light text-drift-gold drop-shadow-[0_1px_8px_rgba(0,0,0,0.3)]">
-                          {dest.price_usd ? formatBudget(dest.price_usd) : dest.price || ''}
-                          <span className="ml-1 text-[10px] font-normal text-drift-text/45">/ person</span>
-                        </div>
-                        <span className="rounded-xl border border-drift-gold/25 bg-drift-gold/15 px-2.5 py-1 text-[11px] font-semibold text-drift-gold">
-                          {matchVal}% match
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Dots */}
-            <div className="flex shrink-0 items-center justify-center gap-2 py-3">
-              {destinations.map((_, idx) => (
-                <span
-                  key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === activeDot ? 'w-4 bg-drift-gold' : 'w-1.5 bg-drift-border2'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
+            {/* Fallback: no domestic/intl distinction */}
+            {domesticDests.length === 0 && internationalDests.length === 0 && destinations.length > 0 && (
+              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 scrollbar-none pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+                {destinations.map((dest, idx) => (
+                  <DestCard key={`a-${dest.city}-${idx}`} dest={dest} isSelected={selectedDest?.city === dest.city && selectedDest?.country === dest.country} onSelect={() => handleSelect(dest)} formatBudget={formatBudget} rank={idx + 1} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

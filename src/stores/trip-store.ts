@@ -49,6 +49,10 @@ export interface ItemMetadata {
   practical_tips?: string
   pairs_with?: string
   review_synthesis?: string
+  transport_mode?: 'flight' | 'train' | 'bus'
+  transportAlts?: Array<{
+    mode: string; name: string; detail: string; price: string; bookingUrl?: string
+  }>
   [key: string]: unknown
 }
 
@@ -77,6 +81,7 @@ export interface Destination {
   price_usd?: number
   image_url?: string
   vibes?: string[]
+  isDomestic?: boolean
 }
 
 export interface ChatMessage {

@@ -470,3 +470,128 @@ export function flightToItineraryItem(flight: FlightOffer, position: number) {
     },
   }
 }
+
+// ─── Grounded Transport Search (Trains/Buses for Domestic) ─────
+
+export interface TransportOption {
+  mode: 'train' | 'bus'
+  operatorName: string
+  serviceNumber?: string
+  departureStation: string
+  arrivalStation: string
+  duration: string
+  price: string
+  class?: string
+  bookingUrl: string
+}
+
+export async function searchGroundedTransport(params: {
+  origin: string
+  destination: string
+  departureDate: string
+  adults?: number
+}): Promise<TransportOption[]> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return []
+
+  const { origin, destination, departureDate } = params
+
+  try {
+    console.log(`[Transport] Searching trains/buses: ${origin} → ${destination}`)
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `Find 3-4 real train and bus options from ${origin} to ${destination} in India for travel on ${departureDate}.
+
+Include:
+- Indian Railways trains (Rajdhani, Shatabdi, Duronto, Garib Rath, Vande Bharat, superfast, express)
+- Major bus operators (state transport like KSRTC/RSRTC/UPSRTC, private Volvo AC sleeper/seater)
+
+Return ONLY a JSON array, no other text:
+[{
+  "mode": "train" or "bus",
+  "operatorName": "Indian Railways" or bus operator name,
+  "serviceNumber": "train number or empty",
+  "serviceName": "Rajdhani Express" etc,
+  "departureStation": "station name",
+  "arrivalStation": "station name",
+  "duration": "5h 30m",
+  "priceUSD": 15,
+  "class": "AC 3-Tier" or "Volvo AC Sleeper" etc
+}]
+
+Use real train names, real stations, realistic durations and prices. Prices in USD.` }] }],
+        tools: [{ google_search: {} }],
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!res.ok) return []
+
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || ''
+
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) return []
+
+    const parsed = JSON.parse(jsonMatch[0]) as Array<{
+      mode: string; operatorName: string; serviceNumber?: string; serviceName?: string
+      departureStation: string; arrivalStation: string; duration: string; priceUSD: number; class?: string
+    }>
+
+    const originSlug = origin.toLowerCase().replace(/\s+/g, '-')
+    const destSlug = destination.toLowerCase().replace(/\s+/g, '-')
+
+    return parsed.slice(0, 4).map(t => ({
+      mode: (t.mode === 'bus' ? 'bus' : 'train') as 'train' | 'bus',
+      operatorName: t.serviceName || t.operatorName || (t.mode === 'train' ? 'Indian Railways' : 'Bus'),
+      serviceNumber: t.serviceNumber,
+      departureStation: t.departureStation,
+      arrivalStation: t.arrivalStation,
+      duration: t.duration,
+      price: `$${t.priceUSD || 10}`,
+      class: t.class,
+      bookingUrl: t.mode === 'train'
+        ? 'https://www.irctc.co.in/nget/train-search'
+        : `https://www.redbus.in/bus-tickets/${originSlug}-to-${destSlug}`,
+    }))
+  } catch (e) {
+    console.warn(`[Transport] Grounded search failed: ${e}`)
+    return []
+  }
+}
+
+export function transportToItineraryItem(transport: TransportOption, position: number) {
+  const modeLabel = transport.mode === 'train' ? 'Train' : 'Bus'
+  const whyFactors: string[] = [
+    `${transport.operatorName}${transport.serviceNumber ? ` (${transport.serviceNumber})` : ''}`,
+    `${transport.duration} travel time`,
+    transport.class || (transport.mode === 'train' ? 'AC class' : 'AC bus'),
+  ]
+
+  return {
+    category: 'flight' as const,
+    name: `${transport.departureStation} → ${transport.arrivalStation}`,
+    detail: `${transport.operatorName}${transport.serviceNumber ? ` ${transport.serviceNumber}` : ''}`,
+    description: `${modeLabel} from ${transport.departureStation} to ${transport.arrivalStation}. ${transport.duration}, ${transport.class || ''}.`,
+    price: transport.price,
+    time: '',
+    position,
+    metadata: {
+      transport_mode: transport.mode,
+      reason: `Best ${modeLabel.toLowerCase()} option on this route`,
+      whyFactors,
+      info: [
+        { l: modeLabel, v: transport.operatorName },
+        ...(transport.serviceNumber ? [{ l: 'Number', v: transport.serviceNumber }] : []),
+        { l: 'Duration', v: transport.duration },
+        { l: 'Class', v: transport.class || 'Standard' },
+      ],
+      features: [transport.class].filter(Boolean),
+      bookingUrl: transport.bookingUrl,
+      alts: [] as Array<{ name: string; detail: string; price: string }>,
+    },
+  }
+}

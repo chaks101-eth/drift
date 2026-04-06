@@ -3,7 +3,7 @@ import { generateItinerary, personalizeItinerary } from '@/lib/ai-agent'
 import { parsePrice } from '@/lib/parse-price'
 import { createServerClient } from '@/lib/supabase'
 import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
-import { searchFlights, searchFlightsGrounded, flightToItineraryItem, resolveIATA } from '@/lib/amadeus'
+import { searchFlights, searchFlightsGrounded, flightToItineraryItem, resolveIATA, searchGroundedTransport, transportToItineraryItem } from '@/lib/amadeus'
 import { findCatalogDestination, getCatalogData, buildRichCatalogContext, enrichItemsWithCatalog } from '@/lib/catalog'
 import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSuggestions, fixItemLinks } from '@/lib/grounded-search'
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
@@ -13,6 +13,7 @@ import { batchGetPlaceData, applyPlaceData, getDestinationPhoto, getPlaceData } 
 import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
 import { buildItineraryMaps } from '@/lib/day-maps'
 import { addTravelTimesToItems } from '@/lib/google-routes'
+import { detectCountry, isDomesticTrip } from '@/lib/country-detection'
 
 export const maxDuration = 120
 
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
         : 5
       const MAX_DESTINATIONS = 8
 
+      // Detect origin country for domestic/international split
+      const originCountry = detectCountry(body.origin || 'Delhi')
+
       // Run catalog query + grounded search IN PARALLEL (catalog ~100ms, grounded ~2-3s)
       const { createClient } = await import('@supabase/supabase-js')
       const adminDb = createClient(
@@ -58,13 +62,14 @@ export async function POST(req: NextRequest) {
             if (error) console.error(`[Generate] Catalog query error: ${error.message}`)
             return data || []
           }),
-        // Grounded search
+        // Grounded search — now requests domestic/international mix
         groundedDestinationSuggestions({
           vibes: userVibes,
           budget: body.budget || 'mid',
           origin: body.origin || 'Delhi',
           days: userDays,
           count: MAX_DESTINATIONS,
+          originCountry: originCountry || undefined,
         }).catch(e => {
           console.warn(`[Generate] Grounded destination suggestions failed: ${e}`)
           return []
@@ -73,7 +78,7 @@ export async function POST(req: NextRequest) {
 
       console.log(`[Generate] Found ${catalogResult.length} catalog + ${groundedResult.length} grounded destinations`)
 
-      // Score catalog destinations by vibe overlap
+      // Score catalog destinations by vibe overlap + tag domestic/international
       const catalogMatches = catalogResult
         .map(d => {
           const overlap = (d.vibes || []).filter((v: string) => userVibes.includes(v)).length
@@ -91,6 +96,7 @@ export async function POST(req: NextRequest) {
             tagline: d.description || `Explore ${d.city}`,
             image_url: d.cover_image || getDestinationImage(d.city),
             from_catalog: true,
+            isDomestic: isDomesticTrip(body.origin || 'Delhi', d.city, d.country),
           }
         })
         .filter(d => d.match > 20)
@@ -107,19 +113,34 @@ export async function POST(req: NextRequest) {
       const groundedDests = filteredGrounded.map((d, i) => ({
         ...d,
         image_url: destPhotos[i] || getDestinationImage(d.city),
+        // Use grounded tag if available, else detect from city/country
+        isDomestic: d.isDomestic ?? isDomesticTrip(body.origin || 'Delhi', d.city, d.country),
       }))
 
-      // Merge both sources, sort by match score — best destinations win regardless of source
-      const allDestinations = [...catalogMatches, ...groundedDests]
-        .sort((a, b) => b.match - a.match)
-        .slice(0, MAX_DESTINATIONS)
+      // Merge, ensuring balanced domestic/international representation
+      const allCandidates = [...catalogMatches, ...groundedDests].sort((a, b) => b.match - a.match)
+      const domestic = allCandidates.filter(d => d.isDomestic)
+      const international = allCandidates.filter(d => !d.isDomestic)
+      const maxPerSection = Math.ceil(MAX_DESTINATIONS / 2)
+
+      // Take up to half from each, fill remaining from whichever has surplus
+      let picked = [
+        ...domestic.slice(0, maxPerSection),
+        ...international.slice(0, maxPerSection),
+      ]
+      if (picked.length < MAX_DESTINATIONS) {
+        const remaining = allCandidates.filter(d => !picked.includes(d))
+        picked = [...picked, ...remaining].slice(0, MAX_DESTINATIONS)
+      }
+      const allDestinations = picked.sort((a, b) => b.match - a.match)
 
       const catalogCount = allDestinations.filter(d => d.from_catalog).length
       const groundedCount = allDestinations.filter(d => !d.from_catalog).length
+      const domesticCount = allDestinations.filter(d => d.isDomestic).length
       const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
       const source = groundedCount > 0 && catalogCount > 0 ? 'catalog+grounded' : groundedCount > 0 ? 'grounded' : 'catalog'
-      console.log(`[Generate] Serving ${allDestinations.length} destinations (${catalogCount} catalog + ${groundedCount} grounded) sorted by match in ${elapsed}s`)
-      return NextResponse.json({ destinations: allDestinations, source })
+      console.log(`[Generate] Serving ${allDestinations.length} destinations (${catalogCount} catalog + ${groundedCount} grounded, ${domesticCount} domestic) in ${elapsed}s`)
+      return NextResponse.json({ destinations: allDestinations, source, originCountry })
     }
 
     if (body.type === 'itinerary') {
@@ -146,7 +167,10 @@ export async function POST(req: NextRequest) {
         console.log(`[Generate] No catalog data for "${body.destination}" — LLM will generate from knowledge`)
       }
 
-      // ─── Resolve IATA codes dynamically + fetch flights ──────
+      // ─── Detect domestic trip + resolve IATA codes ──────
+      const tripIsDomestic = isDomesticTrip(origin, body.destination, body.country)
+      if (tripIsDomestic) console.log(`[Generate] Domestic trip detected: ${origin} → ${body.destination}`)
+
       const [originIATA, destIATA] = await Promise.all([
         resolveIATA(origin),
         resolveIATA(body.destination),
@@ -174,6 +198,11 @@ export async function POST(req: NextRequest) {
         findFlights(originIATA || origin, destIATA || body.destination, body.start_date),
         body.end_date ? findFlights(destIATA || body.destination, originIATA || origin, body.end_date) : Promise.resolve([]),
       ] as const
+
+      // For domestic trips, also search trains/buses in parallel
+      const transportPromise = tripIsDomestic
+        ? searchGroundedTransport({ origin, destination: body.destination, departureDate: body.start_date, adults: travelers }).catch(() => [])
+        : Promise.resolve([])
 
       // ─── Get itinerary items (catalog or LLM) ────────────────
       let items: Array<{
@@ -238,7 +267,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Fire grounding + weather + GPS lookup + flights ALL IN PARALLEL
-      const [groundedResult, weatherAndGps, outboundFlights, returnFlights] = await Promise.all([
+      const [groundedResult, weatherAndGps, outboundFlights, returnFlights, domesticTransport] = await Promise.all([
         // Grounded search (only for non-catalog destinations)
         needsGrounding
           ? groundedDestinationSearch({
@@ -267,6 +296,9 @@ export async function POST(req: NextRequest) {
 
         // Flights (already defined as promises)
         ...flightPromises,
+
+        // Domestic transport (trains/buses)
+        transportPromise,
       ])
 
       const groundedContextText = groundedResult?.places?.length
@@ -295,6 +327,7 @@ export async function POST(req: NextRequest) {
         urlHighlights: enrichedHighlights,
         urlSummary: body.urlSummary || undefined,
         planningNotes: (planningNotesText + catalogContextText + groundedContextText + weatherContextText) || undefined,
+        isDomestic: tripIsDomestic,
       })
 
       // Sanitize LLM categories
@@ -345,6 +378,33 @@ export async function POST(req: NextRequest) {
       }
 
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)
+
+      // ─── Attach transport alternatives for domestic trips ─────
+      if (domesticTransport.length > 0) {
+        const transportAlts = domesticTransport.map(t => ({
+          mode: t.mode,
+          name: `${t.departureStation} → ${t.arrivalStation}`,
+          detail: `${t.operatorName} · ${t.duration}${t.class ? ` · ${t.class}` : ''}`,
+          price: t.price,
+          bookingUrl: t.bookingUrl,
+        }))
+
+        // Find the outbound flight item and attach transport alternatives
+        const outboundItem = items.find(i => i.category === 'flight' && i.position === 0)
+        if (outboundItem) {
+          outboundItem.metadata.transportAlts = transportAlts
+        } else {
+          // No flight found — use best transport as primary outbound item
+          const best = domesticTransport[0]
+          const transportItem = transportToItineraryItem(best, 0)
+          transportItem.metadata.transportAlts = transportAlts.slice(1)
+          items = [transportItem, ...items]
+          // Reindex positions
+          items.forEach((item, idx) => { item.position = idx })
+          console.log(`[Generate] No flights — using ${best.mode} as primary transport`)
+        }
+        console.log(`[Generate] Attached ${transportAlts.length} transport alternatives (trains/buses)`)
+      }
 
       // ─── Create trip in DB ────────────────────────────────────
       const { data: trip, error: tripError } = await supabase

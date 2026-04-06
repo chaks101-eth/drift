@@ -518,6 +518,7 @@ export async function generateItinerary(params: {
   urlHighlights?: Array<{ name: string; category: string; detail: string; estimatedPrice?: string }>
   urlSummary?: string
   planningNotes?: string
+  isDomestic?: boolean
 }) {
   const llm = getLlm()
   const model = getModel()
@@ -834,9 +835,12 @@ async function generateItinerarySingleCall(
     ? `Budget: $${params.budgetAmount} total per person — level: ${params.budget}`
     : `Budget: ${params.budget}`
 
+  const domesticContext = params.isDomestic ? `
+DOMESTIC TRIP: This is a domestic trip within ${params.country}. Consider trains, buses, and road travel as transport modes. Use local transport: auto-rickshaws, metro (where available), Ola/Uber. Reference local pricing. Include local tips (UPI payments, local SIM, etc).` : ''
+
   const userContent = `Generate a complete day-by-day itinerary for ${numDays} days in ${params.destination}, ${params.country}.
 Vibes: ${params.vibes.join(', ')} | ${budgetLine} | ${params.travelers} travelers
-Flying from: ${params.originCity}
+${params.isDomestic ? 'Traveling from' : 'Flying from'}: ${params.originCity}${domesticContext}
 ${params.planningNotes || ''}
 
 Generate EXACTLY ${numDays} days: ${dayDates.join(', ')}.
