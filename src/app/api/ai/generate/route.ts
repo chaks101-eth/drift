@@ -321,17 +321,16 @@ export async function POST(req: NextRequest) {
             source: 'grounded_search',
           }))
           // Try to save discoveries (table may not exist yet — best effort)
-          try {
-            for (const d of discoveries) {
-              const { error: rpcErr } = await adminDb.rpc('upsert_discovered_place', d)
-              if (rpcErr) throw rpcErr
+          for (const d of discoveries) {
+            const { error: rpcErr } = await adminDb.rpc('upsert_discovered_place', d)
+            if (rpcErr) {
+              // RPC doesn't exist yet — try simple insert and stop retrying
+              await adminDb.from('discovered_places').upsert(
+                discoveries.map(dd => ({ ...dd, trip_count: 1, discovered_at: new Date().toISOString() })),
+                { onConflict: 'destination,name', ignoreDuplicates: true }
+              )
+              break
             }
-          } catch {
-            // Fallback: simple insert ignoring duplicates
-            await adminDb.from('discovered_places').upsert(
-              discoveries.map(d => ({ ...d, trip_count: 1, discovered_at: new Date().toISOString() })),
-              { onConflict: 'destination,name', ignoreDuplicates: true }
-            ).then(() => {}).catch(() => {})
           }
         } catch { /* discovery cache is best-effort */ }
       }
