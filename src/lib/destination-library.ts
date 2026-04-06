@@ -16,17 +16,17 @@ export interface LibraryDestination {
 const DOMESTIC: LibraryDestination[] = [
   // Beach
   { city: 'Goa', country: 'India', vibes: ['beach', 'party', 'foodie'], tagline: 'India\'s party coast — beaches by day, clubs by night', image_url: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=85', isDomestic: true },
-  { city: 'Gokarna', country: 'India', vibes: ['beach', 'backpacker', 'spiritual'], tagline: 'Goa\'s quieter cousin — temples meet untouched beaches', image_url: 'https://images.unsplash.com/photo-1590050752117-238cb20e10a0?w=800&q=85', isDomestic: true },
-  { city: 'Varkala', country: 'India', vibes: ['beach', 'wellness', 'backpacker'], tagline: 'Clifftop cafes overlooking the Arabian Sea', image_url: 'https://images.unsplash.com/photo-1590050751120-e37e6e8dbcf0?w=800&q=85', isDomestic: true },
+  { city: 'Gokarna', country: 'India', vibes: ['beach', 'backpacker', 'spiritual'], tagline: 'Goa\'s quieter cousin — temples meet untouched beaches', image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=85', isDomestic: true },
+  { city: 'Varkala', country: 'India', vibes: ['beach', 'wellness', 'backpacker'], tagline: 'Clifftop cafes overlooking the Arabian Sea', image_url: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=85', isDomestic: true },
   { city: 'Pondicherry', country: 'India', vibes: ['beach', 'culture', 'foodie'], tagline: 'French Quarter vibes meets Tamil soul food', image_url: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800&q=85', isDomestic: true },
   { city: 'Andaman Islands', country: 'India', vibes: ['beach', 'adventure', 'nature'], tagline: 'Crystal waters and untouched coral — India\'s best-kept secret', image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=85', isDomestic: true },
   { city: 'Lakshadweep', country: 'India', vibes: ['beach', 'luxury', 'nature'], tagline: 'India\'s Maldives — pristine atolls with zero crowds', image_url: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=800&q=85', isDomestic: true },
   { city: 'Alleppey', country: 'India', vibes: ['beach', 'romance', 'nature'], tagline: 'Houseboat through Kerala\'s backwaters at sunset', image_url: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=85', isDomestic: true },
   // Adventure
-  { city: 'Manali', country: 'India', vibes: ['adventure', 'nature', 'backpacker'], tagline: 'Snow peaks, river rafting, and mountain passes', image_url: 'https://images.unsplash.com/photo-1626621338535-ab2a5cce608f?w=800&q=85', isDomestic: true },
-  { city: 'Rishikesh', country: 'India', vibes: ['adventure', 'spiritual', 'wellness'], tagline: 'White-water rafting meets yoga on the Ganges', image_url: 'https://images.unsplash.com/photo-1592385725584-05839d3d2739?w=800&q=85', isDomestic: true },
+  { city: 'Manali', country: 'India', vibes: ['adventure', 'nature', 'backpacker'], tagline: 'Snow peaks, river rafting, and mountain passes', image_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=85', isDomestic: true },
+  { city: 'Rishikesh', country: 'India', vibes: ['adventure', 'spiritual', 'wellness'], tagline: 'White-water rafting meets yoga on the Ganges', image_url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=85', isDomestic: true },
   { city: 'Leh Ladakh', country: 'India', vibes: ['adventure', 'nature', 'backpacker'], tagline: 'The roof of the world — Khardung La, Pangong, Nubra', image_url: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=85', isDomestic: true },
-  { city: 'Spiti Valley', country: 'India', vibes: ['adventure', 'nature', 'hidden'], tagline: 'India\'s cold desert — monasteries and moonscapes', image_url: 'https://images.unsplash.com/photo-1585516482738-0b2e6e5b5da7?w=800&q=85', isDomestic: true },
+  { city: 'Spiti Valley', country: 'India', vibes: ['adventure', 'nature', 'hidden'], tagline: 'India\'s cold desert — monasteries and moonscapes', image_url: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=85', isDomestic: true },
   { city: 'Coorg', country: 'India', vibes: ['adventure', 'nature', 'wellness'], tagline: 'Coffee plantations and misty waterfalls in Karnataka', image_url: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=800&q=85', isDomestic: true },
   { city: 'Meghalaya', country: 'India', vibes: ['adventure', 'nature', 'hidden'], tagline: 'Living root bridges and the wettest place on Earth', image_url: 'https://images.unsplash.com/photo-1598091383021-15ddea10925d?w=800&q=85', isDomestic: true },
   // Spiritual
@@ -39,15 +39,15 @@ const DOMESTIC: LibraryDestination[] = [
   { city: 'Delhi', country: 'India', vibes: ['city', 'culture', 'foodie'], tagline: 'Old Delhi chaos meets New Delhi grandeur', image_url: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&q=85', isDomestic: true },
   { city: 'Bangalore', country: 'India', vibes: ['city', 'foodie', 'party'], tagline: 'Craft beer capital with the best weather in India', image_url: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800&q=85', isDomestic: true },
   { city: 'Kolkata', country: 'India', vibes: ['city', 'culture', 'foodie'], tagline: 'The city of joy — literary cafes, colonial architecture, street food', image_url: 'https://images.unsplash.com/photo-1558431382-27e303142255?w=800&q=85', isDomestic: true },
-  { city: 'Hyderabad', country: 'India', vibes: ['city', 'foodie', 'culture'], tagline: 'Biryani capital with Charminar and tech-city buzz', image_url: 'https://images.unsplash.com/photo-1572427841249-2f88a3b2fcf0?w=800&q=85', isDomestic: true },
+  { city: 'Hyderabad', country: 'India', vibes: ['city', 'foodie', 'culture'], tagline: 'Biryani capital with Charminar and tech-city buzz', image_url: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800&q=85', isDomestic: true },
   // Romance
   { city: 'Udaipur', country: 'India', vibes: ['romance', 'luxury', 'culture'], tagline: 'City of Lakes — palatial stays and sunset boat rides', image_url: 'https://images.unsplash.com/photo-1595658658481-d53d3f999875?w=800&q=85', isDomestic: true },
   { city: 'Jaipur', country: 'India', vibes: ['culture', 'romance', 'shopping'], tagline: 'Pink City — forts, palaces, and bazaars in every shade', image_url: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=85', isDomestic: true },
-  { city: 'Munnar', country: 'India', vibes: ['romance', 'nature', 'wellness'], tagline: 'Tea gardens and misty mornings in Kerala\'s highlands', image_url: 'https://images.unsplash.com/photo-1611911813383-67d5c293f1a4?w=800&q=85', isDomestic: true },
+  { city: 'Munnar', country: 'India', vibes: ['romance', 'nature', 'wellness'], tagline: 'Tea gardens and misty mornings in Kerala\'s highlands', image_url: 'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=800&q=85', isDomestic: true },
   // Nature
-  { city: 'Shimla', country: 'India', vibes: ['nature', 'romance', 'family'], tagline: 'Colonial hill station with toy train and mountain views', image_url: 'https://images.unsplash.com/photo-1597074866923-dc0589150142?w=800&q=85', isDomestic: true },
-  { city: 'Ooty', country: 'India', vibes: ['nature', 'romance', 'family'], tagline: 'Queen of hill stations — botanical gardens and Nilgiri tea', image_url: 'https://images.unsplash.com/photo-1585544314038-a0b16b15ef1a?w=800&q=85', isDomestic: true },
-  { city: 'Darjeeling', country: 'India', vibes: ['nature', 'culture', 'backpacker'], tagline: 'Himalayan sunrises, tea estates, and the toy train', image_url: 'https://images.unsplash.com/photo-1544634076-28a79c5951e3?w=800&q=85', isDomestic: true },
+  { city: 'Shimla', country: 'India', vibes: ['nature', 'romance', 'family'], tagline: 'Colonial hill station with toy train and mountain views', image_url: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=85', isDomestic: true },
+  { city: 'Ooty', country: 'India', vibes: ['nature', 'romance', 'family'], tagline: 'Queen of hill stations — botanical gardens and Nilgiri tea', image_url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=85', isDomestic: true },
+  { city: 'Darjeeling', country: 'India', vibes: ['nature', 'culture', 'backpacker'], tagline: 'Himalayan sunrises, tea estates, and the toy train', image_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=85', isDomestic: true },
   { city: 'Kodaikanal', country: 'India', vibes: ['nature', 'romance', 'hidden'], tagline: 'Princess of hill stations — misty lakes and forest trails', image_url: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=800&q=85', isDomestic: true },
   { city: 'Jim Corbett', country: 'India', vibes: ['nature', 'adventure', 'family'], tagline: 'Tiger country — India\'s oldest national park', image_url: 'https://images.unsplash.com/photo-1549366021-9f761d450615?w=800&q=85', isDomestic: true },
   // Luxury
@@ -57,15 +57,15 @@ const DOMESTIC: LibraryDestination[] = [
   { city: 'Kerala Backwaters', country: 'India', vibes: ['wellness', 'nature', 'romance'], tagline: 'Ayurveda retreats and houseboat journeys', image_url: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=85', isDomestic: true },
   // Foodie
   { city: 'Lucknow', country: 'India', vibes: ['foodie', 'culture', 'city'], tagline: 'City of Nawabs — the kebab and biryani capital', image_url: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&q=85', isDomestic: true },
-  { city: 'Ahmedabad', country: 'India', vibes: ['foodie', 'culture', 'city'], tagline: 'UNESCO heritage city with the best Gujarati thali', image_url: 'https://images.unsplash.com/photo-1609947017136-9daf32a5eb75?w=800&q=85', isDomestic: true },
+  { city: 'Ahmedabad', country: 'India', vibes: ['foodie', 'culture', 'city'], tagline: 'UNESCO heritage city with the best Gujarati thali', image_url: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&q=85', isDomestic: true },
   // Hidden
-  { city: 'Hampi', country: 'India', vibes: ['hidden', 'culture', 'backpacker'], tagline: 'Ancient ruins scattered across a surreal boulder landscape', image_url: 'https://images.unsplash.com/photo-1590050752117-238cb20e10a0?w=800&q=85', isDomestic: true },
+  { city: 'Hampi', country: 'India', vibes: ['hidden', 'culture', 'backpacker'], tagline: 'Ancient ruins scattered across a surreal boulder landscape', image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=85', isDomestic: true },
   { city: 'Orchha', country: 'India', vibes: ['hidden', 'culture', 'nature'], tagline: 'Forgotten Mughal city — palatial ruins with zero tourists', image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=85', isDomestic: true },
   { city: 'Ziro Valley', country: 'India', vibes: ['hidden', 'nature', 'culture'], tagline: 'Apatani tribal homeland — music festival and rice paddies', image_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=85', isDomestic: true },
-  { city: 'Tawang', country: 'India', vibes: ['hidden', 'spiritual', 'nature'], tagline: 'India\'s largest monastery in Arunachal\'s mountains', image_url: 'https://images.unsplash.com/photo-1585544314038-a0b16b15ef1a?w=800&q=85', isDomestic: true },
+  { city: 'Tawang', country: 'India', vibes: ['hidden', 'spiritual', 'nature'], tagline: 'India\'s largest monastery in Arunachal\'s mountains', image_url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=85', isDomestic: true },
   // Family
-  { city: 'Mysore', country: 'India', vibes: ['family', 'culture', 'foodie'], tagline: 'Palace city — heritage, sandalwood, and Mysore pak', image_url: 'https://images.unsplash.com/photo-1600100397608-e4b89e46e76e?w=800&q=85', isDomestic: true },
-  { city: 'Nainital', country: 'India', vibes: ['family', 'nature', 'romance'], tagline: 'Lake town in the Kumaon hills — boating and mountain views', image_url: 'https://images.unsplash.com/photo-1585544314038-a0b16b15ef1a?w=800&q=85', isDomestic: true },
+  { city: 'Mysore', country: 'India', vibes: ['family', 'culture', 'foodie'], tagline: 'Palace city — heritage, sandalwood, and Mysore pak', image_url: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&q=85', isDomestic: true },
+  { city: 'Nainital', country: 'India', vibes: ['family', 'nature', 'romance'], tagline: 'Lake town in the Kumaon hills — boating and mountain views', image_url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=85', isDomestic: true },
 ]
 
 // ─── INTERNATIONAL — 60 destinations ────────────────────────────
@@ -120,7 +120,7 @@ const INTERNATIONAL: LibraryDestination[] = [
   { city: 'Siem Reap', country: 'Cambodia', vibes: ['backpacker', 'culture', 'adventure'], tagline: 'Angkor Wat at sunrise — temple kingdom on a shoestring', image_url: 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?w=800&q=85', isDomestic: false },
   { city: 'Colombo', country: 'Sri Lanka', vibes: ['backpacker', 'culture', 'beach'], tagline: 'Gateway to Sri Lanka — colonial charm and curry rice', image_url: 'https://images.unsplash.com/photo-1586276393635-5ecd8a851acc?w=800&q=85', isDomestic: false },
   // Shopping
-  { city: 'Hong Kong', country: 'China', vibes: ['shopping', 'city', 'foodie'], tagline: 'Dim sum, harbour views, and Temple Street Night Market', image_url: 'https://images.unsplash.com/photo-1536599018102-9f803c029b81?w=800&q=85', isDomestic: false },
+  { city: 'Hong Kong', country: 'China', vibes: ['shopping', 'city', 'foodie'], tagline: 'Dim sum, harbour views, and Temple Street Night Market', image_url: 'https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=800&q=85', isDomestic: false },
   { city: 'Seoul', country: 'South Korea', vibes: ['shopping', 'city', 'foodie'], tagline: 'K-pop, Korean BBQ, and Myeongdong shopping frenzy', image_url: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&q=85', isDomestic: false },
   // Hidden
   { city: 'Luang Prabang', country: 'Laos', vibes: ['hidden', 'spiritual', 'nature'], tagline: 'Monks at dawn, Mekong sunsets, and Kuang Si Falls', image_url: 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?w=800&q=85', isDomestic: false },
