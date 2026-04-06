@@ -102,8 +102,8 @@ export async function batchGetPlaceData(
   console.log(`[Places] Enriching ${enrichItems.length} items in ${city}...`)
   const startTime = Date.now()
 
-  // Parallel batches of 5
-  const BATCH_SIZE = 5
+  // Parallel batches of 10 (fewer round-trips for faster enrichment)
+  const BATCH_SIZE = 10
   for (let i = 0; i < enrichItems.length; i += BATCH_SIZE) {
     const batch = enrichItems.slice(i, i + BATCH_SIZE)
     const batchResults = await Promise.all(

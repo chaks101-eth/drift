@@ -74,9 +74,9 @@ export function getModel() {
 
 let lastLlmCall = 0
 
-/** Enforce minimum gap between LLM calls (Gemini Tier 1: 2000 RPM) */
+/** Enforce minimum gap between LLM calls (Gemini Tier 1: 2000 RPM = 33 req/s) */
 export async function throttleLlm(): Promise<void> {
-  const gap = 500 // 0.5s — safe for paid tier (2000 RPM)
+  const gap = 100 // 0.1s — safe for paid tier (2000 RPM = 1 req per 30ms)
   const elapsed = Date.now() - lastLlmCall
   if (elapsed < gap) {
     await new Promise(r => setTimeout(r, gap - elapsed))
@@ -549,10 +549,16 @@ export async function generateItinerary(params: {
     urlPlaces = `\nMUST include: ${mentioned.map(h => `${h.name} (${h.category})`).join(', ')}`
   }
 
-  // ─── STEP 0: Lock must-see experiences ────────────────────────
-  console.log(`[Generate] Step 0: Locking must-sees for ${params.destination}`)
-
+  // ─── STEP 0: Lock must-see experiences (skip for short trips) ──
   let lockedItems: Array<{ name: string; category: string; why_locked: string; half_day: boolean }> = []
+
+  if (numDays <= 3) {
+    console.log(`[Generate] Step 0: Skipped for ${numDays}-day trip (must-sees folded into outline)`)
+  } else {
+    console.log(`[Generate] Step 0: Locking must-sees for ${params.destination}`)
+  }
+
+  if (numDays > 3) {
   try {
     await throttleLlm()
     const lockRes = await withRetry(() => llm.chat.completions.create({
@@ -581,6 +587,7 @@ JSON array only. First char [, last char ].` },
   } catch (e) {
     console.warn(`[Generate] Step 0 failed (non-fatal): ${e}`)
   }
+  } // end if (numDays > 3)
 
   const lockedContext = lockedItems.length > 0
     ? `\nLOCKED MUST-HAVES (NON-NEGOTIABLE — build the plan AROUND these):\n${lockedItems.map(i => `- ${i.name} (${i.category}) — ${i.why_locked}${i.half_day ? ' [half-day]' : ''}`).join('\n')}`
@@ -662,9 +669,9 @@ JSON only. First char {, last char }.`
   // ─── STEP 2: Generate each day's items IN PARALLEL ────────────
   console.log(`[Generate] Step 2: Generating ${outline.days.length} days in parallel`)
 
-  // Generate days in batches of 3 to stay within Gemini rate limits
+  // Generate days in batches of 5 (safe for Gemini paid tier at 2000 RPM)
   const dayResults: GeneratedItem[][] = []
-  const BATCH = 3
+  const BATCH = 5
   for (let i = 0; i < outline.days.length; i += BATCH) {
     const batch = outline.days.slice(i, i + BATCH)
     const batchResults = await Promise.all(

@@ -234,7 +234,9 @@ export async function POST(req: NextRequest) {
       // ─── Parallel pre-generation: grounding + weather + flights ──
       // Run ALL pre-generation tasks in parallel to minimize latency
       const catalogContextText = catalogData ? buildRichCatalogContext(catalogData) : ''
-      const needsGrounding = !catalogData || catalogData.hotels.length < 3
+      // Only ground if catalog is thin — skip for well-cataloged destinations (saves ~3-5s)
+      const catalogItemCount = catalogData ? (catalogData.hotels.length + catalogData.activities.length + catalogData.restaurants.length) : 0
+      const needsGrounding = catalogItemCount < 10
 
       // Get destination GPS (fast, from catalog metadata)
       let destLat: number | undefined
@@ -416,13 +418,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Calculate real travel times between items (Google Routes API)
-      try {
-        await addTravelTimesToItems(nonFlightItems)
-      } catch (e) {
-        console.warn(`[Generate] Travel times failed: ${e}`)
-      }
-
+      // Travel times calculated after DB insert (non-blocking)
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)
 
       // ─── Attach transport alternatives for domestic trips ─────
@@ -625,6 +621,24 @@ export async function POST(req: NextRequest) {
       console.log(`[Generate] SUCCESS — trip=${trip.id}, items=${items.length}, source=${dataSource}${weatherContextText ? ', weather=yes' : ''}, time=${elapsed}s`)
       const categoryCounts = items.reduce((acc, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc }, {} as Record<string, number>)
       console.log(`[Generate] Item breakdown: ${Object.entries(categoryCounts).map(([k, v]) => `${k}:${v}`).join(', ')}`)
+
+      // ─── Fire-and-forget: travel times + day maps (non-blocking) ──
+      // These update DB items after response is sent — user sees them on next refresh
+      const bgTripId = trip.id
+      const bgItems = [...nonFlightItems]
+      Promise.resolve().then(async () => {
+        try {
+          await addTravelTimesToItems(bgItems)
+          // Update items in DB with travel times
+          for (const item of bgItems) {
+            if ((item.metadata as Record<string, unknown>)?.travelToNext) {
+              await supabase.from('itinerary_items').update({ metadata: item.metadata }).eq('trip_id', bgTripId).eq('name', item.name)
+            }
+          }
+          console.log(`[Generate] Background: travel times updated for trip=${bgTripId}`)
+        } catch (e) { console.warn(`[Generate] Background travel times failed: ${e}`) }
+      })
+
       return NextResponse.json({ trip, itemCount: items.length, dataSource })
     }
 
