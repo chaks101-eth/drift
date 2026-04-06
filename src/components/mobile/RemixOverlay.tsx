@@ -34,7 +34,10 @@ export default function RemixOverlay() {
 
   const toggleVibe = (id: string) => {
     setSelectedVibes((prev) => {
-      if (prev.includes(id)) return prev.filter((v) => v !== id)
+      if (prev.includes(id)) {
+        if (prev.length <= 1) { toast('Need at least 1 vibe'); return prev }
+        return prev.filter((v) => v !== id)
+      }
       if (prev.length >= 4) {
         toast('Max 4 vibes')
         return prev

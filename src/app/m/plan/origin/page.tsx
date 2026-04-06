@@ -20,6 +20,16 @@ export default function OriginPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
+  // Sync local state when store hydrates from sessionStorage
+  useEffect(() => {
+    if (onboarding.origin && !value) {
+      setValue(onboarding.origin)
+      setIsValidCity(true)
+      // Check if it's a quick chip
+      if (quickCities.includes(onboarding.origin)) setSelectedChip(onboarding.origin)
+    }
+  }, [onboarding.origin]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!token) return
     const t = setTimeout(() => inputRef.current?.focus(), 400)

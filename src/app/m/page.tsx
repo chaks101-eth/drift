@@ -44,6 +44,7 @@ export default function HeroPage() {
           setRedirecting(false)
         }
       })
+      .catch(() => { clearTimeout(timeout); setRedirecting(false) })
 
     return () => clearTimeout(timeout)
   }, [token, userId, checked, router])

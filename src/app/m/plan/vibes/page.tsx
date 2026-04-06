@@ -73,12 +73,17 @@ export default function VibesPage() {
 
     const nextIdx = currentIdx + 1
 
-    if (newPicked.length >= 3 || nextIdx >= moods.length) {
+    if (newPicked.length >= 3) {
       setDone(true)
       setVibes(newPicked)
       trackEvent('vibes_selected', 'onboarding', newPicked.join(','))
-      // Auto-navigate to destinations after a brief celebration
       setTimeout(() => router.push('/m/plan/destinations'), 1200)
+      return
+    }
+
+    if (nextIdx >= moods.length) {
+      // Ran out of cards without enough vibes — reset to let them try again
+      setCurrentIdx(0)
       return
     }
 

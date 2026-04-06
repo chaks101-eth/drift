@@ -44,8 +44,16 @@ export default function LoadingPage() {
   const [error, setError] = useState<string | null>(null)
   const [tip, setTip] = useState<string | null>(null)
   const [generationDone, setGenerationDone] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
   const started = useRef(false)
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  // Track elapsed time for timeout warnings
+  useEffect(() => {
+    if (generationDone || error) return
+    const t = setInterval(() => setElapsed(s => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [generationDone, error])
 
   // Show tip after a delay
   useEffect(() => {
@@ -262,11 +270,13 @@ export default function LoadingPage() {
           </div>
         )}
 
-        {/* Cancel */}
-        {!error && (
+        {/* Cancel / timeout warning */}
+        {!error && elapsed >= 30 && (
           <div className="mt-6 text-[11px] text-drift-text3">
-            Taking longer than usual?{' '}
-            <button onClick={() => router.push('/m/plan/destinations')} className="font-semibold text-drift-gold">Cancel</button>
+            {elapsed >= 60
+              ? <>This is taking longer than expected ({elapsed}s). <button onClick={() => router.push('/m/plan/destinations')} className="font-semibold text-drift-err">Cancel & go back</button></>
+              : <>Taking a moment... <button onClick={() => router.push('/m/plan/destinations')} className="font-semibold text-drift-gold">Cancel</button></>
+            }
           </div>
         )}
       </div>
