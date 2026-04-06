@@ -397,7 +397,7 @@ export async function POST(req: NextRequest) {
           // No flight found — use best transport as primary outbound item
           const best = domesticTransport[0]
           const transportItem = transportToItineraryItem(best, 0)
-          transportItem.metadata.transportAlts = transportAlts.slice(1)
+          ;(transportItem.metadata as Record<string, unknown>).transportAlts = transportAlts.slice(1)
           items = [transportItem, ...items]
           // Reindex positions
           items.forEach((item, idx) => { item.position = idx })
