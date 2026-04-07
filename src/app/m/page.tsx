@@ -21,13 +21,23 @@ export default function HeroPage() {
   const [redirecting, setRedirecting] = useState(false)
   const [starting, setStarting] = useState(false)
 
+  // Check for post-auth return path (e.g., returning from Google OAuth during onboarding)
+  useEffect(() => {
+    if (!token || !userId) return
+    const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
+    if (returnTo) {
+      sessionStorage.removeItem('drift-login-return')
+      router.replace(returnTo)
+      return
+    }
+  }, [token, userId, router])
+
   // Redirect logged-in users with existing trips to their last trip
   useEffect(() => {
     if (!token || !userId || checked) return
     setChecked(true)
-    setRedirecting(true) // show loading while checking
+    setRedirecting(true)
 
-    // Timeout: don't let user wait more than 5s
     const timeout = setTimeout(() => setRedirecting(false), 5000)
 
     supabase
@@ -63,7 +73,7 @@ export default function HeroPage() {
   const handleStart = () => {
     if (starting) return
     setStarting(true)
-    router.push('/m/plan/origin')
+    router.push('/m/plan/vibes')
   }
 
   return (
@@ -98,15 +108,15 @@ export default function HeroPage() {
         </h1>
 
         {/* Subtitle */}
-        <p className="mb-8 max-w-[260px] text-[13px] leading-[1.7] tracking-wide text-drift-text2 opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_1.1s_forwards]">
+        <p className="mb-8 max-w-[260px] text-[13px] leading-[1.7] tracking-wide text-drift-text2 opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.4s_forwards]">
           Your vibe. Your budget. Your dates. AI builds a trip you&apos;d actually book.
         </p>
 
-        {/* CTA */}
+        {/* CTA — visible faster so user can interact sooner */}
         <button
           onClick={handleStart}
           disabled={starting}
-          className={"relative mb-0 flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-[14px] px-6 py-[19px] text-[13px] font-bold uppercase tracking-widest opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_1.4s_forwards] transition-transform duration-200 " + (starting ? "bg-drift-gold/50 text-drift-text3" : "bg-drift-gold text-drift-bg shadow-[0_16px_48px_rgba(200,164,78,0.18)] active:scale-[0.97]")}
+          className={"relative mb-0 flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-[14px] px-6 py-[19px] text-[13px] font-bold uppercase tracking-widest opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.6s_forwards] transition-transform duration-200 " + (starting ? "bg-drift-gold/50 text-drift-text3" : "bg-drift-gold text-drift-bg shadow-[0_16px_48px_rgba(200,164,78,0.18)] active:scale-[0.97]")}
         >
           {starting && (
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-current/25 border-t-current" />
@@ -127,7 +137,7 @@ export default function HeroPage() {
         {/* Reel CTA */}
         <button
           onClick={() => router.push('/m/plan/url')}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[14px] border border-drift-gold/20 bg-transparent px-4 py-[15px] text-xs font-semibold tracking-wider text-drift-gold opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_1.7s_forwards] transition-all duration-200 active:scale-[0.97] active:bg-drift-gold/5"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[14px] border border-drift-gold/20 bg-transparent px-4 py-[15px] text-xs font-semibold tracking-wider text-drift-gold opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.8s_forwards] transition-all duration-200 active:scale-[0.97] active:bg-drift-gold/5"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />

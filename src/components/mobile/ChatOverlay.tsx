@@ -143,9 +143,8 @@ export default function ChatOverlay() {
 
       // Check if streaming response (SSE)
       if (res.headers.get('content-type')?.includes('text/event-stream')) {
-        // Add placeholder assistant message that we'll update
-        addChatMessage({ role: 'assistant', content: '' })
-        setLoading(false) // Hide bouncing dots, show streaming text
+        // Don't add message yet — wait for first real text (fix: empty bubble)
+        let messageAdded = false
 
         const reader = res.body?.getReader()
         const decoder = new TextDecoder()
@@ -154,55 +153,87 @@ export default function ChatOverlay() {
         let finalActions: Array<{ type: string; [key: string]: unknown }> = []
 
         if (reader) {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            buffer += decoder.decode(value, { stream: true })
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              buffer += decoder.decode(value, { stream: true })
 
-            // Parse SSE events from buffer
-            const lines = buffer.split('\n')
-            buffer = lines.pop() || '' // Keep incomplete line in buffer
+              // Parse SSE events from buffer (handle both \n and \r\n)
+              const lines = buffer.split(/\r?\n/)
+              buffer = lines.pop() || ''
 
-            let eventType = ''
-            for (const line of lines) {
-              if (line.startsWith('event: ')) {
-                eventType = line.slice(7)
-              } else if (line.startsWith('data: ')) {
-                const data = line.slice(6)
-                try {
-                  const parsed = JSON.parse(data)
-                  if (eventType === 'text') {
-                    finalText = parsed.content || ''
-                    updateLastChatMessage({ content: finalText })
-                  } else if (eventType === 'tool') {
-                    // Show tool progress as temporary text
-                    updateLastChatMessage({ content: parsed.label || 'Thinking...' })
-                  } else if (eventType === 'actions') {
-                    finalActions = parsed.actions || []
-                    if (finalActions.length > 0) {
-                      updateLastChatMessage({ actions: finalActions })
+              let eventType = ''
+              for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                  eventType = line.slice(7)
+                } else if (line.startsWith('data: ')) {
+                  const data = line.slice(6)
+                  try {
+                    const parsed = JSON.parse(data)
+                    if (eventType === 'text') {
+                      finalText = parsed.content || ''
+                      if (!messageAdded) {
+                        addChatMessage({ role: 'assistant', content: finalText })
+                        setLoading(false)
+                        messageAdded = true
+                      } else {
+                        updateLastChatMessage({ content: finalText })
+                      }
+                    } else if (eventType === 'tool') {
+                      if (!messageAdded) {
+                        addChatMessage({ role: 'assistant', content: parsed.label || 'Thinking...' })
+                        setLoading(false)
+                        messageAdded = true
+                      } else {
+                        updateLastChatMessage({ content: parsed.label || 'Thinking...' })
+                      }
+                    } else if (eventType === 'actions') {
+                      finalActions = parsed.actions || []
+                      if (finalActions.length > 0) {
+                        updateLastChatMessage({ actions: finalActions })
+                      }
+                      if (finalActions.some((a) => a.type === 'swap')) {
+                        trackEvent('item_swapped', 'engagement')
+                      }
                     }
-                    if (finalActions.some((a) => a.type === 'swap')) {
-                      trackEvent('item_swapped', 'engagement')
-                    }
-                  }
-                } catch { /* skip malformed events */ }
+                  } catch { /* skip malformed events */ }
+                }
               }
+            }
+          } catch {
+            // Stream broke mid-way (network drop, screen lock)
+            if (!finalText && messageAdded) {
+              updateLastChatMessage({ content: 'Connection lost — try sending your message again.' })
+            } else if (!messageAdded) {
+              addChatMessage({ role: 'assistant', content: 'Connection lost — try sending your message again.' })
+              setLoading(false)
             }
           }
         }
 
-        // Save assistant message to DB
+        // If stream ended with no text at all
+        if (!messageAdded) {
+          setLoading(false)
+        }
+
+        // Save assistant message to DB (with one retry)
         if (finalText && currentTrip.id) {
-          fetch('/api/ai/chat/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({
-              tripId: currentTrip.id,
-              content: finalText,
-              contextItemId: chatContextItemId || undefined,
-            }),
-          }).catch(() => {})
+          const saveBody = JSON.stringify({
+            tripId: currentTrip.id,
+            content: finalText,
+            contextItemId: chatContextItemId || undefined,
+          })
+          const saveHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+          try {
+            const saveRes = await fetch('/api/ai/chat/save', { method: 'POST', headers: saveHeaders, body: saveBody })
+            if (!saveRes.ok) throw new Error('save failed')
+          } catch {
+            // Retry once after 2s
+            setTimeout(() => {
+              fetch('/api/ai/chat/save', { method: 'POST', headers: saveHeaders, body: saveBody }).catch(() => {})
+            }, 2000)
+          }
         }
       } else {
         // Non-streaming fallback

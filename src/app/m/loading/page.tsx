@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTripStore } from '@/stores/trip-store'
 import { supabase } from '@/lib/supabase'
@@ -27,19 +27,27 @@ const destTips: Record<string, string[]> = {
   singapore: ['Hawker centres are Michelin-quality food for $3', 'Gardens by the Bay light show at 7:45pm is free'],
 }
 
-function getRandomTip(dest: string): string | null {
+const genericTips = [
+  'Drift picks restaurants based on local reviews, not tourist rankings',
+  'Every item in your trip has a reason — tap any card to see why',
+  'Don\'t like something? Tap the 3-dot menu to swap or remove it',
+  'Your trip is personalized to your vibes, not a copy-paste template',
+  'Ask the AI chat to adjust anything — budget, pace, or specific days',
+]
+
+function getAllTips(dest: string): string[] {
   const key = dest.toLowerCase()
   for (const [k, tips] of Object.entries(destTips)) {
     if (key.includes(k) || k.includes(key)) {
-      return tips[Math.floor(Math.random() * tips.length)]
+      return [...tips, ...genericTips]
     }
   }
-  return null
+  return genericTips
 }
 
 export default function LoadingPage() {
   const router = useRouter()
-  const { token, onboarding, setCurrentTrip, setCurrentItems } = useTripStore()
+  const { token, userId, onboarding, setCurrentTrip, setCurrentItems } = useTripStore()
   const [activeStep, setActiveStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [tip, setTip] = useState<string | null>(null)
@@ -47,6 +55,108 @@ export default function LoadingPage() {
   const [elapsed, setElapsed] = useState(0)
   const started = useRef(false)
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+  const generatedTripId = useRef<string | null>(null)
+
+  // ─── Screen Wake Lock: prevent phone from sleeping during generation ───
+  const acquireWakeLock = useCallback(async () => {
+    try {
+      if ('wakeLock' in navigator && !wakeLockRef.current) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen')
+        console.log('[Loading] Wake lock acquired — screen will stay on')
+        wakeLockRef.current.addEventListener('release', () => {
+          console.log('[Loading] Wake lock released')
+          wakeLockRef.current = null
+        })
+      }
+    } catch {
+      // Wake lock not supported or failed — non-fatal
+      console.log('[Loading] Wake lock not available')
+    }
+  }, [])
+
+  const releaseWakeLock = useCallback(() => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release()
+      wakeLockRef.current = null
+    }
+  }, [])
+
+  // Acquire wake lock on mount, release on unmount or completion
+  useEffect(() => {
+    acquireWakeLock()
+    return () => releaseWakeLock()
+  }, [acquireWakeLock, releaseWakeLock])
+
+  // Re-acquire wake lock when page becomes visible again (browser releases it on hide)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !generationDone && !error) {
+        acquireWakeLock()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [generationDone, error, acquireWakeLock])
+
+  // ─── Recovery: check if trip was created while screen was off ───
+  useEffect(() => {
+    const handleVisibilityRecovery = async () => {
+      if (document.visibilityState !== 'visible') return
+      if (generationDone || !started.current) return
+
+      // If we already have a trip ID from the fetch, just redirect
+      if (generatedTripId.current) {
+        router.replace(`/m/board/${generatedTripId.current}`)
+        return
+      }
+
+      // Check if the server created the trip while we were suspended
+      if (token && userId && onboarding.destination) {
+        console.log('[Loading] Screen resumed — checking if trip was created...')
+        try {
+          const { data } = await supabase
+            .from('trips')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('destination', onboarding.destination.city)
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+          if (data?.length) {
+            console.log('[Loading] Trip found after screen resume:', data[0].id)
+            generatedTripId.current = data[0].id
+            setGenerationDone(true)
+            setError(null)
+
+            // Load the trip data
+            const itemsRes = await supabase
+              .from('itinerary_items')
+              .select('*')
+              .eq('trip_id', data[0].id)
+              .order('position')
+
+            const tripRes = await supabase
+              .from('trips')
+              .select('*')
+              .eq('id', data[0].id)
+              .single()
+
+            if (tripRes.data) setCurrentTrip(tripRes.data)
+            if (itemsRes.data) setCurrentItems(itemsRes.data)
+
+            releaseWakeLock()
+            setTimeout(() => router.replace(`/m/board/${data[0].id}`), 600)
+          }
+        } catch (e) {
+          console.warn('[Loading] Recovery check failed:', e)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityRecovery)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityRecovery)
+  }, [token, userId, onboarding.destination, generationDone, router, setCurrentTrip, setCurrentItems, releaseWakeLock])
 
   // Track elapsed time for timeout warnings
   useEffect(() => {
@@ -55,11 +165,15 @@ export default function LoadingPage() {
     return () => clearInterval(t)
   }, [generationDone, error])
 
-  // Show tip after a delay
+  // Rotate tips every 8 seconds
   useEffect(() => {
     const destName = onboarding.destination?.city || ''
-    const t = setTimeout(() => setTip(getRandomTip(destName)), 3000)
-    return () => clearTimeout(t)
+    const tips = getAllTips(destName)
+    let idx = 0
+    const show = () => { setTip(tips[idx % tips.length]); idx++ }
+    const delay = setTimeout(show, 3000)
+    const interval = setInterval(show, 8000)
+    return () => { clearTimeout(delay); clearInterval(interval) }
   }, [onboarding.destination?.city])
 
   // Step progression — follows real timing of backend steps
@@ -114,6 +228,7 @@ export default function LoadingPage() {
         const data = await res.json()
         if (!data.trip) throw new Error('No trip returned')
 
+        generatedTripId.current = data.trip.id
         setCurrentTrip(data.trip)
         setGenerationDone(true)
 
@@ -128,7 +243,6 @@ export default function LoadingPage() {
         trackEvent('trip_generated', 'conversion', dest.city)
 
         // Fast-forward through remaining steps smoothly
-        setGenerationDone(true)
         for (let s = activeStep + 1; s < steps.length; s++) {
           await new Promise(r => setTimeout(r, 400))
           setActiveStep(s)
@@ -155,10 +269,47 @@ export default function LoadingPage() {
           console.warn('[Loading] Personalization failed, continuing with base trip')
         }
 
-        // Navigate to board
+        // Release wake lock and navigate to board
+        releaseWakeLock()
         setTimeout(() => router.replace(`/m/board/${data.trip.id}`), 600)
       } catch (err) {
         const code = err instanceof Error ? err.message : 'unknown'
+
+        // Before showing error, check if trip was actually created (fetch failed after server responded)
+        if (token && userId && code !== 'rate_limit' && code !== 'auth_expired') {
+          try {
+            const { data } = await supabase
+              .from('trips')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('destination', dest.city)
+              .order('created_at', { ascending: false })
+              .limit(1)
+
+            if (data?.length) {
+              // Trip exists! The fetch failed but the server succeeded
+              console.log('[Loading] Trip found despite fetch error:', data[0].id)
+              generatedTripId.current = data[0].id
+              setGenerationDone(true)
+
+              const [tripRes, itemsRes] = await Promise.all([
+                supabase.from('trips').select('*').eq('id', data[0].id).single(),
+                supabase.from('itinerary_items').select('*').eq('trip_id', data[0].id).order('position'),
+              ])
+
+              if (tripRes.data) setCurrentTrip(tripRes.data)
+              if (itemsRes.data) setCurrentItems(itemsRes.data)
+
+              trackEvent('trip_generated', 'conversion', dest.city)
+              releaseWakeLock()
+              setTimeout(() => router.replace(`/m/board/${data[0].id}`), 600)
+              return
+            }
+          } catch {
+            // Recovery check failed — show the original error
+          }
+        }
+
         const messages: Record<string, string> = {
           rate_limit: 'Too many trips generated. Please wait a minute and try again.',
           auth_expired: 'Your session expired. Please log in again.',
@@ -168,12 +319,13 @@ export default function LoadingPage() {
           unknown: 'Something went wrong. Please try again.',
         }
         setError(messages[code] || messages.unknown)
+        releaseWakeLock()
         trackEvent('generation_failed', 'error', code)
       }
     }
 
     generate()
-  }, [token, onboarding, setCurrentTrip, setCurrentItems, router])
+  }, [token, onboarding, setCurrentTrip, setCurrentItems, router, userId, releaseWakeLock])
 
   const destName = onboarding.destination?.city || ''
   const vibes = onboarding.pickedVibes || []
@@ -258,7 +410,7 @@ export default function LoadingPage() {
             <p className="text-xs text-red-400">{error}</p>
             <div className="mt-3 flex gap-2 justify-center">
               <button
-                onClick={() => { setError(null); started.current = false; setActiveStep(0); setGenerationDone(false) }}
+                onClick={() => { setError(null); started.current = false; setActiveStep(0); setGenerationDone(false); setElapsed(0) }}
                 className="rounded-xl border border-drift-gold/20 bg-drift-gold-bg px-4 py-2 text-xs font-semibold text-drift-gold"
               >
                 Retry
@@ -285,6 +437,13 @@ export default function LoadingPage() {
             <button onClick={() => router.push('/m/plan/destinations')} className="mt-2 font-semibold text-drift-gold">
               Pick a different destination
             </button>
+          </div>
+        )}
+
+        {/* Keep screen on hint */}
+        {!error && !generationDone && elapsed < 10 && (
+          <div className="mt-6 text-center text-[10px] text-drift-text3/50 opacity-0 animate-[fadeUp_0.5s_var(--ease-smooth)_2s_forwards]">
+            Keep this screen open — your trip is being built
           </div>
         )}
       </div>

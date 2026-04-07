@@ -219,7 +219,7 @@ export default function UrlPage() {
       {/* Header */}
       <div className="shrink-0 px-6 pt-[calc(env(safe-area-inset-top)+16px)]">
         <div className="mb-3">
-          <BackButton href="/m/plan/origin" />
+          <BackButton href="/m" />
         </div>
         <h1 className="mb-1 font-serif text-3xl font-light">
           Paste a <em className="font-normal italic text-drift-gold">link</em>
@@ -285,7 +285,7 @@ export default function UrlPage() {
               Extract Trip
             </button>
             <button
-              onClick={() => router.push('/m/plan/origin')}
+              onClick={() => router.push('/m/plan/vibes')}
               className="mt-3 w-full text-center text-[11px] text-drift-text3"
             >
               or plan manually instead

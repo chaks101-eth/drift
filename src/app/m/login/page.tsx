@@ -22,7 +22,6 @@ export default function LoginPage() {
   const userEmail = useTripStore((s) => s.userEmail)
   useEffect(() => {
     if (token && userEmail) {
-      // Return to previous page if available, otherwise hero
       const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
       sessionStorage.removeItem('drift-login-return')
       router.replace(returnTo || '/m')

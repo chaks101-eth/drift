@@ -45,14 +45,27 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
   const reason = (meta.reason as string) || (meta.honest_take as string) || ''
   const alts = (meta.alts as Array<{ name: string; detail: string; price: string; image_url?: string; trust?: Array<{ type: string; text: string }> }>) || []
 
+  const [swapping, setSwapping] = useState(false)
+
   const handleSwap = async (alt: typeof alts[number], e: React.MouseEvent) => {
     e.stopPropagation()
+    if (swapping) return
+    setSwapping(true)
     const prevName = item.name
+    const prevState = { name: item.name, detail: item.detail, price: item.price, image_url: item.image_url }
     const updates = { name: alt.name, detail: alt.detail, price: alt.price, image_url: alt.image_url || item.image_url }
     updateItem(item.id, updates)
-    await supabase.from('itinerary_items').update(updates).eq('id', item.id)
-    toast(`Swapped ${prevName} → ${alt.name}`)
-    setShowAlts(false)
+    try {
+      const { error } = await supabase.from('itinerary_items').update(updates).eq('id', item.id)
+      if (error) throw error
+      toast(`Swapped ${prevName} → ${alt.name}`)
+      setShowAlts(false)
+    } catch {
+      updateItem(item.id, prevState)
+      toast('Swap failed — check your connection', true)
+    } finally {
+      setSwapping(false)
+    }
   }
 
   return (
@@ -97,6 +110,11 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               <span className={`inline-block self-start rounded-md px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider ${tag.cls}`}>
                 {tag.label}
               </span>
+              {item.time && (
+                <span className="inline-block rounded-md bg-drift-surface2 px-1.5 py-0.5 text-[7px] font-semibold text-drift-text3">
+                  {item.time}
+                </span>
+              )}
               {meta.source && (
                 <span className={`inline-block rounded-md px-1 py-0.5 text-[6px] font-bold uppercase tracking-wider ${
                   ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
@@ -154,7 +172,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
           {alts.length > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowAlts(!showAlts); setShowWhy(false) }}
-              className="flex items-center gap-1 text-[9px] font-semibold text-drift-text3 transition-colors hover:text-drift-text2"
+              className="flex items-center gap-1 text-[9px] font-semibold text-drift-gold/60 transition-colors hover:text-drift-gold"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
@@ -216,9 +234,10 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
                       </span>
                       <button
                         onClick={(e) => handleSwap(alt, e)}
-                        className="rounded-md bg-drift-gold px-2 py-0.5 text-[8px] font-bold text-drift-bg"
+                        disabled={swapping}
+                        className="rounded-md bg-drift-gold px-2 py-0.5 text-[8px] font-bold text-drift-bg disabled:opacity-50"
                       >
-                        Swap
+                        {swapping ? '...' : 'Swap'}
                       </button>
                     </div>
                   </div>

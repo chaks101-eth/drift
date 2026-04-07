@@ -281,15 +281,18 @@ export interface GroundedDestination {
 export async function groundedDestinationSuggestions(params: {
   vibes: string[]
   budget: string
+  budgetAmount?: number
   origin: string
   days: number
+  travelers?: number
+  startDate?: string
   count?: number
   originCountry?: string
 }): Promise<GroundedDestination[]> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return []
 
-  const { vibes, budget, origin, days, count = 8, originCountry } = params
+  const { vibes, budget, budgetAmount, origin, days, travelers = 2, startDate, count = 8, originCountry } = params
 
   const domesticCount = Math.ceil(count / 2)
   const intlCount = Math.floor(count / 2)
@@ -297,9 +300,33 @@ export async function groundedDestinationSuggestions(params: {
     ? `Suggest exactly ${count} travel destinations: ${domesticCount} DOMESTIC destinations within ${originCountry} and ${intlCount} INTERNATIONAL destinations outside ${originCountry}.`
     : `Suggest exactly ${count} travel destinations.`
 
+  // Season/weather intelligence from travel dates
+  let seasonContext = ''
+  if (startDate) {
+    const travelMonth = new Date(startDate).toLocaleString('en', { month: 'long', year: 'numeric' })
+    seasonContext = `\nTravel month: ${travelMonth}. CRITICAL: Only suggest destinations with GOOD weather during ${travelMonth}. Avoid monsoon seasons, extreme heat, or off-season periods. Factor in peak/off-peak pricing.`
+  }
+
+  // Group size intelligence
+  let groupContext = ''
+  if (travelers === 1) {
+    groupContext = '\nSOLO traveler — prioritize safe, solo-friendly destinations with social hostels, walkability, and good solo dining.'
+  } else if (travelers === 2) {
+    groupContext = '\nCOUPLE — consider romantic and intimate destinations with great dining and couple experiences.'
+  } else if (travelers >= 5) {
+    groupContext = `\nLARGE GROUP of ${travelers} — prioritize destinations with villas, group-friendly activities, and good value at scale.`
+  } else if (travelers > 2) {
+    groupContext = `\nSmall group of ${travelers} travelers.`
+  }
+
+  // Budget context with actual amount
+  const budgetContext = budgetAmount
+    ? `Budget: $${budgetAmount} per person total (${budget} tier) for ${days} days`
+    : `Budget level: ${budget}`
+
   const prompt = `${domesticInstruction}
 All must match these vibes: ${vibes.join(', ')}.
-Budget level: ${budget}
+${budgetContext}${groupContext}${seasonContext}
 Trip duration: ${days} days
 Traveling from: ${origin}${originCountry ? `, ${originCountry}` : ''}
 
@@ -310,14 +337,14 @@ For each destination, provide:
 4. A vibe match percentage (how well it matches the requested vibes, 60-95%)
 5. Estimated total trip cost per person in USD for ${days} days at ${budget} level
 6. Top 3 matching vibes from: beach, adventure, city, romance, spiritual, foodie, party, solo, winter, culture
-7. A compelling 1-sentence tagline that captures why this destination matches their vibes
+7. A compelling 1-sentence tagline — mention season/weather advantage if relevant (e.g. "Perfect dry season" or "Cherry blossom season")
 
 Format as a numbered list:
 1. **City, Country** [DOMESTIC] (Match: XX%) — $X,XXX total
    Vibes: vibe1, vibe2, vibe3
    Tagline: Your compelling tagline here
 
-Be opinionated. Don't suggest generic popular cities unless they genuinely match. Mix well-known and hidden gems.${originCountry ? ` For domestic ${originCountry} destinations, include both popular and offbeat places. For international, consider travel accessibility from ${origin}.` : ''}`
+Be opinionated. Don't suggest generic popular cities unless they genuinely match. Mix well-known and hidden gems. Consider visa requirements and flight connectivity from ${origin}.${originCountry ? ` For domestic ${originCountry} destinations, include both popular and offbeat places. For international, consider travel accessibility from ${origin}.` : ''}`
 
   try {
     console.log(`[Grounding] Searching for destinations matching: ${vibes.join(', ')}`)

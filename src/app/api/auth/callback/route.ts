@@ -26,5 +26,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${base}/m/login?error=auth_failed`)
   }
 
+  // Check for a return URL stored in the state parameter or default to /m
+  // The client stores 'drift-login-return' in sessionStorage before OAuth redirect,
+  // but we can't read sessionStorage server-side. Redirect to /m and let the
+  // client-side auth listener + sessionStorage handle the return path.
   return NextResponse.redirect(`${base}/m`)
 }

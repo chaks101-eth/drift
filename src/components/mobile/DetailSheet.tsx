@@ -301,11 +301,19 @@ export default function DetailSheet() {
                           if (btn.disabled || !item) return
                           btn.disabled = true
                           const prevName = item.name
+                          const prevState = { name: item.name, detail: item.detail, price: item.price, image_url: item.image_url }
                           const updates = { name: alt.name, detail: alt.detail, price: alt.price, image_url: alt.image_url || item.image_url }
                           updateItem(item.id, updates)
-                          await supabase.from('itinerary_items').update(updates).eq('id', item.id)
-                          closeDetail()
-                          useUIStore.getState().toast(`Swapped ${prevName} → ${alt.name}`)
+                          try {
+                            const { error } = await supabase.from('itinerary_items').update(updates).eq('id', item.id)
+                            if (error) throw error
+                            closeDetail()
+                            useUIStore.getState().toast(`Swapped ${prevName} → ${alt.name}`)
+                          } catch {
+                            updateItem(item.id, prevState)
+                            btn.disabled = false
+                            useUIStore.getState().toast('Swap failed — check your connection', true)
+                          }
                         }}
                         className="rounded-lg bg-drift-gold px-2.5 py-1 text-[9px] font-bold text-drift-bg disabled:opacity-50"
                       >Swap</button>

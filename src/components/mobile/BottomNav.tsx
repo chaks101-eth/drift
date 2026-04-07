@@ -68,7 +68,7 @@ export default function BottomNav() {
   const handleFromScratch = () => {
     setShowNewTrip(false)
     resetOnboarding()
-    router.push('/m/plan/origin')
+    router.push('/m/plan/vibes')
   }
 
   const handleFromUrl = () => {

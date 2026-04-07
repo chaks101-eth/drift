@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess(true)
-      setTimeout(() => router.replace('/m/plan/origin'), 1500)
+      setTimeout(() => router.replace('/m/plan/vibes'), 1500)
     } catch {
       setError('Something went wrong. Try again.')
       setLoading(false)

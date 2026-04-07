@@ -1,34 +1,55 @@
 'use client'
 
+import { useState } from 'react'
 import { useUIStore } from '@/stores/ui-store'
-import { useTripStore } from '@/stores/trip-store'
+import { useTripStore, type ItineraryItem } from '@/stores/trip-store'
 import { supabase } from '@/lib/supabase'
 
 export default function CardMenu() {
   const { showCardMenu, menuItemId, closeCardMenu, openDetail, openChat } = useUIStore()
   const { currentItems, removeItem, token } = useTripStore()
   const { toast } = useUIStore()
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const item = currentItems.find((i) => i.id === menuItemId)
 
-  const handleAction = async (action: 'alts' | 'chat' | 'remove') => {
+  // Reset confirm state when menu closes
+  if (!showCardMenu && confirmDelete) setConfirmDelete(false)
+
+  const handleAction = async (action: 'alts' | 'chat' | 'remove' | 'confirm-remove') => {
     const savedId = menuItemId
     const savedItem = item
+
+    if (action === 'remove') {
+      // First tap shows confirmation
+      setConfirmDelete(true)
+      return
+    }
+
     closeCardMenu()
+    setConfirmDelete(false)
     if (!savedId || !savedItem) return
 
     if (action === 'alts') {
       openDetail(savedId)
     } else if (action === 'chat') {
       openChat(`What are better options for ${savedItem.name}?`)
-    } else if (action === 'remove') {
+    } else if (action === 'confirm-remove') {
       const name = savedItem.name
+      // Save full item for rollback
+      const snapshot = { ...savedItem } as ItineraryItem
       removeItem(savedId)
-      const { error } = await supabase.from('itinerary_items').delete().eq('id', savedId)
-      if (error) {
-        toast("Couldn't remove this item. Check your connection.", true)
-      } else {
+      try {
+        const { error } = await supabase.from('itinerary_items').delete().eq('id', savedId)
+        if (error) throw error
         toast(`${name} removed from your trip`)
+      } catch {
+        // Rollback: re-add item to state
+        useTripStore.getState().setCurrentItems([
+          ...useTripStore.getState().currentItems,
+          snapshot,
+        ].sort((a, b) => a.position - b.position))
+        toast("Couldn't remove — check your connection", true)
       }
     }
   }
@@ -67,16 +88,29 @@ export default function CardMenu() {
           Ask AI About This
         </button>
 
-        <button
-          onClick={() => handleAction('remove')}
-          className="flex w-full items-center gap-3 px-6 py-3.5 text-[13px] font-medium text-[#e74c3c] transition-colors active:bg-white/3"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-[#e74c3c]">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-          </svg>
-          Remove from Trip
-        </button>
+        {confirmDelete ? (
+          <button
+            onClick={() => handleAction('confirm-remove')}
+            className="flex w-full items-center gap-3 px-6 py-3.5 text-[13px] font-bold text-[#e74c3c] bg-[#e74c3c]/10 transition-colors active:bg-[#e74c3c]/20"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-[#e74c3c]">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+            </svg>
+            Tap again to confirm removal
+          </button>
+        ) : (
+          <button
+            onClick={() => handleAction('remove')}
+            className="flex w-full items-center gap-3 px-6 py-3.5 text-[13px] font-medium text-[#e74c3c] transition-colors active:bg-white/3"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-[#e74c3c]">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+            </svg>
+            Remove from Trip
+          </button>
+        )}
       </div>
     </div>
   )

@@ -56,6 +56,17 @@ export default function BoardView({ trip, items }: BoardViewProps) {
   const [activeDay, setActiveDay] = useState(0)
   const [sharing, setSharing] = useState(false)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [showDiscoveryHint, setShowDiscoveryHint] = useState(false)
+
+  // Show "tap to see why" hint once per session on first board visit
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem('drift-hint-seen')) {
+        const t = setTimeout(() => setShowDiscoveryHint(true), 2000)
+        return () => clearTimeout(t)
+      }
+    } catch { /* SSR */ }
+  }, [])
 
   const handleShare = async () => {
     if (sharing) return
@@ -290,6 +301,23 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         </div>
       </div>
 
+      {/* Discovery hint — tap to see why */}
+      {showDiscoveryHint && (
+        <div className="mx-5 mt-3 flex items-center gap-2.5 rounded-xl border border-drift-gold/15 bg-drift-gold/5 px-4 py-2.5 animate-[fadeUp_0.4s_var(--ease-smooth)]">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-drift-gold/15">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="2"><path d="M15 15l-2 5L9 9l11 4-5 2z" /></svg>
+          </div>
+          <p className="flex-1 text-[11px] text-drift-text2">Tap any item to see why we picked it and swap alternatives</p>
+          <button
+            onClick={() => { setShowDiscoveryHint(false); try { sessionStorage.setItem('drift-hint-seen', '1') } catch {} }}
+            className="shrink-0 p-1 text-drift-text3"
+            aria-label="Dismiss"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      )}
+
       {/* Save trip prompt — for anonymous users */}
       {isAnonymous && !authPromptDismissed && (
         <div className="mx-5 mt-3 flex items-center gap-3 rounded-2xl border border-drift-gold/20 bg-drift-gold/5 px-4 py-3">
@@ -507,7 +535,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
         <button
           onClick={() => {
             useTripStore.getState().resetOnboarding()
-            window.location.href = '/m/plan/origin'
+            window.location.href = '/m/plan/vibes'
           }}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-drift-border2 py-3 text-[11px] font-semibold text-drift-text3 transition-all active:scale-[0.98]"
         >

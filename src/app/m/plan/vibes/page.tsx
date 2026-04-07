@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
+import GoldButton from '@/components/mobile/GoldButton'
 import { useTripStore } from '@/stores/trip-store'
 import { trackEvent } from '@/lib/analytics'
 
@@ -41,13 +42,12 @@ export default function VibesPage() {
   const savedVibes = onboarding.pickedVibes
   const [currentIdx, setCurrentIdx] = useState(() => {
     if (savedVibes.length >= 3) return moods.length // all done
-    // Skip past already-picked vibes
     return savedVibes.length > 0
       ? moods.findIndex(m => !savedVibes.includes(m.id)) || 0
       : 0
   })
   const [picked, setPicked] = useState<string[]>(savedVibes.length > 0 ? [...savedVibes] : [])
-  const [done, setDone] = useState(savedVibes.length >= 3)
+  const [cardsExhausted, setCardsExhausted] = useState(false)
   const dragRef = useRef({ on: false, x0: 0, y0: 0, dx: 0 })
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const swipeTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -57,44 +57,47 @@ export default function VibesPage() {
     return () => { if (swipeTimerRef.current) clearTimeout(swipeTimerRef.current) }
   }, [])
 
+  const canContinue = picked.length >= 1
   const counterText = picked.length === 0
-    ? 'Pick 3 vibes'
+    ? 'Pick up to 3 vibes'
     : picked.length < 3
       ? `${picked.length} of 3 picked`
       : 'All 3 picked!'
 
+  const handleContinue = useCallback(() => {
+    if (picked.length === 0) return
+    setVibes(picked)
+    trackEvent('vibes_selected', 'onboarding', picked.join(','))
+    router.push('/m/plan/details')
+  }, [picked, setVibes, router])
+
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
-    if (done) return
-    const newPicked = direction === 'right'
+    if (cardsExhausted) return
+    const newPicked = direction === 'right' && picked.length < 3
       ? [...picked, moods[currentIdx].id]
       : picked
 
-    if (direction === 'right') setPicked(newPicked)
+    if (direction === 'right' && picked.length < 3) setPicked(newPicked)
 
-    const nextIdx = currentIdx + 1
-
+    // Auto-redirect when 3 vibes are picked
     if (newPicked.length >= 3) {
-      setDone(true)
       setVibes(newPicked)
       trackEvent('vibes_selected', 'onboarding', newPicked.join(','))
-      setTimeout(() => router.push('/m/plan/destinations'), 1200)
+      setTimeout(() => router.push('/m/plan/details'), 800)
+      setCardsExhausted(true) // hide remaining cards
       return
     }
 
+    const nextIdx = currentIdx + 1
+
     if (nextIdx >= moods.length) {
-      // Ran out of cards without enough vibes — reset to let them try again
-      setCurrentIdx(0)
+      // Ran out of cards — show continue button, don't loop
+      setCardsExhausted(true)
       return
     }
 
     setCurrentIdx(nextIdx)
-  }, [currentIdx, picked, done, setVibes])
-
-  const handleContinue = () => {
-    if (picked.length === 0) return // don't allow 0 vibes
-    setVibes(picked)
-    router.push('/m/plan/destinations')
-  }
+  }, [currentIdx, picked, cardsExhausted, setVibes, router])
 
   // Touch handlers for the top card
   const onTouchStart = (e: React.TouchEvent) => {
@@ -112,7 +115,6 @@ export default function VibesPage() {
     if (card) {
       const rotate = dx * 0.07
       card.style.transform = `translate(${dx}px, ${dy * 0.12}px) rotate(${rotate}deg)`
-      // Show YES/PASS labels
       const yesEl = card.querySelector('.swipe-yes') as HTMLElement
       const noEl = card.querySelector('.swipe-no') as HTMLElement
       if (yesEl) yesEl.style.opacity = String(Math.max(0, dx / 100))
@@ -127,7 +129,6 @@ export default function VibesPage() {
     const card = cardRefs.current.get(currentIdx)
 
     if (Math.abs(dx) > 80) {
-      // Fly out
       if (card) {
         const flyX = dx > 0 ? 500 : -500
         card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.3s'
@@ -136,7 +137,6 @@ export default function VibesPage() {
       }
       swipeTimerRef.current = setTimeout(() => handleSwipe(dx > 0 ? 'right' : 'left'), 150)
     } else {
-      // Spring back
       if (card) {
         card.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.3s'
         card.style.transform = 'scale(1) translateY(0)'
@@ -151,19 +151,27 @@ export default function VibesPage() {
 
   // Visible cards (current + 2 behind it)
   const visibleCards = []
-  for (let i = Math.min(2, moods.length - currentIdx - 1); i >= 0; i--) {
-    const idx = currentIdx + i
-    if (idx < moods.length) visibleCards.push({ mood: moods[idx], stackPos: i })
+  if (!cardsExhausted) {
+    for (let i = Math.min(2, moods.length - currentIdx - 1); i >= 0; i--) {
+      const idx = currentIdx + i
+      if (idx < moods.length) visibleCards.push({ mood: moods[idx], stackPos: i })
+    }
   }
 
-  if (token === null) return null // wait for anonymous session
+  if (token === null) {
+    return (
+      <div className="flex h-full items-center justify-center bg-drift-bg">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-drift-border2 border-t-drift-gold" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">
       {/* Header */}
       <div className="shrink-0 px-6 pt-[calc(env(safe-area-inset-top)+16px)]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton href="/m/plan/budget" />
+          <BackButton href="/m" />
           <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] tabular-nums transition-colors ${
             picked.length > 0 ? 'text-drift-gold' : 'text-drift-text3'
           }`}>
@@ -173,7 +181,7 @@ export default function VibesPage() {
         <h1 className="mb-1 font-serif text-3xl font-light">
           What&apos;s your travel <em className="font-normal italic text-drift-gold">vibe?</em>
         </h1>
-        <p className="text-xs text-drift-text3">Swipe right to pick, left to skip</p>
+        <p className="text-xs text-drift-text3">Swipe right to pick, left to skip — or tap the card</p>
         {/* Progress dots */}
         <div className="mt-2 flex gap-2">
           {[0, 1, 2].map((i) => (
@@ -189,15 +197,17 @@ export default function VibesPage() {
 
       {/* Card stack */}
       <div className="relative flex flex-1 items-center justify-center px-6">
-        {done ? (
-          /* Done state */
+        {cardsExhausted || (picked.length >= 3 && currentIdx >= moods.length) ? (
+          /* Done / exhausted state */
           <div className="flex flex-col items-center gap-4 text-center animate-[fadeUp_0.5s_var(--ease-smooth)]">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-drift-gold-bg">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-drift-gold">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </div>
-            <div className="text-lg font-medium text-drift-text">Perfect picks</div>
+            <div className="text-lg font-medium text-drift-text">
+              {picked.length >= 3 ? 'Perfect picks' : `${picked.length} vibe${picked.length !== 1 ? 's' : ''} selected`}
+            </div>
             <div className="flex flex-wrap justify-center gap-2">
               {picked.map((id) => {
                 const mood = moods.find((m) => m.id === id)
@@ -208,67 +218,117 @@ export default function VibesPage() {
                 ) : null
               })}
             </div>
-            <div className="mt-3 text-[10px] text-drift-text3">Finding your destinations...</div>
+            {picked.length < 3 && (
+              <p className="text-[11px] text-drift-text3">
+                {picked.length === 0 ? 'No vibes picked — go back and swipe right on ones you like' : "That's enough to find great destinations"}
+              </p>
+            )}
           </div>
         ) : (
           /* Cards */
-          visibleCards.map(({ mood, stackPos }) => {
-            const isTop = stackPos === 0
-            return (
-              <div
-                key={mood.id}
-                ref={(el) => { if (el) cardRefs.current.set(currentIdx + stackPos, el) }}
-                className="absolute left-6 right-6 overflow-hidden rounded-3xl shadow-2xl"
-                style={{
-                  zIndex: 10 - stackPos,
-                  transform: `scale(${1 - stackPos * 0.04}) translateY(${stackPos * 16}px)`,
-                  opacity: stackPos > 2 ? 0.15 : 1,
-                  transition: isTop ? undefined : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1)',
-                }}
-                {...(isTop ? {
-                  onTouchStart,
-                  onTouchMove,
-                  onTouchEnd,
-                } : {})}
-              >
-                {/* Image */}
-                <div className="relative h-[420px] w-full">
-                  <Image
-                    src={mood.img}
-                    alt={mood.name}
-                    fill
-                    className="object-cover"
-                    sizes="100vw"
-                    draggable={false}
-                  />
-                </div>
-                {/* YES / PASS labels */}
-                <div className="swipe-yes pointer-events-none absolute left-6 top-6 rounded-xl border-2 border-green-400 px-4 py-2 text-lg font-extrabold text-green-400 opacity-0 rotate-[-15deg]">
-                  YES
-                </div>
-                <div className="swipe-no pointer-events-none absolute right-6 top-6 rounded-xl border-2 border-red-400 px-4 py-2 text-lg font-extrabold text-red-400 opacity-0 rotate-[15deg]">
-                  NOPE
-                </div>
-                {/* Info overlay */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 pb-6 pt-20">
-                  <div className="font-serif text-2xl font-medium text-white">{mood.name}</div>
-                  <div className="mt-1 text-sm text-white/70">{mood.desc}</div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {mood.tags.map((tag) => (
-                      <span key={tag} className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm">
-                        {tag}
-                      </span>
-                    ))}
+          <>
+            {visibleCards.map(({ mood, stackPos }) => {
+              const isTop = stackPos === 0
+              const alreadyPicked = picked.includes(mood.id)
+              return (
+                <div
+                  key={mood.id}
+                  ref={(el) => { if (el) cardRefs.current.set(currentIdx + stackPos, el) }}
+                  className="absolute left-6 right-6 overflow-hidden rounded-3xl shadow-2xl"
+                  style={{
+                    zIndex: 10 - stackPos,
+                    transform: `scale(${1 - stackPos * 0.04}) translateY(${stackPos * 16}px)`,
+                    opacity: stackPos > 2 ? 0.15 : 1,
+                    transition: isTop ? undefined : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1)',
+                  }}
+                  {...(isTop ? {
+                    onTouchStart,
+                    onTouchMove,
+                    onTouchEnd,
+                    onClick: () => {
+                      // Tap to pick (only if not mid-drag and not already at 3)
+                      if (Math.abs(dragRef.current.dx) < 10 && picked.length < 3 && !alreadyPicked) {
+                        const card = cardRefs.current.get(currentIdx)
+                        if (card) {
+                          card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.3s'
+                          card.style.transform = 'translateX(500px) rotate(30deg)'
+                          card.style.opacity = '0'
+                        }
+                        swipeTimerRef.current = setTimeout(() => handleSwipe('right'), 150)
+                      }
+                    },
+                  } : {})}
+                >
+                  {/* Image */}
+                  <div className="relative h-[420px] w-full">
+                    <Image
+                      src={mood.img}
+                      alt={mood.name}
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                      draggable={false}
+                    />
+                  </div>
+                  {/* YES / PASS labels */}
+                  <div className="swipe-yes pointer-events-none absolute left-6 top-6 rounded-xl border-2 border-green-400 px-4 py-2 text-lg font-extrabold text-green-400 opacity-0 rotate-[-15deg]">
+                    YES
+                  </div>
+                  <div className="swipe-no pointer-events-none absolute right-6 top-6 rounded-xl border-2 border-red-400 px-4 py-2 text-lg font-extrabold text-red-400 opacity-0 rotate-[15deg]">
+                    NOPE
+                  </div>
+                  {/* Tap hint — show on first 3 cards until user picks one */}
+                  {isTop && currentIdx < 3 && picked.length === 0 && (
+                    <div className="pointer-events-none absolute right-4 bottom-[120px] z-20 animate-pulse rounded-full bg-drift-gold/90 px-3 py-1.5 text-[10px] font-bold text-drift-bg shadow-lg">
+                      Tap to pick
+                    </div>
+                  )}
+                  {/* Info overlay */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 pb-6 pt-20">
+                    <div className="font-serif text-2xl font-medium text-white">{mood.name}</div>
+                    <div className="mt-1 text-sm text-white/70">{mood.desc}</div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {mood.tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })
+              )
+            })}
+            {/* Skip button below cards — only when there are cards */}
+            {visibleCards.length > 0 && (
+              <button
+                onClick={() => {
+                  const card = cardRefs.current.get(currentIdx)
+                  if (card) {
+                    card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.3s'
+                    card.style.transform = 'translateX(-500px) rotate(-30deg)'
+                    card.style.opacity = '0'
+                  }
+                  swipeTimerRef.current = setTimeout(() => handleSwipe('left'), 150)
+                }}
+                className="absolute bottom-[-28px] text-[11px] font-semibold text-drift-text3 active:text-drift-text2"
+              >
+                Skip this vibe
+              </button>
+            )}
+          </>
         )}
       </div>
 
-      {/* Bottom safe area */}
-      <div className="shrink-0 pb-[calc(env(safe-area-inset-bottom)+8px)]" />
+      {/* Bottom — Continue button (always visible once 1+ picked) */}
+      <div className="shrink-0 px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
+        {canContinue && (
+          <div className="animate-[fadeUp_0.3s_var(--ease-smooth)]">
+            <GoldButton ready={canContinue} onClick={handleContinue}>
+              Continue with {picked.length} vibe{picked.length !== 1 ? 's' : ''}
+            </GoldButton>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

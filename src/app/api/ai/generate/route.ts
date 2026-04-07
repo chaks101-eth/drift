@@ -81,12 +81,15 @@ export async function POST(req: NextRequest) {
             if (error) console.error(`[Generate] Catalog query error: ${error.message}`)
             return data || []
           }),
-        // Grounded search — now requests domestic/international mix
+        // Grounded search — full context for smart suggestions
         groundedDestinationSuggestions({
           vibes: userVibes,
           budget: body.budget || 'mid',
+          budgetAmount: body.budgetAmount || undefined,
           origin: body.origin || 'Delhi',
           days: userDays,
+          travelers: body.travelers || 2,
+          startDate: body.start_date || undefined,
           count: MAX_DESTINATIONS,
           originCountry: originCountry || undefined,
         }).catch(e => {
