@@ -1,264 +1,198 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 import NavBar from '@/app/NavBar'
+import DesktopAuthProvider from '@/components/desktop/AuthProvider'
+import { useTripStore } from '@/stores/trip-store'
 
 const VIBES = [
-  { id: 'beach', name: 'Beach Chill', desc: 'Sun, sand, zero stress', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop' },
-  { id: 'adventure', name: 'Adventure', desc: 'Hikes, thrills, adrenaline', img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&h=300&fit=crop' },
-  { id: 'city', name: 'City Nights', desc: 'Rooftops, lights, energy', img: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=400&h=300&fit=crop' },
-  { id: 'romance', name: 'Romance', desc: 'Sunsets, wine, intimacy', img: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&h=300&fit=crop' },
-  { id: 'spiritual', name: 'Spiritual', desc: 'Peace, temples, mindfulness', img: 'https://images.unsplash.com/photo-1545389336-cf090694435e?w=400&h=300&fit=crop' },
-  { id: 'foodie', name: 'Foodie Trail', desc: 'Street food & fine dining', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop' },
-  { id: 'party', name: 'Party Mode', desc: 'Clubs, festivals, all night', img: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=300&fit=crop' },
-  { id: 'solo', name: 'Solo Reset', desc: 'Find yourself, explore', img: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400&h=300&fit=crop' },
-  { id: 'winter', name: 'Winter Magic', desc: 'Snow, cozy, northern lights', img: 'https://images.unsplash.com/photo-1477601263568-180e2c6d046e?w=400&h=300&fit=crop' },
-  { id: 'culture', name: 'Culture Deep Dive', desc: 'Art, history, local life', img: 'https://images.unsplash.com/photo-1533669955142-6a73332af4db?w=400&h=300&fit=crop' },
+  { id: 'beach', name: 'Beach Chill', desc: 'Sun, sand, zero stress', img: 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=400&h=300&fit=crop&q=80' },
+  { id: 'adventure', name: 'Adventure', desc: 'Hikes, thrills, adrenaline', img: 'https://images.unsplash.com/photo-1522163182402-834f871fd851?w=400&h=300&fit=crop&q=80' },
+  { id: 'city', name: 'City Nights', desc: 'Rooftops, lights, energy', img: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400&h=300&fit=crop&q=80' },
+  { id: 'romance', name: 'Romance', desc: 'Sunsets, wine, intimacy', img: 'https://images.unsplash.com/photo-1501426026826-31c667bdf23d?w=400&h=300&fit=crop&q=80' },
+  { id: 'luxury', name: 'Luxury', desc: 'Five stars, private pools, VIP', img: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=300&fit=crop&q=80' },
+  { id: 'wellness', name: 'Wellness & Spa', desc: 'Detox, yoga, massages', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=300&fit=crop&q=80' },
+  { id: 'spiritual', name: 'Spiritual', desc: 'Peace, temples, mindfulness', img: 'https://images.unsplash.com/photo-1512100356356-de1b84283e18?w=400&h=300&fit=crop&q=80' },
+  { id: 'foodie', name: 'Foodie Trail', desc: 'Street food & fine dining', img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop&q=80' },
+  { id: 'party', name: 'Party Mode', desc: 'Clubs, festivals, all night', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=300&fit=crop&q=80' },
+  { id: 'nature', name: 'Nature Escape', desc: 'Mountains, lakes, wildlife', img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=300&fit=crop&q=80' },
+  { id: 'family', name: 'Family Fun', desc: 'Kid-friendly, safe, memorable', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop&q=80' },
+  { id: 'backpacker', name: 'Backpacker', desc: 'Hostels, budget, freedom', img: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=400&h=300&fit=crop&q=80' },
+  { id: 'culture', name: 'Culture Deep Dive', desc: 'Art, history, local life', img: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&h=300&fit=crop&q=80' },
+  { id: 'shopping', name: 'Shop Till You Drop', desc: 'Markets, malls, souvenirs', img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=300&fit=crop&q=80' },
+  { id: 'hidden', name: 'Hidden Gems', desc: 'Off-the-beaten-path spots', img: 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=400&h=300&fit=crop&q=80' },
+]
+
+const BUDGETS = [
+  { id: 'budget', label: 'Budget', amount: 1500, desc: 'Hostels, street food, walking tours' },
+  { id: 'mid', label: 'Comfort', amount: 3000, desc: '3-4 star hotels, local restaurants' },
+  { id: 'luxury', label: 'Luxury', amount: 7000, desc: '5-star resorts, premium experiences' },
 ]
 
 export default function VibesPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#08080c]" />}>
+    <DesktopAuthProvider>
       <VibesContent />
-    </Suspense>
+    </DesktopAuthProvider>
   )
 }
 
 function VibesContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [selected, setSelected] = useState<string[]>([])
-  const [budget, setBudget] = useState(3000)
-  const [travelers, setTravelers] = useState(2)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [origin, setOrigin] = useState('')
-  const [occasion, setOccasion] = useState('')
-  const [directDest, setDirectDest] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [dateError, setDateError] = useState('')
-  const [surpriseReveal, setSurpriseReveal] = useState(false)
+  const { setVibes, setOrigin, setDates, setBudget, setTravelers, setOccasion, onboarding } = useTripStore()
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.push('/login')
-    })
-    const surprise = searchParams.get('surprise')
-    if (surprise) {
-      const vibes = surprise.split(',').filter(v => VIBES.some(vb => vb.id === v))
-      if (vibes.length > 0) {
-        // Surprise Me reveal: show vibes one by one with delight
-        setSurpriseReveal(true)
-        setSelected([])
-        vibes.forEach((v, i) => {
-          setTimeout(() => {
-            setSelected(prev => [...prev, v])
-            if (i === vibes.length - 1) setTimeout(() => setSurpriseReveal(false), 800)
-          }, 400 + i * 500)
-        })
-      }
-    }
-  }, [router, searchParams])
+  const [selected, setSelected] = useState<string[]>(onboarding.pickedVibes || [])
+  const [origin, setOriginLocal] = useState(onboarding.origin || '')
+  const [startDate, setStartDate] = useState(onboarding.startDate || '')
+  const [endDate, setEndDate] = useState(onboarding.endDate || '')
+  const [budget, setBudgetLocal] = useState<'budget' | 'mid' | 'luxury'>(onboarding.budgetLevel || 'mid')
+  const [travelers, setTravelersLocal] = useState(onboarding.travelers || 2)
+  const [occasion, setOccasionLocal] = useState('')
+  const [navigating, setNavigating] = useState(false)
 
   function toggleVibe(id: string) {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
-    )
+    setSelected(prev => prev.includes(id) ? prev.filter(v => v !== id) : prev.length < 3 ? [...prev, id] : prev)
   }
 
-  async function handleContinue() {
-    if (selected.length === 0) return
-    // Date validation
-    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
-      setDateError('End date must be after start date')
-      return
-    }
-    setDateError('')
-    setLoading(true)
+  function handleContinue() {
+    if (selected.length === 0 || navigating) return
+    setNavigating(true)
 
-    sessionStorage.setItem('drift_vibes', JSON.stringify({
-      vibes: selected,
-      budget: budget <= 2000 ? 'budget' : budget <= 4000 ? 'mid' : 'luxury',
-      budgetAmount: budget,
-      travelers,
-      startDate,
-      endDate,
-      origin: origin || 'Delhi',
-      occasion: occasion || undefined,
-      directDestination: directDest || undefined,
-    }))
+    // Save to trip store
+    setVibes(selected)
+    if (origin) setOrigin(origin)
+    if (startDate && endDate) setDates(startDate, endDate)
+    const budgetDef = BUDGETS.find(b => b.id === budget)
+    setBudget(budget, budgetDef?.amount || 3000)
+    setTravelers(travelers)
+    if (occasion) setOccasion(occasion)
 
-    if (directDest) {
-      // Skip destination selection — go straight to generation
-      router.push(`/destinations?direct=${encodeURIComponent(directDest)}`)
-    } else {
-      router.push('/destinations')
-    }
+    router.push('/destinations')
   }
 
   return (
-    <div className="min-h-screen bg-[#08080c]">
+    <div className="min-h-screen bg-drift-bg text-drift-text">
       <NavBar />
-      <div className="max-w-[1100px] mx-auto px-8 pt-[76px] pb-16 max-md:px-4 max-md:pt-[60px] max-md:pb-24">
-        <p className="text-[11px] tracking-[4px] uppercase text-[#c8a44e] mb-2">Set the mood</p>
-        <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal mb-2 text-[#f0efe8] max-md:text-[clamp(22px,6vw,32px)] max-md:mb-1.5">
-          What&apos;s your <em className="text-[#c8a44e] italic">vibe</em>?
+      <div className="mx-auto max-w-[1100px] px-8 pt-20 pb-16">
+        {/* Header */}
+        <p className="text-[11px] tracking-[4px] uppercase text-drift-gold font-semibold mb-2">Set the mood</p>
+        <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal mb-2">
+          What&apos;s your <em className="text-drift-gold italic">vibe</em>?
         </h1>
-        <p className="text-[15px] text-[#7a7a85] mb-9 max-md:text-[13px] max-md:mb-6">Pick as many as you feel. We&apos;ll curate destinations that match your energy.</p>
+        <p className="text-[15px] text-drift-text2 mb-8">Pick up to 3 vibes. We&apos;ll find destinations that match your energy.</p>
 
-        {/* Surprise Me reveal banner */}
-        {surpriseReveal && (
-          <div className="mb-6 p-4 rounded-xl border border-[rgba(200,164,78,0.2)] bg-[rgba(200,164,78,0.06)] animate-[fadeUp_0.5s_ease]">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">&#10024;</span>
-              <span className="font-serif text-[#c8a44e] text-base">The universe picked these for you...</span>
-            </div>
-          </div>
-        )}
-
-        {/* Vibe Grid — 5 cols desktop, 3 tablet, 2 mobile */}
-        <div className="grid grid-cols-5 gap-3 mb-9 vibe-grid-responsive">
-          {VIBES.map(v => (
-            <div
-              key={v.id}
-              onClick={() => toggleVibe(v.id)}
-              className={`relative h-[150px] rounded-2xl overflow-hidden cursor-pointer border-2 transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] active:scale-[0.97] vibe-card-responsive ${
-                selected.includes(v.id)
-                  ? 'border-[#c8a44e] shadow-[0_0_24px_rgba(200,164,78,0.15)] scale-[1.02]'
-                  : 'border-transparent scale-100'
-              }`}
-            >
-              <Image src={v.img} alt={v.name} fill className={`object-cover transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.15,1)] ${selected.includes(v.id) ? 'scale-[1.06]' : ''}`} sizes="(max-width: 768px) 50vw, 20vw" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-black/10 z-[1]" />
-              {selected.includes(v.id) && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#c8a44e] z-[3] flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-              )}
-              <div className="relative z-[2] h-full flex flex-col justify-end p-3.5">
-                <div className="text-sm font-semibold text-white max-md:text-[13px]">{v.name}</div>
-                <div className="text-[10px] text-white/65 mt-0.5 max-md:text-[9px]">{v.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Flying From */}
-        <div className="mb-8">
-          <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">Flying from</h3>
-          <input
-            type="text"
-            value={origin}
-            onChange={e => setOrigin(e.target.value)}
-            placeholder="e.g. Delhi, Mumbai, London"
-            className="w-full max-w-[360px] px-4 py-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all placeholder-[#4a4a55]"
-          />
-        </div>
-
-        {/* Config Row — side by side desktop, stacked mobile */}
-        <div className="flex gap-8 mb-8 config-row-responsive">
-          <div className="flex-1">
-            <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">Budget per person</h3>
-            <div className="text-2xl font-light text-[#c8a44e] font-serif mb-2.5 max-md:text-xl">${budget.toLocaleString()}</div>
-            <input
-              type="range"
-              min={500}
-              max={10000}
-              step={100}
-              value={budget}
-              onChange={e => setBudget(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="flex justify-between mt-1.5 text-[11px] text-[#4a4a55]">
-              <span>$500</span><span>$10,000</span>
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">Travel Dates</h3>
-            <div className="flex gap-2.5">
-              <input
-                type="date"
-                value={startDate}
-                onChange={e => { setStartDate(e.target.value); setDateError('') }}
-                min={new Date().toISOString().split('T')[0]}
-                className="flex-1 px-3 py-2.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={e => { setEndDate(e.target.value); setDateError('') }}
-                min={startDate || new Date().toISOString().split('T')[0]}
-                className={`flex-1 px-3 py-2.5 bg-[rgba(255,255,255,0.04)] border rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all ${dateError ? 'border-[#e74c3c]' : 'border-[rgba(255,255,255,0.06)]'}`}
-              />
-            </div>
-            {dateError && <div className="text-[11px] text-[#e74c3c] mt-1.5">{dateError}</div>}
-            <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase mt-4">Travelers</h3>
-            <div className="flex items-center gap-3.5">
-              <button onClick={() => setTravelers(Math.max(1, travelers - 1))} className="w-[34px] h-[34px] rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] text-[#f0efe8] text-[15px] flex items-center justify-center hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all max-md:w-10 max-md:h-10 max-md:text-base">-</button>
-              <span className="text-lg font-light min-w-[28px] text-center">{travelers}</span>
-              <button onClick={() => setTravelers(travelers + 1)} className="w-[34px] h-[34px] rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] text-[#f0efe8] text-[15px] flex items-center justify-center hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all max-md:w-10 max-md:h-10 max-md:text-base">+</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Occasion */}
-        <div className="mb-8">
-          <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">What&apos;s the occasion?</h3>
-          <div className="flex flex-wrap gap-2">
-            {['Just exploring', 'Honeymoon', 'Anniversary', 'Birthday', 'Girls/Guys Trip', 'Family', 'Weekend Getaway'].map(o => (
-              <button
-                key={o}
-                onClick={() => setOccasion(occasion === o ? '' : o)}
-                className={`px-3.5 py-1.5 rounded-full text-xs border transition-all ${
-                  occasion === o
-                    ? 'bg-[rgba(200,164,78,0.15)] border-[rgba(200,164,78,0.3)] text-[#c8a44e]'
-                    : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[#7a7a85] hover:border-[rgba(255,255,255,0.12)]'
+        {/* Vibe grid */}
+        <div className="grid grid-cols-5 gap-3 mb-10 max-lg:grid-cols-3 max-md:grid-cols-2">
+          {VIBES.map(v => {
+            const isSelected = selected.includes(v.id)
+            return (
+              <div
+                key={v.id}
+                onClick={() => toggleVibe(v.id)}
+                className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 transition-all duration-300 ${
+                  isSelected
+                    ? 'border-drift-gold shadow-[0_0_24px_rgba(200,164,78,0.2)] scale-[1.02]'
+                    : 'border-transparent hover:border-[rgba(255,255,255,0.1)] hover:-translate-y-1'
                 }`}
               >
-                {o}
+                <div className="relative h-[140px]">
+                  <Image src={v.img} alt={v.name} fill className="object-cover" sizes="220px" unoptimized />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.9)] via-[rgba(8,8,12,0.3)] to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <div className="text-[13px] font-semibold">{v.name}</div>
+                  <div className="text-[10px] text-drift-text3">{v.desc}</div>
+                </div>
+                {/* Check */}
+                <div className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
+                  isSelected ? 'border-drift-gold bg-drift-gold' : 'border-white/25'
+                }`}>
+                  {isSelected && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Trip details */}
+        <div className="grid grid-cols-3 gap-6 mb-8 max-md:grid-cols-1">
+          {/* Origin */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-drift-text3 mb-2 block">Flying from</label>
+            <input
+              value={origin}
+              onChange={e => setOriginLocal(e.target.value)}
+              placeholder="Delhi, Mumbai, London..."
+              className="w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none transition-colors"
+            />
+          </div>
+
+          {/* Dates */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-drift-text3 mb-2 block">Travel dates</label>
+            <div className="flex gap-2">
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                className="flex-1 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none" />
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                className="flex-1 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-sm text-drift-text focus:border-drift-gold/30 focus:outline-none" />
+            </div>
+          </div>
+
+          {/* Travelers */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-drift-text3 mb-2 block">Travelers</label>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setTravelersLocal(Math.max(1, travelers - 1))}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(255,255,255,0.08)] text-drift-text3 hover:border-drift-gold/20 hover:text-drift-gold transition-colors">−</button>
+              <span className="text-lg font-semibold w-8 text-center">{travelers}</span>
+              <button onClick={() => setTravelersLocal(Math.min(12, travelers + 1))}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(255,255,255,0.08)] text-drift-text3 hover:border-drift-gold/20 hover:text-drift-gold transition-colors">+</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Budget */}
+        <div className="mb-10">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-drift-text3 mb-3 block">Budget per person</label>
+          <div className="flex gap-3">
+            {BUDGETS.map(b => (
+              <button
+                key={b.id}
+                onClick={() => setBudgetLocal(b.id as 'budget' | 'mid' | 'luxury')}
+                className={`flex-1 rounded-xl border px-4 py-4 text-left transition-all ${
+                  budget === b.id
+                    ? 'border-drift-gold bg-drift-gold/10'
+                    : 'border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] hover:border-[rgba(255,255,255,0.12)]'
+                }`}
+              >
+                <div className={`text-sm font-semibold ${budget === b.id ? 'text-drift-gold' : 'text-drift-text'}`}>{b.label}</div>
+                <div className="text-[11px] text-drift-text3 mt-0.5">${b.amount.toLocaleString()}/person</div>
+                <div className="text-[10px] text-drift-text3/60 mt-0.5">{b.desc}</div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* I know where I'm going */}
-        <div className="mb-8">
-          <h3 className="text-[11px] font-medium text-[#7a7a85] mb-2.5 tracking-[1px] uppercase">Already know your destination?</h3>
-          <input
-            type="text"
-            value={directDest}
-            onChange={e => setDirectDest(e.target.value)}
-            placeholder="e.g. Bali, Dubai, Goa — leave empty to get suggestions"
-            className="w-full max-w-[360px] px-4 py-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-[10px] text-[#f0efe8] text-sm outline-none focus:border-[#c8a44e] focus:shadow-[0_0_0_3px_rgba(200,164,78,0.08)] transition-all placeholder-[#4a4a55]"
-          />
-        </div>
-
-        {/* Missing fields hint */}
-        {selected.length > 0 && (!startDate || !endDate || !origin) && (
-          <div className="mb-3 text-[11px] text-[#c8a44e]">
-            Fill in{!origin ? ' origin city,' : ''}{!startDate ? ' start date,' : ''}{!endDate ? ' end date,' : ''} to continue
-          </div>
-        )}
-
-        {/* CTA */}
+        {/* Continue */}
         <button
           onClick={handleContinue}
-          disabled={selected.length === 0 || !startDate || !endDate || !origin || loading}
-          className="px-11 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(200,164,78,0.3),0_4px_12px_rgba(200,164,78,0.15)] transition-all active:translate-y-0 active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2.5"
+          disabled={selected.length === 0 || navigating}
+          className={`w-full max-w-[400px] mx-auto block rounded-full py-4 text-sm font-bold uppercase tracking-widest transition-all ${
+            selected.length > 0 && !navigating
+              ? 'bg-gradient-to-r from-drift-gold to-[#a88a3e] text-drift-bg shadow-[0_12px_40px_rgba(200,164,78,0.25)] hover:-translate-y-0.5'
+              : 'bg-drift-gold/20 text-drift-text3 cursor-not-allowed'
+          }`}
         >
-          {loading ? (
-            <>
-              <div className="w-4 h-4 rounded-full border-[1.5px] border-[#0a0a0f] border-t-transparent animate-[load-spin_1s_linear_infinite]" />
-              Finding your destinations...
-            </>
+          {navigating ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/25 border-t-current" />
+            </span>
           ) : (
-            <>
-              Plan My Trip
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </>
+            `Continue with ${selected.length} vibe${selected.length !== 1 ? 's' : ''}`
           )}
         </button>
       </div>

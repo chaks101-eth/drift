@@ -1,328 +1,252 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { ITINERARY_MESSAGES } from '@/lib/loading-messages'
+import { useRouter } from 'next/navigation'
 import NavBar from '@/app/NavBar'
-
-type Destination = {
-  city: string
-  country: string
-  match: number
-  price?: string
-  price_usd?: number
-  vibes: string[]
-  image_url: string
-  tagline: string
-}
+import DesktopAuthProvider from '@/components/desktop/AuthProvider'
+import { useTripStore, type Destination } from '@/stores/trip-store'
 
 export default function DestinationsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#08080c]" />}>
+    <DesktopAuthProvider>
       <DestinationsContent />
-    </Suspense>
+    </DesktopAuthProvider>
   )
 }
 
 function DestinationsContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const { token, onboarding, setDestination } = useTripStore()
+  const { pickedVibes, budgetLevel, budgetAmount, travelers, origin, startDate, endDate } = onboarding
+
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)
-  const [generating, setGenerating] = useState(false)
-  const [loadMsg, setLoadMsg] = useState(0)
-  const [loadProgress, setLoadProgress] = useState(0)
-  const [vibeData, setVibeData] = useState<{
-    vibes: string[]; budget: string; budgetAmount?: number; travelers: number; startDate: string; endDate: string; origin?: string; occasion?: string
-  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedDest, setSelectedDest] = useState<Destination | null>(null)
+  const [navigating, setNavigating] = useState(false)
 
+  // Custom destination
+  const [customDest, setCustomDest] = useState('')
+  const [customCountry, setCustomCountry] = useState('')
+  const [suggestions, setSuggestions] = useState<Array<{ city: string; country: string; description: string }>>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+  // Redirect if no vibes selected
   useEffect(() => {
-    const stored = sessionStorage.getItem('drift_vibes')
-    if (!stored) { router.push('/vibes'); return }
+    if (pickedVibes.length === 0) router.push('/vibes')
+  }, [pickedVibes, router])
 
-    const data = JSON.parse(stored)
-    setVibeData(data)
+  // Fetch destinations
+  useEffect(() => {
+    if (!token || pickedVibes.length === 0) return
 
-    // Direct destination — skip selection, generate immediately
-    const direct = searchParams.get('direct')
-    if (direct) {
-      selectDestinationDirect(data, direct)
+    async function fetchDests() {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/ai/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({
+            type: 'destinations',
+            vibes: pickedVibes,
+            budget: budgetLevel,
+            origin: origin || 'Delhi',
+            start_date: startDate,
+            end_date: endDate,
+          }),
+        })
+        if (!res.ok) throw new Error('Failed')
+        const data = await res.json()
+        setDestinations(data.destinations || [])
+        if (!data.destinations?.length) setError('No destinations found. Try different vibes.')
+      } catch {
+        setError('Couldn\'t load destinations.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDests()
+  }, [token, pickedVibes, budgetLevel, origin, startDate, endDate])
+
+  // Autocomplete
+  useEffect(() => {
+    if (customDest.length < 2) { setSuggestions([]); return }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(customDest)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setSuggestions(data.predictions || [])
+          setShowSuggestions(true)
+        }
+      } catch { /* ignore */ }
+    }, 300)
+  }, [customDest])
+
+  const countryMap: Record<string, string> = {
+    bali: 'Indonesia', bangkok: 'Thailand', dubai: 'UAE', paris: 'France', tokyo: 'Japan',
+    istanbul: 'Turkey', phuket: 'Thailand', singapore: 'Singapore', maldives: 'Maldives',
+    goa: 'India', london: 'UK', jaipur: 'India', manali: 'India', delhi: 'India',
+  }
+
+  function handleConfirm() {
+    if (navigating) return
+
+    if (customDest.trim().length > 1) {
+      const city = customDest.trim()
+      const country = customCountry || countryMap[city.toLowerCase()] || ''
+      setDestination({ city, country, tagline: `Your ${city} adventure`, match: 100, vibes: pickedVibes })
+    } else if (selectedDest) {
+      setDestination(selectedDest)
+    } else {
       return
     }
 
-    fetchDestinations(data)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, searchParams])
-
-  // Progressive loading messages during generation
-  useEffect(() => {
-    if (!generating) return
-    const interval = setInterval(() => {
-      setLoadMsg(prev => (prev + 1) % ITINERARY_MESSAGES.length)
-      setLoadProgress(prev => Math.min(prev + 22, 95))
-    }, 2200)
-    return () => clearInterval(interval)
-  }, [generating])
-
-  async function fetchDestinations(data: { vibes: string[]; budget: string; origin?: string }) {
-    setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { router.push('/login'); return }
-
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          type: 'destinations',
-          vibes: data.vibes,
-          budget: data.budget,
-          origin: data.origin || 'Delhi',
-        }),
-      })
-      const result = await res.json()
-      setDestinations(result.destinations || [])
-    } catch {
-      setDestinations([])
-    }
-    setLoading(false)
+    setNavigating(true)
+    router.push('/loading-trip')
   }
 
-  async function selectDestination(dest: Destination) {
-    if (!vibeData) return
-    setGenerating(true)
-    setLoadMsg(0)
-    setLoadProgress(5)
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { router.push('/login'); return }
-
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          type: 'itinerary',
-          destination: dest.city,
-          country: dest.country,
-          vibes: vibeData.vibes,
-          start_date: vibeData.startDate || '2026-04-10',
-          end_date: vibeData.endDate || '2026-04-17',
-          travelers: vibeData.travelers || 2,
-          budget: vibeData.budget || 'mid',
-          budgetAmount: vibeData.budgetAmount || undefined,
-          origin: vibeData.origin || 'Delhi',
-          occasion: vibeData.occasion || undefined,
-        }),
-      })
-      const result = await res.json()
-      if (result.trip) {
-        setLoadProgress(100)
-        setTimeout(() => router.push(`/trip/${result.trip.id}`), 400)
-      } else {
-        console.error('Generation failed:', result.error || result)
-        setGenerating(false)
-      }
-    } catch (err) {
-      console.error('Itinerary generation error:', err)
-      setGenerating(false)
-    }
-  }
-
-  // Direct destination — skips destination picker entirely
-  async function selectDestinationDirect(data: typeof vibeData, destName: string) {
-    setGenerating(true)
-    setLoadMsg(0)
-    setLoadProgress(5)
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { router.push('/login'); return }
-
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          type: 'itinerary',
-          destination: destName,
-          country: '',
-          vibes: data?.vibes || [],
-          start_date: data?.startDate || '2026-04-10',
-          end_date: data?.endDate || '2026-04-17',
-          travelers: data?.travelers || 2,
-          budget: data?.budget || 'mid',
-          budgetAmount: data?.budgetAmount || undefined,
-          origin: data?.origin || 'Delhi',
-        }),
-      })
-      const result = await res.json()
-      if (result.trip) {
-        setLoadProgress(100)
-        setTimeout(() => router.push(`/trip/${result.trip.id}`), 400)
-      } else {
-        console.error('Generation failed:', result.error || result)
-        setGenerating(false)
-        // Fall back to showing destinations
-        if (data) fetchDestinations(data)
-      }
-    } catch (err) {
-      console.error('Direct generation error:', err)
-      setGenerating(false)
-      if (data) fetchDestinations(data)
-    }
-  }
-
-  // ─── Loading Overlay (philosophy: loading states build anticipation) ───
-  if (generating) {
-    const msg = ITINERARY_MESSAGES[loadMsg]
-    const isComplete = loadProgress >= 100
-    return (
-      <div className="fixed inset-0 z-[300] bg-[#08080c] flex items-center justify-center flex-col gap-6">
-        {isComplete ? (
-          /* ─── Celebration moment ─── */
-          <>
-            <div className="animate-[celebrate_0.6s_ease_forwards]">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#e8cc6e] flex items-center justify-center shadow-[0_0_48px_rgba(200,164,78,0.4)]">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-            </div>
-            <div className="font-serif text-[26px] text-[#c8a44e] animate-[fadeUp_0.5s_ease_forwards_0.2s] opacity-0">Your trip is ready</div>
-            <div className="text-sm text-[#7a7a85] animate-[fadeUp_0.5s_ease_forwards_0.4s] opacity-0">Taking you to your itinerary...</div>
-          </>
-        ) : (
-          <>
-            {/* Glowing spinner */}
-            <div className="w-16 h-16 rounded-full flex items-center justify-center animate-[load-breathe_2s_ease-in-out_infinite]"
-              style={{ background: 'radial-gradient(circle, rgba(200,164,78,0.2), transparent 70%)' }}>
-              <div className="w-8 h-8 rounded-full border-[1.5px] border-[#c8a44e] border-t-transparent animate-[load-spin_1s_linear_infinite]" />
-            </div>
-            {/* Message */}
-            <div className="font-serif text-[22px] text-center leading-snug transition-opacity duration-400"
-              dangerouslySetInnerHTML={{ __html: msg.text.replace(/<em>/g, '<em class="text-[#c8a44e] italic">') }}
-            />
-            {/* Step */}
-            <div className="text-xs text-[#4a4a55] tracking-[1px] uppercase transition-opacity duration-400">{msg.step}</div>
-            {/* Progress bar */}
-            <div className="w-[200px] h-0.5 bg-[rgba(255,255,255,0.06)] rounded-sm overflow-hidden">
-              <div
-                className="h-full rounded-sm transition-[width] duration-600 ease-out"
-                style={{ width: `${loadProgress}%`, background: 'linear-gradient(90deg, #c8a44e, #e8cc6e)' }}
-              />
-            </div>
-            {/* Cancel — subtle, doesn't shout */}
-            <button
-              onClick={() => { setGenerating(false); router.push('/vibes') }}
-              className="mt-4 text-[11px] text-[#4a4a55] hover:text-[#7a7a85] transition-colors"
-            >
-              Cancel and go back
-            </button>
-          </>
-        )}
-      </div>
-    )
-  }
+  const canConfirm = customDest.trim().length > 1 || selectedDest !== null
 
   return (
-    <div className="min-h-screen bg-[#08080c]">
-      <NavBar showBack />
-      <div className="max-w-[1200px] mx-auto px-8 pt-[76px] pb-16 max-md:px-4 max-md:pt-[60px] max-md:pb-24">
-        <p className="text-[11px] tracking-[4px] uppercase text-[#c8a44e] mb-2">Step 2</p>
-        <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal mb-2 text-[#f0efe8] max-md:text-[clamp(22px,6vw,32px)]">
-          Your <em className="text-[#c8a44e] italic">destinations</em>
+    <div className="min-h-screen bg-drift-bg text-drift-text">
+      <NavBar />
+      <div className="mx-auto max-w-[1100px] px-8 pt-20 pb-16">
+        {/* Header */}
+        <p className="text-[11px] tracking-[4px] uppercase text-drift-gold font-semibold mb-2">Pick your destination</p>
+        <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal mb-2">
+          Where should you <em className="text-drift-gold italic">drift</em>?
         </h1>
-        <p className="text-[15px] text-[#7a7a85] mb-9 max-md:text-[13px] max-md:mb-6">AI-curated places that match your energy. Tap to build your trip.</p>
+        <p className="text-[15px] text-drift-text2 mb-8">Based on your vibes, we found these matches. Or search for your own.</p>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20 flex-col gap-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center animate-[load-breathe_2s_ease-in-out_infinite]"
-              style={{ background: 'radial-gradient(circle, rgba(200,164,78,0.2), transparent 70%)' }}>
-              <div className="w-6 h-6 rounded-full border-[1.5px] border-[#c8a44e] border-t-transparent animate-[load-spin_1s_linear_infinite]" />
-            </div>
-            <div className="font-serif text-xl text-[#c8a44e]">Finding perfect matches...</div>
+        {/* Custom destination search */}
+        <div className="relative mb-8 max-w-[500px]">
+          <div className="flex items-center gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input
+              value={customDest}
+              onChange={e => { setCustomDest(e.target.value); setCustomCountry(''); setSelectedDest(null) }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="Or type a destination..."
+              className="flex-1 bg-transparent text-sm text-drift-text placeholder:text-drift-text3 focus:outline-none"
+            />
           </div>
-        ) : destinations.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-14 h-14 rounded-full bg-[rgba(200,164,78,0.08)] border border-[rgba(200,164,78,0.15)] flex items-center justify-center mx-auto mb-4">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-xl border border-[rgba(255,255,255,0.08)] bg-drift-card shadow-[0_16px_48px_rgba(0,0,0,0.6)] overflow-hidden">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onMouseDown={() => { setCustomDest(s.city); setCustomCountry(s.country); setShowSuggestions(false) }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-[rgba(200,164,78,0.06)] transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                  <div>
+                    <span className="text-drift-text">{s.city}</span>
+                    <span className="text-drift-text3">, {s.country}</span>
+                  </div>
+                </button>
+              ))}
             </div>
-            <h2 className="font-serif text-xl text-[#f0efe8] mb-2">No destinations available yet</h2>
-            <p className="text-sm text-[#7a7a85] max-w-[320px] mx-auto mb-6">Our catalog is being built. Use the &quot;Already know your destination?&quot; field on the vibes page to go directly to any city.</p>
-            <button
-              onClick={() => router.push('/vibes')}
-              className="px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 transition-all"
-            >
-              Back to Vibes
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-5 dest-grid-responsive">
-            {destinations.map((d, i) => (
-              <div
-                key={i}
-                onClick={() => selectDestination(d)}
-                className="rounded-2xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,0.05)] bg-[#0e0e14] transition-all duration-[450ms] ease-[cubic-bezier(0.4,0,0.15,1)] hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_0_1px_rgba(200,164,78,0.1)] hover:border-[rgba(200,164,78,0.15)] active:-translate-y-0.5 active:scale-[0.99]"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div className="relative w-full h-[200px] max-md:h-[180px]">
-                  <Image src={d.image_url} alt={d.city} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
-                </div>
-                <div className="p-[18px] max-md:p-3.5">
-                  <div className="font-serif text-[22px] mb-0.5 text-[#f0efe8] max-md:text-xl">{d.city}</div>
-                  {d.country && d.country.toLowerCase() !== d.city.toLowerCase() && (
-                    <div className="text-xs text-[#7a7a85] mb-2">{d.country}</div>
-                  )}
-                  {d.tagline && (
-                    <p className="text-[11px] text-[#4a4a55] leading-relaxed mb-2.5 line-clamp-2">{d.tagline}</p>
-                  )}
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {d.vibes.map(t => (
-                      <span key={t} className="px-2.5 py-0.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-full text-[10px] text-[#7a7a85]">{t}</span>
-                    ))}
-                  </div>
-                  {/* Match bar */}
-                  <div className="mb-3">
-                    <div className="h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700 ease-out"
-                        style={{
-                          width: `${d.match}%`,
-                          background: d.match >= 90 ? 'linear-gradient(90deg, #4ecdc4, #c8a44e)' : d.match >= 75 ? '#c8a44e' : '#f0a500',
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-baseline">
-                    <div className="text-xl font-light text-[#c8a44e] max-md:text-lg">
-                      {d.price_usd ? `$${d.price_usd.toLocaleString()}` : d.price} <span className="text-[11px] text-[#4a4a55]">/ person</span>
-                    </div>
-                    <span className="px-2.5 py-0.5 bg-[rgba(200,164,78,0.15)] border border-[rgba(200,164,78,0.2)] rounded-full text-[11px] font-semibold text-[#c8a44e]">
-                      {d.match}% Match
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+          )}
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex justify-center py-20">
+            <div className="text-center">
+              <div className="h-8 w-8 mx-auto animate-spin rounded-full border-2 border-drift-gold/30 border-t-drift-gold" />
+              <p className="mt-4 text-sm text-drift-text3">Matching destinations to your vibes...</p>
+            </div>
           </div>
         )}
 
-        <button
-          onClick={() => router.push('/vibes')}
-          className="mt-8 text-[#7a7a85] text-sm hover:text-[#f0efe8] transition-colors flex items-center gap-1.5"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          Back to vibes
-        </button>
+        {/* Error */}
+        {!loading && error && (
+          <div className="text-center py-16">
+            <p className="text-drift-text3 mb-4">{error}</p>
+            <button onClick={() => router.push('/vibes')} className="rounded-xl border border-drift-gold/20 px-6 py-2.5 text-sm text-drift-gold hover:bg-drift-gold/5">
+              Try different vibes
+            </button>
+          </div>
+        )}
+
+        {/* Destination grid */}
+        {!loading && !error && destinations.length > 0 && (
+          <div className="grid grid-cols-3 gap-5 mb-10 max-lg:grid-cols-2 max-md:grid-cols-1">
+            {destinations.map((dest, i) => {
+              const isSelected = selectedDest?.city === dest.city
+              return (
+                <div
+                  key={dest.city}
+                  onClick={() => { setSelectedDest(dest); setCustomDest(''); setCustomCountry('') }}
+                  className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 transition-all duration-300 ${
+                    isSelected
+                      ? 'border-drift-gold shadow-[0_0_32px_rgba(200,164,78,0.15)]'
+                      : 'border-transparent hover:border-[rgba(255,255,255,0.1)] hover:-translate-y-1'
+                  }`}
+                >
+                  <div className="relative h-[200px]">
+                    {dest.image_url && (
+                      <Image src={dest.image_url} alt={dest.city} fill className="object-cover" sizes="400px" unoptimized />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.95)] via-[rgba(8,8,12,0.4)_50%] to-transparent" />
+                  </div>
+
+                  {/* Match badge */}
+                  <span className="absolute left-3 top-3 rounded-lg bg-drift-gold/15 border border-drift-gold/25 px-2.5 py-1 text-[10px] font-bold text-drift-gold backdrop-blur-xl">
+                    {dest.match || 85}% match
+                  </span>
+
+                  {/* Check */}
+                  <div className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
+                    isSelected ? 'border-drift-gold bg-drift-gold' : 'border-white/25'
+                  }`}>
+                    {isSelected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
+                  </div>
+
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <div className="text-lg font-semibold">{dest.city}</div>
+                    <div className="text-[11px] text-drift-text3">{dest.country}{dest.price ? ` · from ${dest.price}` : ''}</div>
+                    {dest.vibes && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {dest.vibes.slice(0, 3).map(v => (
+                          <span key={v} className="rounded-full bg-drift-gold/10 px-2 py-0.5 text-[9px] text-drift-gold">{v}</span>
+                        ))}
+                      </div>
+                    )}
+                    {dest.tagline && <p className="mt-1.5 text-[11px] text-drift-text2 line-clamp-2">{dest.tagline}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Confirm */}
+        <div className="flex justify-center">
+          <button
+            onClick={handleConfirm}
+            disabled={!canConfirm || navigating}
+            className={`min-w-[300px] rounded-full py-4 text-sm font-bold uppercase tracking-widest transition-all ${
+              canConfirm && !navigating
+                ? 'bg-gradient-to-r from-drift-gold to-[#a88a3e] text-drift-bg shadow-[0_12px_40px_rgba(200,164,78,0.25)] hover:-translate-y-0.5'
+                : 'bg-drift-gold/20 text-drift-text3 cursor-not-allowed'
+            }`}
+          >
+            {navigating ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/25 border-t-current" />
+              </span>
+            ) : (
+              `Plan ${customDest || selectedDest?.city || 'Trip'}`
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )

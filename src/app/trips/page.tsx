@@ -24,8 +24,13 @@ export default function MyTripsPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.push('/login'); return }
+      let { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        // Try anonymous auth
+        const { data } = await supabase.auth.signInAnonymously()
+        session = data.session
+        if (!session) { router.push('/login'); return }
+      }
 
       const { data } = await supabase
         .from('trips')

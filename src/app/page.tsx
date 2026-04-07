@@ -16,11 +16,9 @@ export default function Landing() {
       window.location.href = '/m'
       return
     }
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/vibes')
-      else setReady(true)
-    })
-  }, [router])
+    // Show landing page for everyone (guest mode means all visitors have sessions)
+    setReady(true)
+  }, [])
 
   // Scroll reveal
   useEffect(() => {
@@ -56,7 +54,7 @@ export default function Landing() {
         </p>
         <div className="flex gap-3 justify-center items-center opacity-0 animate-[fadeUp_1s_ease_forwards_0.8s] landing-btns-responsive">
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/vibes')}
             className="px-11 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(200,164,78,0.3),0_4px_12px_rgba(200,164,78,0.15)] transition-all duration-400 active:translate-y-0 active:scale-[0.97] flex items-center gap-2.5"
           >
             Plan My Trip
@@ -163,7 +161,7 @@ export default function Landing() {
         <p className="text-sm text-[#4a4a55] mb-7">Free to use. No credit card. Your first trip is 30 seconds away.</p>
         <div className="flex gap-3 justify-center max-md:flex-col max-md:px-4">
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/vibes')}
             className="px-11 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(200,164,78,0.3)] transition-all active:scale-[0.97] flex items-center gap-2.5 justify-center"
           >
             Plan My Trip — Free

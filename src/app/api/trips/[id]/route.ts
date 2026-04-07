@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@/lib/supabase'
+
+// GET /api/trips/[id] — fetch trip + items (public read for desktop board + shared trips)
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  // Use service role to bypass RLS — trips should be viewable on desktop/shared links
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  const [tripRes, itemsRes] = await Promise.all([
+    db.from('trips').select('*').eq('id', id).single(),
+    db.from('itinerary_items').select('*').eq('trip_id', id).order('position'),
+  ])
+
+  if (!tripRes.data) return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
+
+  return NextResponse.json({
+    trip: tripRes.data,
+    items: itemsRes.data || [],
+  })
+}
 
 // DELETE /api/trips/[id] — delete a trip and all its items + chat messages
 export async function DELETE(
