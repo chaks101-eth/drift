@@ -15,6 +15,7 @@ import { buildItineraryMaps } from '@/lib/day-maps'
 import { addTravelTimesToItems } from '@/lib/google-routes'
 import { detectCountry, isDomesticTrip } from '@/lib/country-detection'
 import { matchDestinations } from '@/lib/destination-library'
+import { classifyError, reportGenerationFailure, getUserMessage } from '@/lib/generation-errors'
 
 export const maxDuration = 120
 
@@ -511,8 +512,21 @@ export async function POST(req: NextRequest) {
       const { data: trip, error: tripError } = tripResult
 
       if (tripError) {
-        console.error(`[Generate] Trip creation failed: ${tripError.message}`)
-        return NextResponse.json({ error: tripError.message }, { status: 500 })
+        const elapsed = Number(((Date.now() - reqStart) / 1000).toFixed(1))
+        const genError = classifyError(tripError, 'db_trip_insert', {
+          destination: body.destination,
+          user_id: user.id,
+          supabase_error: tripError.message,
+          supabase_code: tripError.code,
+          elapsed,
+        })
+        reportGenerationFailure(genError, tripError)
+        return NextResponse.json({
+          error: getUserMessage(genError.code),
+          code: genError.code,
+          stage: 'db_trip_insert',
+          debug: process.env.NODE_ENV !== 'production' ? tripError.message : undefined,
+        }, { status: 500 })
       }
       console.log(`[Generate] Trip created: ${trip.id}`)
 
@@ -602,8 +616,23 @@ export async function POST(req: NextRequest) {
         .insert(itemsToInsert)
 
       if (itemsError) {
-        console.error(`[Generate] Items insert failed: ${itemsError.message}`)
-        return NextResponse.json({ error: itemsError.message }, { status: 500 })
+        const elapsed = Number(((Date.now() - reqStart) / 1000).toFixed(1))
+        const genError = classifyError(itemsError, 'db_items_insert', {
+          destination: body.destination,
+          trip_id: trip.id,
+          user_id: user.id,
+          item_count: items.length,
+          supabase_error: itemsError.message,
+          supabase_code: itemsError.code,
+          elapsed,
+        })
+        reportGenerationFailure(genError, itemsError)
+        return NextResponse.json({
+          error: getUserMessage(genError.code),
+          code: genError.code,
+          stage: 'db_items_insert',
+          debug: process.env.NODE_ENV !== 'production' ? itemsError.message : undefined,
+        }, { status: 500 })
       }
 
       // ─── Generate day maps (non-blocking) ────────────────────
@@ -664,13 +693,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ trip, itemCount: items.length, dataSource })
     }
 
-    return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid type', code: 'invalid_input' }, { status: 400 })
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
-    console.error(`[Generate] FAILED after ${elapsed}s: ${msg}`)
-    if (error instanceof Error && error.stack) console.error(`[Generate] Stack: ${error.stack}`)
-    return NextResponse.json({ error: `Generation failed: ${msg}` }, { status: 500 })
+    const elapsed = Number(((Date.now() - reqStart) / 1000).toFixed(1))
+    const genError = classifyError(error, 'generate_main', {
+      type: body.type,
+      destination: body.destination,
+      country: body.country,
+      vibes: body.vibes,
+      origin: body.origin,
+      travelers: body.travelers,
+      user_id: user.id,
+      elapsed,
+    })
+    reportGenerationFailure(genError, error)
+    return NextResponse.json({
+      error: getUserMessage(genError.code),
+      code: genError.code,
+      stage: genError.stage,
+      debug: process.env.NODE_ENV !== 'production' ? genError.message : undefined,
+    }, { status: 500 })
   }
 }
 

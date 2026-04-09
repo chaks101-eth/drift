@@ -50,6 +50,7 @@ export default function LoadingPage() {
   const { token, userId, onboarding, setCurrentTrip, setCurrentItems } = useTripStore()
   const [activeStep, setActiveStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [errorDebug, setErrorDebug] = useState<{ code: string; stage: string; debug?: string } | null>(null)
   const [tip, setTip] = useState<string | null>(null)
   const [generationDone, setGenerationDone] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -220,10 +221,16 @@ export default function LoadingPage() {
         })
 
         if (!res.ok) {
-          if (res.status === 429) throw new Error('rate_limit')
-          if (res.status === 401) throw new Error('auth_expired')
-          if (res.status >= 500) throw new Error('server_error')
-          throw new Error('generation_failed')
+          // Try to parse structured error response from server
+          let serverError: { error?: string; code?: string; stage?: string; debug?: string } = {}
+          try { serverError = await res.json() } catch { /* non-JSON */ }
+
+          if (res.status === 429) throw Object.assign(new Error('rate_limit'), { serverError })
+          if (res.status === 401) throw Object.assign(new Error('auth_expired'), { serverError })
+
+          // Server-provided error code takes precedence over generic status-based mapping
+          const code = serverError.code || (res.status >= 500 ? 'server_error' : 'generation_failed')
+          throw Object.assign(new Error(code), { serverError })
         }
         const data = await res.json()
         if (!data.trip) throw new Error('No trip returned')
@@ -310,7 +317,14 @@ export default function LoadingPage() {
           }
         }
 
-        const messages: Record<string, string> = {
+        // Prefer the server's user-friendly message (which comes from generation-errors.ts)
+        const serverErr = (err as { serverError?: { error?: string; code?: string; stage?: string; debug?: string } })?.serverError
+        const serverMessage = serverErr?.error
+        const serverCode = serverErr?.code
+        const serverStage = serverErr?.stage
+        const serverDebug = serverErr?.debug
+
+        const fallbackMessages: Record<string, string> = {
           rate_limit: 'Too many trips generated. Please wait a minute and try again.',
           auth_expired: 'Your session expired. Please log in again.',
           server_error: 'Our AI is temporarily busy. Please try again in a moment.',
@@ -318,9 +332,17 @@ export default function LoadingPage() {
           'No trip returned': 'Trip generation produced no results. Try different vibes.',
           unknown: 'Something went wrong. Please try again.',
         }
-        setError(messages[code] || messages.unknown)
+
+        setError(serverMessage || fallbackMessages[code] || fallbackMessages.unknown)
+        if (serverCode || serverStage || serverDebug) {
+          setErrorDebug({
+            code: serverCode || code,
+            stage: serverStage || 'client',
+            debug: serverDebug,
+          })
+        }
         releaseWakeLock()
-        trackEvent('generation_failed', 'error', code)
+        trackEvent('generation_failed', 'error', `${serverCode || code}|${serverStage || 'client'}`)
       }
     }
 
@@ -406,11 +428,28 @@ export default function LoadingPage() {
 
         {/* Error */}
         {error && (
-          <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 text-center">
+          <div className="mt-6 max-w-[320px] rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 text-center">
             <p className="text-xs text-red-400">{error}</p>
+
+            {/* Debug panel — visible only in dev, helps Chakshur debug */}
+            {errorDebug && process.env.NODE_ENV !== 'production' && (
+              <div className="mt-3 rounded-lg border border-red-500/20 bg-black/40 p-2 text-left">
+                <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-red-400/70">Debug info</div>
+                <div className="font-mono text-[9px] text-red-300/90 break-all">
+                  <div><span className="text-red-400/60">code:</span> {errorDebug.code}</div>
+                  <div><span className="text-red-400/60">stage:</span> {errorDebug.stage}</div>
+                  {errorDebug.debug && (
+                    <div className="mt-1 border-t border-red-500/20 pt-1">
+                      <span className="text-red-400/60">raw:</span> {errorDebug.debug}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="mt-3 flex gap-2 justify-center">
               <button
-                onClick={() => { setError(null); started.current = false; setActiveStep(0); setGenerationDone(false); setElapsed(0) }}
+                onClick={() => { setError(null); setErrorDebug(null); started.current = false; setActiveStep(0); setGenerationDone(false); setElapsed(0) }}
                 className="rounded-xl border border-drift-gold/20 bg-drift-gold-bg px-4 py-2 text-xs font-semibold text-drift-gold"
               >
                 Retry

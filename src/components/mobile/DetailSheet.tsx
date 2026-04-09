@@ -7,6 +7,7 @@ import { useTripStore } from '@/stores/trip-store'
 import { supabase } from '@/lib/supabase'
 import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
+import { getBookableState, getBookableCTA, getOutboundUrl, getBookableStateLabel } from '@/lib/bookable-state'
 import type { ItemMetadata } from '@/stores/trip-store'
 
 function generateFallbackReason(item: { name: string; category: string }, vibes: string[]): string {
@@ -79,10 +80,14 @@ export default function DetailSheet() {
   info.slice(0, 2).forEach((i) => stats.push({ v: i.v, l: i.l }))
 
   // Booking URL
-  const bookingUrl = (meta.bookingUrl || meta.booking_url) as string | undefined
   const mapsUrl = meta.mapsUrl as string | undefined
   const dest = currentTrip?.destination || ''
-  const searchName = encodeURIComponent(`${item.name} ${dest}`)
+
+  // ── Bookable state (Phase 1: classify every item into A/B/C/D) ──
+  const bookableState = getBookableState(item)
+  const bookableCta = getBookableCTA(bookableState, item.category)
+  const outboundUrl = getOutboundUrl(item, bookableState, dest)
+  const stateLabel = getBookableStateLabel(bookableState)
 
   const handleScroll = () => {
     if (!scrollRef.current) return
@@ -190,16 +195,29 @@ export default function DetailSheet() {
         </div>
 
         <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-          {/* Title + Source badge */}
+          {/* Title + Source + State badges */}
           <h2 className="mt-4 font-serif text-xl font-semibold text-drift-text">{item.name}</h2>
-          {meta.source && (
-            <span className={`mt-1.5 inline-block rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-              ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
-                ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text3'
-            }`}>
-              {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? 'Verified Place' : 'AI Suggested'}
-            </span>
-          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {meta.source && (
+              <span className={`inline-block rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
+                  ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text3'
+              }`}>
+                {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? 'Verified Place' : 'AI Suggested'}
+              </span>
+            )}
+            {stateLabel && (
+              <span className={`inline-block rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                bookableState === 'A'
+                  ? 'bg-drift-gold/15 text-drift-gold'
+                  : bookableState === 'B'
+                  ? 'bg-drift-warn/10 text-drift-warn'
+                  : 'bg-drift-surface2 text-drift-text3'
+              }`}>
+                {stateLabel}
+              </span>
+            )}
+          </div>
           <p className="mt-1.5 text-xs leading-relaxed text-drift-text2">{item.description || item.detail || ''}</p>
 
           {/* Address + Maps link */}
@@ -257,31 +275,47 @@ export default function DetailSheet() {
             </div>
           </div>
 
-          {/* Booking / Maps */}
-          <div className="mt-4 flex gap-2">
-            {bookingUrl ? (
-              <a href={bookingUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|${item.category}`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
-                Book Now
+          {/* Booking action — state-aware (Phase 1 of booking bridge) */}
+          {bookableCta.variant === 'none' || !outboundUrl ? (
+            <div className="mt-4 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-center text-[11px] text-drift-text3">
+              Part of your trip context — no booking needed here
+            </div>
+          ) : (
+            <div className="mt-4 flex gap-2">
+              <a
+                href={outboundUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|${item.category}|${bookableState}|${bookableCta.trackLabel}`)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-[11px] font-bold ${
+                  bookableCta.variant === 'primary'
+                    ? 'bg-drift-gold text-drift-bg'
+                    : bookableCta.variant === 'secondary'
+                    ? 'border border-drift-gold/30 bg-drift-gold/10 text-drift-gold'
+                    : 'border border-drift-border2 bg-drift-surface text-drift-text'
+                }`}
+              >
+                {bookableCta.label}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
               </a>
-            ) : item.category === 'hotel' ? (
-              <a href={`https://www.booking.com/search.html?ss=${searchName}`} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|hotel`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
-                Find on Booking.com
-              </a>
-            ) : item.category === 'activity' ? (
-              <a href={`https://www.viator.com/searchResults/all?text=${searchName}`} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|activity`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
-                Find on Viator
-              </a>
-            ) : item.category === 'food' ? (
-              <a href={`https://www.google.com/maps/search/${searchName}`} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|food`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-drift-gold py-3 text-[11px] font-bold text-drift-bg">
-                View on Maps
-              </a>
-            ) : null}
-            {mapsUrl && (
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-[11px] font-bold text-drift-text">
-                Maps
-              </a>
-            )}
-          </div>
+              {/* Secondary Maps button — only show when the primary action isn't already map-based */}
+              {mapsUrl && bookableCta.variant !== 'tertiary' && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|${item.category}|${bookableState}|view_map_secondary`)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-[11px] font-bold text-drift-text"
+                >
+                  Maps
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Alternatives */}
           {alts.length > 0 && (
