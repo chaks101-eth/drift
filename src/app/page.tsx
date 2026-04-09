@@ -3,255 +3,455 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useEffect, useRef, useState } from 'react'
+
+// ─── Cinematic hero rotation ──────────────────────────────────
+const HERO_IMAGES = [
+  { src: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=2400&q=90', location: 'Tegallalang', country: 'Bali' },
+  { src: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=2400&q=90', location: 'Shibuya', country: 'Tokyo' },
+  { src: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=2400&q=90', location: 'Amalfi', country: 'Italy' },
+  { src: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=2400&q=90', location: 'Santorini', country: 'Greece' },
+  { src: 'https://images.unsplash.com/photo-1504598318550-17eba1008a68?w=2400&q=90', location: 'Cappadocia', country: 'Turkey' },
+]
+
+// ─── Magnetic CTA hook ─────────────────────────────────────────
+function useMagnetic() {
+  const ref = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const handleMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect()
+      const x = e.clientX - rect.left - rect.width / 2
+      const y = e.clientY - rect.top - rect.height / 2
+      el.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`
+    }
+    const handleLeave = () => { el.style.transform = 'translate(0, 0)' }
+    el.addEventListener('mousemove', handleMove)
+    el.addEventListener('mouseleave', handleLeave)
+    return () => {
+      el.removeEventListener('mousemove', handleMove)
+      el.removeEventListener('mouseleave', handleLeave)
+    }
+  }, [])
+  return ref
+}
+
+// ─── Animated counter ───────────────────────────────────────────
+function Counter({ value, suffix = '', duration = 1800 }: { value: number; suffix?: string; duration?: number }) {
+  const [n, setN] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  const started = useRef(false)
+  useEffect(() => {
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true
+        const start = performance.now()
+        const tick = (now: number) => {
+          const progress = Math.min(1, (now - start) / duration)
+          const eased = 1 - Math.pow(1 - progress, 3)
+          setN(Math.round(value * eased))
+          if (progress < 1) requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }
+    }, { threshold: 0.5 })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [value, duration])
+  return <span ref={ref}>{n}{suffix}</span>
+}
 
 export default function Landing() {
   const router = useRouter()
   const [ready, setReady] = useState(false)
+  const [heroIdx, setHeroIdx] = useState(0)
+  const [cursor, setCursor] = useState({ x: 0, y: 0 })
+  const cursorVisible = useRef(false)
+  const primaryRef = useMagnetic()
 
   useEffect(() => {
-    // On mobile, redirect to React mobile app
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       window.location.href = '/m'
       return
     }
-    // Show landing page for everyone (guest mode means all visitors have sessions)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true)
   }, [])
+
+  // Hero rotation
+  useEffect(() => {
+    if (!ready) return
+    const t = setInterval(() => setHeroIdx(i => (i + 1) % HERO_IMAGES.length), 6500)
+    return () => clearInterval(t)
+  }, [ready])
+
+  // Cursor follower
+  useEffect(() => {
+    if (!ready) return
+    const move = (e: MouseEvent) => {
+      cursorVisible.current = true
+      setCursor({ x: e.clientX, y: e.clientY })
+    }
+    window.addEventListener('mousemove', move)
+    return () => window.removeEventListener('mousemove', move)
+  }, [ready])
 
   // Scroll reveal
   useEffect(() => {
     if (!ready) return
-    const els = document.querySelectorAll('.reveal')
     const obs = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
       { threshold: 0.15 }
     )
-    els.forEach(el => obs.observe(el))
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
     return () => obs.disconnect()
   }, [ready])
 
   if (!ready) return <div className="min-h-screen bg-[#08080c]" />
 
+  const hero = HERO_IMAGES[heroIdx]
+
   return (
-    <div className="min-h-screen bg-[#08080c] overflow-x-hidden">
-      {/* Background glow */}
-      <div className="fixed inset-0 pointer-events-none z-0"
-        style={{ background: 'radial-gradient(ellipse at 25% 45%, rgba(200,164,78,0.07) 0%, transparent 55%), radial-gradient(ellipse at 75% 55%, rgba(78,130,200,0.04) 0%, transparent 50%), radial-gradient(ellipse at 50% 90%, rgba(200,78,130,0.03) 0%, transparent 45%)' }}
-      />
+    <div className="min-h-screen bg-[#08080c] text-[#f0efe8] overflow-x-hidden cursor-none max-md:cursor-auto">
+      {/* ═══ Custom cursor follower ═══ */}
+      <div
+        className="pointer-events-none fixed z-[200] hidden md:block"
+        style={{
+          left: cursor.x,
+          top: cursor.y,
+          transform: 'translate(-50%, -50%)',
+        }}
+      >
+        <div className="h-8 w-8 rounded-full border border-[#c8a44e]/60 transition-transform duration-200 ease-out" />
+        <div className="absolute inset-0 m-auto h-1 w-1 rounded-full bg-[#c8a44e]" />
+      </div>
 
-      {/* Particles */}
-      <Particles />
-
+      {/* ═══════════════════════════════════════════════════════ */}
       {/* ─── HERO ─── */}
-      <section className="relative z-[2] min-h-screen flex items-center justify-center flex-col text-center px-6">
-        <h1 className="font-serif text-[clamp(52px,11vw,130px)] font-normal leading-[1.05] mb-3 opacity-0 animate-[fadeUp_1s_ease_forwards_0.2s]">
-          Just <em className="text-[#c8a44e] italic">Drift.</em>
-        </h1>
-        <p className="text-[clamp(14px,2vw,18px)] text-[#7a7a85] font-light max-w-[540px] leading-relaxed mb-9 opacity-0 animate-[fadeUp_1s_ease_forwards_0.5s]">
-          Tell us your <strong className="text-[#f0efe8] font-medium">vibe</strong>, your <strong className="text-[#f0efe8] font-medium">budget</strong>, your <strong className="text-[#f0efe8] font-medium">dates</strong>. Our AI builds a trip you&apos;d actually book — with real flights, real hotels, and reasons behind every pick.
-        </p>
-        <div className="flex gap-3 justify-center items-center opacity-0 animate-[fadeUp_1s_ease_forwards_0.8s] landing-btns-responsive">
-          <button
-            onClick={() => router.push('/vibes')}
-            className="px-11 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(200,164,78,0.3),0_4px_12px_rgba(200,164,78,0.15)] transition-all duration-400 active:translate-y-0 active:scale-[0.97] flex items-center gap-2.5"
+      {/* ═══════════════════════════════════════════════════════ */}
+      <section className="relative h-screen w-full overflow-hidden">
+        {/* Rotating photos */}
+        {HERO_IMAGES.map((img, i) => (
+          <div
+            key={img.src}
+            className="absolute inset-0 transition-opacity duration-[2200ms] ease-in-out"
+            style={{ opacity: i === heroIdx ? 1 : 0 }}
           >
-            Plan My Trip
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-          <button
-            onClick={() => router.push('/login?surprise=1')}
-            className="px-8 py-3.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.12)] text-[#f0efe8] text-sm font-medium rounded-full hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all active:scale-[0.97]"
-          >
-            Surprise Me
-          </button>
+            <Image
+              src={img.src}
+              alt=""
+              fill
+              priority={i === 0}
+              className="object-cover scale-110 animate-[heroKenBurns_18s_ease-in-out_infinite]"
+              sizes="100vw"
+              unoptimized
+            />
+          </div>
+        ))}
+
+        {/* Aurora blobs */}
+        <div className="aurora-blob h-[520px] w-[520px] -left-40 top-20 bg-[#c8a44e]" style={{ animationDelay: '0s' }} />
+        <div className="aurora-blob h-[420px] w-[420px] right-0 bottom-20 bg-[#7a5cb8]" style={{ animationDelay: '-8s', opacity: 0.2 }} />
+
+        {/* Animated grid */}
+        <div className="absolute inset-0 grid-bg" />
+
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(8,8,12,0.4)] via-[rgba(8,8,12,0.55)] to-[#08080c]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(8,8,12,0.75)] via-transparent to-transparent" />
+
+        {/* Top bar */}
+        <div className="relative z-10 flex items-center justify-between px-12 py-7 max-lg:px-8">
+          <div className="flex items-baseline gap-3">
+            <span className="font-serif text-[26px] italic text-[#c8a44e]">Drift</span>
+            <span className="text-[8px] font-semibold tracking-[3px] uppercase text-white/40">AI Composer</span>
+          </div>
+          <nav className="flex items-center gap-10 text-[10px] font-medium tracking-[2px] uppercase">
+            <button onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })} className="text-white/60 hover:text-[#c8a44e] transition-colors">How</button>
+            <button onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })} className="text-white/60 hover:text-[#c8a44e] transition-colors">Why</button>
+            <button onClick={() => router.push('/trips')} className="text-white/60 hover:text-[#c8a44e] transition-colors">My Trips</button>
+          </nav>
         </div>
 
-        {/* Social proof */}
-        <div className="mt-12 flex items-center gap-5 opacity-0 animate-[fadeUp_1s_ease_forwards_1.1s] max-md:flex-col max-md:gap-2.5">
-          <p className="text-xs text-[#4a4a55] leading-relaxed text-center">
-            <strong className="text-[#7a7a85]">Early access</strong> — limited spots. Real flights. Real hotels. Real AI.<br />No credit card required.
-          </p>
+        {/* Hero content */}
+        <div className="absolute inset-0 flex items-center">
+          <div className="px-12 lg:px-24 max-w-[960px]">
+            {/* Eyebrow */}
+            <div className="mb-8 flex items-center gap-3 opacity-0 animate-[fadeUp_0.9s_ease_forwards_0.4s]">
+              <div className="h-px w-10 bg-[#c8a44e]" />
+              <span className="text-[9px] font-semibold tracking-[3px] uppercase text-[#c8a44e]/90">Travel, composed</span>
+            </div>
+
+            {/* Headline — toned down with text-reveal masking */}
+            <h1 className="font-serif text-[clamp(40px,5.5vw,76px)] font-light leading-[1.0] mb-7 tracking-[-0.02em]">
+              <span className="text-reveal-line"><span style={{ animationDelay: '0.5s' }}>Every trip begins</span></span>
+              <br />
+              <span className="text-reveal-line"><span style={{ animationDelay: '0.75s' }}>with a&nbsp;</span></span>
+              <span className="text-reveal-line"><span style={{ animationDelay: '0.9s' }} className="italic text-[#c8a44e]">feeling</span></span>
+              <span className="text-reveal-line"><span style={{ animationDelay: '0.95s' }}>.</span></span>
+            </h1>
+
+            {/* Subtitle — refined */}
+            <p className="text-[15px] font-light text-white/65 max-w-[480px] leading-[1.7] mb-12 opacity-0 animate-[fadeUp_1s_ease_forwards_1.2s]">
+              Not another planner. An intelligence that reads your vibe, finds places locals love, and composes a trip you&apos;d actually book — in 30 seconds.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex items-center gap-5 opacity-0 animate-[fadeUp_1s_ease_forwards_1.4s]">
+              <button
+                ref={primaryRef}
+                onClick={() => router.push('/vibes')}
+                className="group relative overflow-hidden rounded-full bg-[#c8a44e] px-8 py-4 text-[10px] font-bold tracking-[2.5px] uppercase text-[#08080c] transition-shadow duration-400 hover:shadow-[0_20px_60px_rgba(200,164,78,0.4)]"
+                style={{ transition: 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4), box-shadow 0.4s' }}
+              >
+                <span className="relative z-10 flex items-center gap-3">
+                  Start Drifting
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </span>
+                {/* Shimmer */}
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
+              </button>
+
+              <button
+                onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
+                className="group flex items-center gap-3 px-2 py-3 text-[10px] font-semibold tracking-[2px] uppercase text-white/70 hover:text-[#c8a44e] transition-colors"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 group-hover:border-[#c8a44e]/60 group-hover:bg-[#c8a44e]/10 transition-all">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                </div>
+                See how
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-0 animate-[fadeUp_1s_ease_forwards_1.4s]">
-          <div className="w-px h-8 bg-gradient-to-b from-[#c8a44e] to-transparent mx-auto mb-1.5" />
-          <span className="text-[9px] tracking-[3px] uppercase text-[#4a4a55]">See how it works</span>
+        {/* Bottom-left location indicator */}
+        <div className="absolute bottom-14 left-12 z-10 max-lg:left-8 opacity-0 animate-[fadeUp_1s_ease_forwards_1.6s]">
+          <div className="flex items-center gap-3">
+            <div className="h-px w-6 bg-[#c8a44e]/50" />
+            <div>
+              <div className="text-[8px] font-semibold tracking-[2px] uppercase text-white/40">Now showing</div>
+              <div key={heroIdx} className="text-[14px] font-medium text-white/90 mt-0.5 animate-[fadeIn_0.8s_ease]">
+                {hero.location} <span className="text-white/50 italic font-light">· {hero.country}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Image dots */}
+        <div className="absolute bottom-16 right-12 z-10 flex gap-2 max-lg:right-8 opacity-0 animate-[fadeUp_1s_ease_forwards_1.6s]">
+          {HERO_IMAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setHeroIdx(i)}
+              className={`h-[2px] rounded-full transition-all duration-700 ${
+                i === heroIdx ? 'w-10 bg-[#c8a44e]' : 'w-4 bg-white/25 hover:bg-white/45'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Scroll hint */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 opacity-0 animate-[fadeUp_1s_ease_forwards_1.8s]">
+          <span className="text-[8px] font-semibold tracking-[2px] uppercase text-white/35">Scroll</span>
+          <div className="h-6 w-px bg-gradient-to-b from-[#c8a44e]/60 to-transparent animate-[scrollHint_2s_ease-in-out_infinite]" />
         </div>
       </section>
 
-      {/* ─── PRODUCT PREVIEW ─── */}
-      <section className="relative z-[2] max-w-[1100px] mx-auto px-8 py-24 max-md:px-4 max-md:py-16 reveal">
-        <p className="text-[10px] tracking-[4px] uppercase text-[#c8a44e] font-semibold mb-2.5">Your trip, visualized</p>
-        <h2 className="font-serif text-[clamp(26px,4vw,40px)] font-normal leading-[1.25] mb-2.5 max-md:text-[clamp(22px,6vw,32px)]">
-          A flowchart, not a <em className="text-[#c8a44e] italic">spreadsheet</em>
-        </h2>
-        <p className="text-[15px] text-[#7a7a85] leading-[1.7] max-w-[520px] mb-9 max-md:text-[13px]">
-          Every flight, hotel, activity, and meal — connected in a visual board. Tap to swap. Ask AI to adjust. Your trip is alive, not static.
-        </p>
-        <ProductMockup />
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ─── STATS MARQUEE ─── */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <section className="relative border-y border-white/[0.06] py-8 overflow-hidden">
+        <div className="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap">
+          {[...Array(2)].map((_, k) => (
+            <div key={k} className="flex shrink-0 items-center gap-16 px-8">
+              {[
+                { v: '200+', l: 'Trips Composed' },
+                { v: '58', l: 'Destinations' },
+                { v: '100%', l: 'Real Data' },
+                { v: '0', l: 'Hallucinations' },
+                { v: '30s', l: 'Avg. Compose' },
+                { v: 'AI', l: 'Curated' },
+              ].map((s, i) => (
+                <div key={`${k}-${i}`} className="flex items-baseline gap-3">
+                  <span className="font-serif text-[28px] font-light text-[#c8a44e]">{s.v}</span>
+                  <span className="text-[9px] font-semibold tracking-[2.5px] uppercase text-white/40">{s.l}</span>
+                  <span className="text-white/15 ml-12">◆</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════ */}
       {/* ─── HOW IT WORKS ─── */}
-      <section className="relative z-[2] max-w-[1100px] mx-auto px-8 pt-10 pb-24 max-md:px-4 max-md:py-16 reveal">
-        <p className="text-[10px] tracking-[4px] uppercase text-[#c8a44e] font-semibold mb-2.5">How it works</p>
-        <h2 className="font-serif text-[clamp(26px,4vw,40px)] font-normal leading-[1.25] mb-8 max-md:text-[clamp(22px,6vw,32px)]">
-          Three steps. <em className="text-[#c8a44e] italic">No planning headaches.</em>
-        </h2>
-        <div className="grid grid-cols-3 gap-8 l-steps-responsive max-md:grid-cols-1 max-md:gap-3">
-          {[
-            { num: '1', title: 'Pick your vibe', desc: 'Beach chill? Culture deep dive? Foodie trail? Select up to 3 moods. Set budget and dates.' },
-            { num: '2', title: 'AI builds your trip', desc: 'Real flights, vetted hotels, crowd-optimized timings. Every pick comes with a reason you can see.' },
-            { num: '3', title: 'Make it yours', desc: "Swap anything with one tap. Ask AI to adjust. Share with friends. Book when you're ready." },
-          ].map(s => (
-            <div key={s.num} className="text-center p-7 rounded-2xl border border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.02)] transition-all duration-400 hover:border-[rgba(200,164,78,0.12)] hover:bg-[rgba(200,164,78,0.03)] max-md:p-5">
-              <div className="w-9 h-9 rounded-full border border-[rgba(200,164,78,0.25)] bg-[rgba(200,164,78,0.06)] flex items-center justify-center text-sm text-[#c8a44e] font-semibold mx-auto mb-3.5 font-serif">{s.num}</div>
-              <div className="text-sm font-semibold mb-1.5">{s.title}</div>
-              <div className="text-xs text-[#4a4a55] leading-relaxed">{s.desc}</div>
+      {/* ═══════════════════════════════════════════════════════ */}
+      <section id="how" className="relative py-32 px-12 lg:px-24 reveal">
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mb-16 max-w-[680px]">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px w-10 bg-[#c8a44e]" />
+              <span className="text-[9px] font-semibold tracking-[3px] uppercase text-[#c8a44e]/90">The process</span>
             </div>
-          ))}
+            <h2 className="font-serif text-[clamp(32px,4vw,48px)] font-light leading-[1.1] tracking-[-0.01em]">
+              Three steps. <em className="italic text-[#c8a44e]">No headaches.</em>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6 max-md:grid-cols-1">
+            {[
+              {
+                num: '01',
+                title: 'Set your vibe',
+                desc: 'Tell Drift how you want to feel — beach chill, foodie deep-dive, adventure rush. No boring forms.',
+                img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+              },
+              {
+                num: '02',
+                title: 'AI composes',
+                desc: 'Drift evaluates timing, price, vibe fit — then assembles a cohesive trip you\'d actually book.',
+                img: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80',
+              },
+              {
+                num: '03',
+                title: 'Refine & go',
+                desc: 'Chat with Drift to swap, adjust, explore alternatives. Every change cascades intelligently.',
+                img: 'https://images.unsplash.com/photo-1523484763220-f02e4937d58e?w=800&q=80',
+              },
+            ].map((s, i) => (
+              <div
+                key={s.num}
+                className="reveal group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] transition-all duration-500 hover:border-[#c8a44e]/25 hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(0,0,0,0.4)]"
+                style={{ transitionDelay: `${i * 100}ms` }}
+              >
+                <div className="relative h-[180px] overflow-hidden">
+                  <Image src={s.img} alt={s.title} fill className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110" sizes="400px" unoptimized />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#08080c] via-[#08080c]/40 to-transparent" />
+                  <div className="absolute top-5 left-5 font-serif text-[52px] font-light text-[#c8a44e]/35 leading-none">{s.num}</div>
+                </div>
+                <div className="p-6">
+                  <h3 className="font-serif text-[20px] font-normal mb-2.5">{s.title}</h3>
+                  <p className="text-[12px] leading-[1.7] text-white/55">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ─── WHY DRIFT ─── */}
-      <section className="relative z-[2] max-w-[1100px] mx-auto px-8 pt-10 pb-24 max-md:px-4 max-md:py-16 reveal">
-        <p className="text-[10px] tracking-[4px] uppercase text-[#c8a44e] font-semibold mb-2.5">Why Drift</p>
-        <h2 className="font-serif text-[clamp(26px,4vw,40px)] font-normal leading-[1.25] mb-8 max-md:text-[clamp(22px,6vw,32px)]">
-          Built different, <em className="text-[#c8a44e] italic">on purpose</em>
-        </h2>
-        <div className="grid grid-cols-2 gap-4 l-diffs-responsive max-md:grid-cols-1 max-md:gap-2.5">
-          {[
-            {
-              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
-              title: 'AI that explains itself',
-              desc: 'Every recommendation shows why it was picked. Price-to-comfort ratio. Crowd timing. Vibe alignment. No black boxes.',
-            },
-            {
-              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-              title: 'Real data, not guesses',
-              desc: "Live flight prices from Amadeus. Hotel ratings from 2M+ reviews. Not some LLM making up numbers.",
-            },
-            {
-              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
-              title: "Swap, don't start over",
-              desc: "Don't like a hotel? Tap alternatives, see trust badges, swap in one click. The cost bar updates live.",
-            },
-            {
-              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
-              title: 'Vibes, not filters',
-              desc: 'You don\'t search by star rating. You say "romantic + foodie + beach" and Drift gets it. Travel that feels like you.',
-            },
-          ].map(d => (
-            <div key={d.title} className="p-5 rounded-[14px] border border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.02)] transition-all duration-400 hover:border-[rgba(200,164,78,0.1)] hover:-translate-y-0.5">
-              <div className="mb-2.5 text-[#c8a44e] opacity-70">{d.icon}</div>
-              <div className="text-[13px] font-semibold mb-1">{d.title}</div>
-              <div className="text-[11px] text-[#4a4a55] leading-relaxed">{d.desc}</div>
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ─── WHY DRIFT — Bento grid ─── */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <section id="why" className="relative py-32 px-12 lg:px-24 reveal">
+        {/* Subtle aurora */}
+        <div className="aurora-blob h-[420px] w-[420px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#c8a44e]" style={{ opacity: 0.06 }} />
+
+        <div className="relative mx-auto max-w-[1100px]">
+          <div className="mb-16 max-w-[680px]">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px w-10 bg-[#c8a44e]" />
+              <span className="text-[9px] font-semibold tracking-[3px] uppercase text-[#c8a44e]/90">Why Drift</span>
             </div>
-          ))}
+            <h2 className="font-serif text-[clamp(32px,4vw,48px)] font-light leading-[1.1] tracking-[-0.01em]">
+              Not search. <em className="italic text-[#c8a44e]">Curation by intelligence.</em>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-5 max-md:grid-cols-1">
+            {[
+              {
+                title: 'AI that explains itself',
+                desc: 'Every recommendation shows why it was picked. Price-to-comfort. Crowd timing. Vibe alignment. No black boxes.',
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>,
+              },
+              {
+                title: 'Real data, not guesses',
+                desc: 'Live flight prices from Amadeus. Hotel ratings from 2M+ reviews. Not some LLM making up numbers.',
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
+              },
+              {
+                title: 'Swap, don\'t start over',
+                desc: 'Don\'t like a hotel? Tap alternatives, see trust badges, swap in one click. The cost bar updates live.',
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>,
+              },
+              {
+                title: 'Vibes, not filters',
+                desc: 'You don\'t search by star rating. You say "romantic + foodie + beach" and Drift gets it.',
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" /></svg>,
+              },
+            ].map((d, i) => (
+              <div
+                key={d.title}
+                className="reveal group relative flex gap-5 rounded-2xl border border-white/[0.06] bg-white/[0.015] backdrop-blur-sm p-7 transition-all duration-500 hover:border-[#c8a44e]/20 hover:-translate-y-1 hover:bg-white/[0.025]"
+                style={{ transitionDelay: `${i * 80}ms` }}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8a44e]/10 text-[#c8a44e] transition-all duration-500 group-hover:bg-[#c8a44e]/15 group-hover:scale-110">
+                  {d.icon}
+                </div>
+                <div>
+                  <h3 className="font-serif text-[18px] font-normal mb-2">{d.title}</h3>
+                  <p className="text-[12px] leading-[1.7] text-white/55">{d.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Live stats row */}
+          <div className="mt-16 grid grid-cols-4 gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.015] py-8 px-8 max-md:grid-cols-2 reveal">
+            {[
+              { v: 200, suffix: '+', l: 'Trips composed' },
+              { v: 58, suffix: '', l: 'Destinations' },
+              { v: 100, suffix: '%', l: 'Real data' },
+              { v: 0, suffix: '', l: 'Hallucinations' },
+            ].map(s => (
+              <div key={s.l} className="text-center">
+                <div className="font-serif text-[32px] font-light text-[#c8a44e] tabular-nums">
+                  <Counter value={s.v} suffix={s.suffix} />
+                </div>
+                <div className="mt-1 text-[9px] font-semibold tracking-[2px] uppercase text-white/45">{s.l}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════ */}
       {/* ─── FINAL CTA ─── */}
-      <section className="relative z-[2] text-center px-8 pt-20 pb-16 max-md:px-4 max-md:pt-16 max-md:pb-10 reveal">
-        <h2 className="font-serif text-[clamp(28px,5vw,48px)] font-normal leading-[1.2] mb-2.5 max-md:text-[clamp(24px,6vw,36px)]">
-          Stop planning. <em className="text-[#c8a44e] italic">Start drifting.</em>
-        </h2>
-        <p className="text-sm text-[#4a4a55] mb-7">Free to use. No credit card. Your first trip is 30 seconds away.</p>
-        <div className="flex gap-3 justify-center max-md:flex-col max-md:px-4">
+      {/* ═══════════════════════════════════════════════════════ */}
+      <section className="relative py-32 px-12 lg:px-24 text-center reveal overflow-hidden">
+        <div className="aurora-blob h-[600px] w-[600px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#c8a44e]" style={{ opacity: 0.08 }} />
+        <div className="relative mx-auto max-w-[680px]">
+          <h2 className="font-serif text-[clamp(32px,4.5vw,56px)] font-light leading-[1.05] mb-6 tracking-[-0.01em]">
+            Stop planning.<br />
+            <em className="italic text-[#c8a44e]">Start drifting.</em>
+          </h2>
+          <p className="text-[13px] text-white/55 mb-10">Free. No credit card. Your first trip is 30 seconds away.</p>
           <button
             onClick={() => router.push('/vibes')}
-            className="px-11 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(200,164,78,0.3)] transition-all active:scale-[0.97] flex items-center gap-2.5 justify-center"
+            className="inline-flex items-center gap-3 rounded-full bg-[#c8a44e] px-10 py-4 text-[10px] font-bold tracking-[2.5px] uppercase text-[#08080c] hover:-translate-y-0.5 hover:shadow-[0_20px_60px_rgba(200,164,78,0.4)] transition-all duration-400"
           >
-            Plan My Trip — Free
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Compose My Trip
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
           </button>
         </div>
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="relative z-[2] text-center px-8 py-6 border-t border-[rgba(255,255,255,0.06)] text-[11px] text-[#4a4a55]">
-        Drift &middot;{' '}
-        <Link href="/about" className="hover:text-[#c8a44e] transition-colors">About</Link>
-        {' '}&middot;{' '}
-        <Link href="/faq" className="hover:text-[#c8a44e] transition-colors">FAQ</Link>
-        {' '}&middot;{' '}
-        <Link href="/privacy" className="hover:text-[#c8a44e] transition-colors">Privacy</Link>
-        {' '}&middot;{' '}
-        <Link href="/terms" className="hover:text-[#c8a44e] transition-colors">Terms</Link>
-        {' '}&middot; Built with taste.
+      <footer className="border-t border-white/[0.06] py-10 px-12 text-center text-[10px] text-white/35">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <span className="font-serif text-[16px] italic text-[#c8a44e]">Drift</span>
+          <span>·</span>
+          <Link href="/about" className="hover:text-[#c8a44e] transition-colors uppercase tracking-wider">About</Link>
+          <span>·</span>
+          <Link href="/faq" className="hover:text-[#c8a44e] transition-colors uppercase tracking-wider">FAQ</Link>
+          <span>·</span>
+          <Link href="/privacy" className="hover:text-[#c8a44e] transition-colors uppercase tracking-wider">Privacy</Link>
+          <span>·</span>
+          <Link href="/terms" className="hover:text-[#c8a44e] transition-colors uppercase tracking-wider">Terms</Link>
+        </div>
       </footer>
-    </div>
-  )
-}
-
-/* ─── Particles Component ─────────────────────────────────────── */
-function Particles() {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const container = ref.current
-    if (!container) return
-    for (let i = 0; i < 20; i++) {
-      const p = document.createElement('div')
-      p.className = 'particle'
-      p.style.left = `${Math.random() * 100}%`
-      p.style.animationDuration = `${8 + Math.random() * 12}s`
-      p.style.animationDelay = `${Math.random() * 10}s`
-      const size = 1 + Math.random() * 2
-      p.style.width = `${size}px`
-      p.style.height = `${size}px`
-      container.appendChild(p)
-    }
-    return () => { container.innerHTML = '' }
-  }, [])
-
-  return <div ref={ref} className="fixed inset-0 pointer-events-none z-0" />
-}
-
-/* ─── Product Mockup ──────────────────────────────────────────── */
-function ProductMockup() {
-  const cards = [
-    { tag: 'Flight', tagClass: 'bg-[rgba(200,164,78,0.15)] text-[#c8a44e]', name: 'IndiGo 6E-2087', detail: 'DEL → DPS · 9h 20m', price: '$420', img: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=400&h=200&fit=crop' },
-    { tag: 'Hotel', tagClass: 'bg-[rgba(78,205,196,0.15)] text-[#4ecdc4]', name: 'Alila Ubud', detail: 'Infinity pool · 4.8★', price: '$89/nt', img: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=200&fit=crop' },
-    { tag: 'Activity', tagClass: 'bg-[rgba(160,120,200,0.15)] text-[#a080c8]', name: 'Tegallalang Rice Terraces', detail: 'Morning · 2 hours', price: '$12', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&h=200&fit=crop' },
-    { tag: 'Food', tagClass: 'bg-[rgba(240,165,0,0.15)] text-[#f0a500]', name: 'Locavore', detail: 'Fine dining · Tasting menu', price: '$65', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=200&fit=crop' },
-  ]
-
-  return (
-    <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#0e0e14] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.03)]">
-      {/* Browser bar */}
-      <div className="h-8 bg-[rgba(255,255,255,0.03)] border-b border-[rgba(255,255,255,0.06)] flex items-center px-3 gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-[#e74c3c]" />
-        <div className="w-2 h-2 rounded-full bg-[#f0a500]" />
-        <div className="w-2 h-2 rounded-full bg-[#4ecdc4]" />
-      </div>
-      {/* Cards */}
-      <div className="p-5 flex gap-3 overflow-x-auto max-md:p-3.5">
-        {cards.map((c, i) => (
-          <div key={i} className="flex items-center gap-0 flex-shrink-0">
-            <div className="w-40 rounded-xl overflow-hidden border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] max-md:w-[140px]">
-              <div className="relative w-full h-[90px] max-md:h-[72px]">
-                <Image src={c.img} alt={c.name} fill className="object-cover" sizes="(max-width: 768px) 140px, 160px" />
-              </div>
-              <div className="p-2.5">
-                <span className={`text-[7px] px-1.5 py-0.5 rounded ${c.tagClass} uppercase tracking-wide font-semibold inline-block mb-1`}>{c.tag}</span>
-                <div className="text-[11px] font-semibold mb-0.5">{c.name}</div>
-                <div className="text-[9px] text-[#4a4a55]">{c.detail}</div>
-                <div className="text-xs text-[#c8a44e] font-medium mt-1">{c.price}</div>
-              </div>
-            </div>
-            {i < cards.length - 1 && (
-              <div className="flex items-center px-1 flex-shrink-0">
-                <div className="w-8 h-px bg-[rgba(255,255,255,0.06)] relative">
-                  <div className="absolute right-0 -top-[3px] border-l-[5px] border-l-[rgba(255,255,255,0.06)] border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent" />
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

@@ -10,6 +10,12 @@ const SUGGESTIONS = [
   'What should I pack?',
 ]
 
+interface ChatAction {
+  type: string
+  label?: string
+  [key: string]: unknown
+}
+
 interface ChatPanelProps {
   open: boolean
   onClose: () => void
@@ -18,7 +24,10 @@ interface ChatPanelProps {
 
 export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
   const token = useTripStore((s) => s.token)
-  const { chatHistory, addChatMessage, updateLastChatMessage } = useTripStore()
+  const chatHistory = useTripStore((s) => s.chatHistory)
+  const addChatMessage = useTripStore((s) => s.addChatMessage)
+  const updateLastChatMessage = useTripStore((s) => s.updateLastChatMessage)
+
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -32,6 +41,14 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' })
   }, [chatHistory])
 
+  // Keyboard: Escape closes panel
+  useEffect(() => {
+    if (!open) return
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [open, onClose])
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || streaming || !token) return
     const msg = text.trim()
@@ -39,43 +56,81 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
     setStreaming(true)
 
     addChatMessage({ role: 'user', content: msg })
-    addChatMessage({ role: 'assistant', content: '' })
+
+    let messageAdded = false
+    let finalText = ''
+    let finalActions: ChatAction[] = []
 
     try {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ tripId, message: msg }),
+        body: JSON.stringify({ tripId, message: msg, stream: true }),
       })
 
+      // SSE streaming
       if (res.headers.get('content-type')?.includes('text/event-stream')) {
         const reader = res.body?.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
-        let fullText = ''
 
-        while (reader) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
-                if (data.text) { fullText += data.text; updateLastChatMessage({ content: fullText }) }
-                if (data.done) updateLastChatMessage({ content: fullText })
-              } catch { /* skip */ }
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+
+            const lines = buffer.split(/\r?\n/)
+            buffer = lines.pop() || ''
+
+            let eventType = ''
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                eventType = line.slice(7)
+              } else if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6))
+                  if (eventType === 'text') {
+                    finalText = data.content || ''
+                    if (!messageAdded) {
+                      addChatMessage({ role: 'assistant', content: finalText })
+                      messageAdded = true
+                    } else {
+                      updateLastChatMessage({ content: finalText })
+                    }
+                  } else if (eventType === 'tool') {
+                    if (!messageAdded) {
+                      addChatMessage({ role: 'assistant', content: data.label || 'Thinking...' })
+                      messageAdded = true
+                    } else {
+                      updateLastChatMessage({ content: data.label || 'Thinking...' })
+                    }
+                  } else if (eventType === 'actions') {
+                    finalActions = data.actions || []
+                    if (finalActions.length > 0) {
+                      updateLastChatMessage({ actions: finalActions })
+                    }
+                  }
+                } catch { /* skip malformed */ }
+              }
             }
           }
         }
+
+        if (!messageAdded) {
+          addChatMessage({ role: 'assistant', content: finalText || 'I couldn\'t process that.' })
+        }
       } else {
+        // Fallback non-streaming
         const data = await res.json()
-        updateLastChatMessage({ content: data.reply || data.message || 'Sorry, I couldn\'t process that.' })
+        addChatMessage({ role: 'assistant', content: data.text || data.reply || 'I couldn\'t process that.', actions: data.actions })
       }
     } catch {
-      updateLastChatMessage({ content: 'Something went wrong. Try again.' })
+      if (messageAdded) {
+        updateLastChatMessage({ content: 'Connection lost — try again.' })
+      } else {
+        addChatMessage({ role: 'assistant', content: 'Connection lost — try again.' })
+      }
     } finally {
       setStreaming(false)
     }
@@ -91,7 +146,10 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
             </svg>
           </div>
-          <span className="font-serif text-lg text-drift-text">Chat with Drift</span>
+          <div>
+            <div className="font-serif text-[16px] text-drift-text">Chat with Drift</div>
+            <div className="text-[9px] text-drift-text3 uppercase tracking-wider">AI Travel Assistant</div>
+          </div>
         </div>
         <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-drift-surface transition-colors">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -104,14 +162,19 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {chatHistory.length === 0 && (
           <div className="text-center py-12">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-drift-gold/10">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
+                <polygon points="3 11 22 2 13 21 11 13 3 11" />
+              </svg>
+            </div>
             <div className="font-serif text-xl text-drift-text mb-2">Ask anything about your trip</div>
-            <p className="text-[12px] text-drift-text3 mb-6">Swap hotels, find cheaper options, add activities, or get local tips.</p>
-            <div className="flex flex-wrap justify-center gap-2">
+            <p className="text-[12px] text-drift-text3 mb-6 leading-relaxed">Swap hotels, find cheaper options, add activities, or get local tips — I&apos;ll handle it.</p>
+            <div className="flex flex-col gap-2">
               {SUGGESTIONS.map(s => (
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}
-                  className="rounded-full border border-drift-border px-4 py-2 text-[11px] text-drift-text3 hover:border-drift-gold/20 hover:text-drift-gold transition-all"
+                  className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-2.5 text-[12px] text-drift-text2 transition-all hover:border-drift-gold/20 hover:text-drift-gold hover:bg-drift-gold/[0.04]"
                 >
                   {s}
                 </button>
@@ -120,30 +183,49 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
           </div>
         )}
 
-        {chatHistory.map((msg, i) => (
-          <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-            {msg.role === 'assistant' && (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-drift-gold/10">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
-                  <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
+        {chatHistory.map((msg, i) => {
+          const actions = (msg.actions || []) as ChatAction[]
+          return (
+            <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+              {msg.role === 'assistant' && (
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-drift-gold/10">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                  </svg>
+                </div>
+              )}
+              <div className="flex flex-col gap-2 max-w-[320px]">
+                <div className={`rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-drift-gold/10 border border-drift-gold/15 text-drift-text rounded-tr-sm'
+                    : 'bg-drift-surface border border-drift-border text-drift-text2 rounded-tl-sm'
+                }`}>
+                  {msg.content || (streaming && i === chatHistory.length - 1 ? (
+                    <span className="flex gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-drift-gold animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="h-1.5 w-1.5 rounded-full bg-drift-gold animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="h-1.5 w-1.5 rounded-full bg-drift-gold animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
+                  ) : '')}
+                </div>
+
+                {/* Action cards (swap results, etc.) */}
+                {actions.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {actions.map((action, ai) => (
+                      <div key={ai} className="rounded-lg bg-drift-gold/[0.06] border border-drift-gold/15 px-3 py-2 text-[11px] text-drift-gold">
+                        <div className="flex items-center gap-1.5">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                          <span className="font-semibold">{action.label || action.type}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-            <div className={`max-w-[320px] rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
-              msg.role === 'user'
-                ? 'bg-drift-gold/10 border border-drift-gold/15 text-drift-text rounded-tr-sm'
-                : 'bg-drift-surface border border-drift-border text-drift-text2 rounded-tl-sm'
-            }`}>
-              {msg.content || (streaming && i === chatHistory.length - 1 ? (
-                <span className="flex gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-drift-gold animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-drift-gold animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-drift-gold animate-bounce" style={{ animationDelay: '300ms' }} />
-                </span>
-              ) : '')}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Input */}
@@ -161,12 +243,13 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
             }}
             placeholder="Ask about your trip..."
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-drift-border bg-transparent px-4 py-3 text-[13px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none max-h-[120px] overflow-y-auto"
+            disabled={streaming}
+            className="flex-1 resize-none rounded-xl border border-drift-border bg-[rgba(255,255,255,0.02)] px-4 py-3 text-[13px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none max-h-[120px] overflow-y-auto disabled:opacity-60"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || streaming}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-drift-gold text-drift-bg disabled:opacity-30 transition-opacity"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-drift-gold text-drift-bg disabled:opacity-30 hover:scale-105 transition-all"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />

@@ -101,47 +101,88 @@ function LoadingContent() {
   }, [token, onboarding, router, activeStep])
 
   const dest = onboarding.destination
+  const destImage = dest?.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&q=80'
+
+  // Compute progress percentage
+  const progressPct = Math.min(100, Math.round(((activeStep + 1) / steps.length) * 100))
 
   return (
-    <div className="min-h-screen bg-drift-bg text-drift-text">
+    <div className="min-h-screen bg-drift-bg text-drift-text relative overflow-hidden">
       <NavBar />
-      <div className="flex min-h-[calc(100vh-56px)] items-center justify-center">
-        <div className="w-full max-w-[480px] text-center px-8">
+
+      {/* Destination photo background */}
+      {dest && (
+        <div className="fixed inset-0 z-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${destImage})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-drift-bg via-drift-bg/80 to-drift-bg" />
+          <div className="absolute inset-0 bg-drift-bg/60 backdrop-blur-md" />
+        </div>
+      )}
+
+      <div className="relative z-10 flex min-h-[calc(100vh-56px)] items-center justify-center">
+        <div className="w-full max-w-[560px] text-center px-8">
           {/* Destination */}
           {dest && (
-            <div className="mb-8">
-              <h1 className="font-serif text-3xl text-drift-text">{dest.city}</h1>
-              {dest.country && <p className="text-sm text-drift-text3 mt-1">{dest.country}</p>}
+            <div className="mb-10 animate-[fadeUp_0.8s_ease]">
+              <div className="mb-3 flex items-center justify-center gap-2">
+                <div className="h-px w-8 bg-drift-gold opacity-60" />
+                <span className="text-[10px] font-semibold tracking-[4px] uppercase text-drift-gold">Composing your trip</span>
+                <div className="h-px w-8 bg-drift-gold opacity-60" />
+              </div>
+              <h1 className="font-serif text-[48px] font-light text-drift-text">{dest.city}</h1>
+              {dest.country && <p className="text-[13px] text-drift-text3 mt-1 tracking-wide">{dest.country}</p>}
             </div>
           )}
 
           {/* Orbital spinner */}
-          <div className="relative mx-auto mb-8 h-24 w-24">
-            <div className="absolute inset-0 rounded-full border border-drift-gold/20 animate-spin" style={{ animationDuration: '8s' }}>
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-drift-gold" />
+          <div className="relative mx-auto mb-10 h-28 w-28">
+            <div className="absolute inset-0 rounded-full border border-drift-gold/25 animate-spin" style={{ animationDuration: '8s' }}>
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-drift-gold shadow-[0_0_12px_rgba(200,164,78,0.8)]" />
             </div>
-            <div className="absolute inset-3 rounded-full border border-drift-gold/10 animate-spin" style={{ animationDuration: '12s', animationDirection: 'reverse' }}>
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-drift-gold/60" />
+            <div className="absolute inset-4 rounded-full border border-drift-gold/15 animate-spin" style={{ animationDuration: '12s', animationDirection: 'reverse' }}>
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-drift-gold/70" />
+            </div>
+            <div className="absolute inset-8 rounded-full border border-drift-gold/10 animate-spin" style={{ animationDuration: '16s' }}>
+              <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-drift-gold/50" />
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-serif text-2xl text-drift-gold">D</span>
+              <span className="font-serif text-[28px] text-drift-gold">D</span>
             </div>
           </div>
+
+          {/* Progress bar */}
+          {!error && (
+            <div className="mb-6">
+              <div className="h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-drift-gold/50 via-drift-gold to-drift-gold/80 transition-all duration-700 ease-out"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-[9px] text-drift-text3 uppercase tracking-wider">
+                <span>{progressPct}%</span>
+                <span>{steps.length - activeStep - 1} steps remaining</span>
+              </div>
+            </div>
+          )}
 
           {/* Steps */}
           <div className="space-y-2 mb-8">
             {steps.map((step, i) => (
               <div key={i} className={`flex items-center gap-3 transition-all duration-500 ${
-                i === activeStep ? 'opacity-100' : i < activeStep ? 'opacity-30' : 'opacity-0'
+                i === activeStep ? 'opacity-100' : i < activeStep ? 'opacity-40' : 'opacity-15'
               }`}>
-                <div className={`h-1.5 w-1.5 rounded-full transition-all ${
-                  i === activeStep ? 'bg-drift-gold scale-125' : i < activeStep ? 'bg-drift-ok' : 'bg-drift-text3'
+                <div className={`h-1.5 w-1.5 rounded-full shrink-0 transition-all ${
+                  i === activeStep ? 'bg-drift-gold scale-150 shadow-[0_0_8px_rgba(200,164,78,0.8)]' : i < activeStep ? 'bg-drift-ok' : 'bg-drift-text3'
                 }`} />
-                <span className={`text-[13px] ${i === activeStep ? 'text-drift-gold font-medium' : 'text-drift-text3'}`}>
+                <span className={`text-[13px] text-left ${i === activeStep ? 'text-drift-gold font-medium' : 'text-drift-text3'}`}>
                   {step.text}
                 </span>
                 {i < activeStep && (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" className="ml-auto"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" className="ml-auto shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
                 )}
               </div>
             ))}
@@ -149,18 +190,18 @@ function LoadingContent() {
 
           {/* Error */}
           {error && (
-            <div className="rounded-xl border border-drift-err/20 bg-drift-err/5 px-5 py-4 text-center">
-              <p className="text-[13px] text-drift-err mb-3">{error}</p>
+            <div className="rounded-2xl border border-drift-err/20 bg-drift-err/5 px-6 py-5 text-center animate-[fadeUp_0.3s_ease]">
+              <p className="text-[13px] text-drift-err mb-4">{error}</p>
               <div className="flex gap-3 justify-center">
                 <button
-                  onClick={() => { setError(null); started.current = false }}
-                  className="rounded-lg bg-drift-gold px-5 py-2 text-[12px] font-semibold text-drift-bg"
+                  onClick={() => { setError(null); started.current = false; window.location.reload() }}
+                  className="rounded-full bg-drift-gold px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider text-drift-bg hover:-translate-y-0.5 transition-all"
                 >
                   Retry
                 </button>
                 <button
                   onClick={() => router.push('/destinations')}
-                  className="rounded-lg border border-drift-border px-5 py-2 text-[12px] text-drift-text3"
+                  className="rounded-full border border-[rgba(255,255,255,0.12)] px-6 py-2.5 text-[11px] font-medium text-drift-text3 hover:border-drift-gold/20 hover:text-drift-gold transition-all"
                 >
                   Go back
                 </button>

@@ -113,15 +113,18 @@ function DestinationsContent() {
   const canConfirm = customDest.trim().length > 1 || selectedDest !== null
 
   return (
-    <div className="min-h-screen bg-drift-bg text-drift-text">
+    <div className="min-h-screen bg-drift-bg text-drift-text animate-[fadeIn_0.4s_ease]">
       <NavBar />
       <div className="mx-auto max-w-[1100px] px-8 pt-20 pb-16">
         {/* Header */}
-        <p className="text-[11px] tracking-[4px] uppercase text-drift-gold font-semibold mb-2">Pick your destination</p>
-        <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal mb-2">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="h-px w-8 bg-drift-gold opacity-60" />
+          <span className="text-[10px] font-semibold tracking-[4px] uppercase text-drift-gold">Step 2 of 3 · Pick destination</span>
+        </div>
+        <h1 className="font-serif text-[clamp(36px,5vw,56px)] font-light mb-3 leading-[1.05]">
           Where should you <em className="text-drift-gold italic">drift</em>?
         </h1>
-        <p className="text-[15px] text-drift-text2 mb-8">Based on your vibes, we found these matches. Or search for your own.</p>
+        <p className="text-[15px] text-drift-text2 mb-8 max-w-[560px]">Matched to your vibes: <span className="text-drift-gold">{pickedVibes.join(', ')}</span>. Or search for your own below.</p>
 
         {/* Custom destination search */}
         <div className="relative mb-8 max-w-[500px]">

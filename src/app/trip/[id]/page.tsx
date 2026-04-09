@@ -1,22 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useTripStore } from '@/stores/trip-store'
+import { useUIStore } from '@/stores/ui-store'
 import DesktopBoardView from '@/components/desktop/BoardView'
 import ChatPanel from '@/components/desktop/ChatPanel'
 import DetailModal from '@/components/desktop/DetailModal'
+import RemixModal from '@/components/desktop/RemixModal'
+import DesktopToast from '@/components/desktop/Toast'
 import NavBar from '@/app/NavBar'
 
 export default function DesktopTripPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
   const setAuth = useTripStore((s) => s.setAuth)
   const currentTrip = useTripStore((s) => s.currentTrip)
   const currentItems = useTripStore((s) => s.currentItems)
+  const showChat = useUIStore((s) => s.showChat)
+  const openChat = useUIStore((s) => s.openChat)
+  const closeChat = useUIStore((s) => s.closeChat)
   const [loading, setLoading] = useState(true)
-  const [chatOpen, setChatOpen] = useState(false)
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
 
   const detailItem = detailItemId ? currentItems.find(i => i.id === detailItemId) || null : null
@@ -84,27 +88,28 @@ export default function DesktopTripPage() {
   }
 
   return (
-    <div className="min-h-screen bg-drift-bg text-drift-text">
+    <div className="min-h-screen bg-drift-bg text-drift-text animate-[fadeIn_0.4s_ease]">
       <NavBar />
-      <div className="h-[calc(100vh-56px)]">
+      <div className="h-[calc(100vh-56px)] mt-14">
         <DesktopBoardView
           trip={currentTrip}
           items={currentItems}
           onOpenDetail={(itemId) => setDetailItemId(itemId)}
+          onOpenChat={() => openChat()}
         />
       </div>
 
-      {/* Floating Chat FAB */}
-      {!chatOpen && (
+      {/* Drift Chat FAB — branded mark, opens chat panel */}
+      {!showChat && (
         <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-8 right-8 z-[280] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-[#a88a3e] shadow-[0_8px_32px_rgba(200,164,78,0.35)] transition-all hover:scale-[1.08] hover:shadow-[0_12px_40px_rgba(200,164,78,0.45)] active:scale-95"
+          onClick={() => openChat()}
+          aria-label="Chat with Drift"
+          className="group fixed bottom-8 right-8 z-[280] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-[#a88a3e] shadow-[0_12px_36px_rgba(200,164,78,0.35)] transition-all duration-400 hover:scale-[1.08] hover:shadow-[0_16px_48px_rgba(200,164,78,0.5)] active:scale-95"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-          </svg>
-          {/* Pulse ring */}
-          <span className="absolute inset-[-4px] rounded-full border-2 border-drift-gold opacity-0 animate-[fabPulse_3s_ease-out_infinite]" />
+          <span className="font-serif italic text-[26px] font-normal text-drift-bg leading-none translate-y-[-1px]">D</span>
+          {/* Pulse rings */}
+          <span className="absolute inset-0 rounded-full border border-drift-gold/60 opacity-0 animate-[fabPulse_3s_ease-out_infinite]" />
+          <span className="absolute inset-0 rounded-full border border-drift-gold/40 opacity-0 animate-[fabPulse_3s_ease-out_infinite]" style={{ animationDelay: '1.5s' }} />
         </button>
       )}
 
@@ -113,16 +118,22 @@ export default function DesktopTripPage() {
         <DetailModal
           item={detailItem}
           onClose={() => setDetailItemId(null)}
-          onChat={() => { setDetailItemId(null); setChatOpen(true) }}
+          onChat={() => { setDetailItemId(null); openChat() }}
         />
       )}
 
       {/* Chat Panel */}
       <ChatPanel
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
+        open={showChat}
+        onClose={() => closeChat()}
         tripId={id}
       />
+
+      {/* Remix Modal */}
+      <RemixModal />
+
+      {/* Toast notifications */}
+      <DesktopToast />
     </div>
   )
 }
