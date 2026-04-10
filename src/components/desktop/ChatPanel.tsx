@@ -61,79 +61,122 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
     let finalText = ''
     let finalActions: ChatAction[] = []
 
-    try {
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ tripId, message: msg, stream: true }),
-      })
+    // Helper: try SSE streaming first, fall back to non-streaming
+    const tryStream = async (): Promise<boolean> => {
+      try {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tripId, message: msg, stream: true }),
+        })
 
-      // SSE streaming
-      if (res.headers.get('content-type')?.includes('text/event-stream')) {
+        if (!res.ok) {
+          // 4xx/5xx — don't retry as stream, fall back to non-stream
+          return false
+        }
+
+        if (!res.headers.get('content-type')?.includes('text/event-stream')) {
+          // Server responded but not as SSE — parse as JSON directly
+          const data = await res.json()
+          addChatMessage({ role: 'assistant', content: data.text || data.reply || 'I couldn\'t process that.', actions: data.actions })
+          messageAdded = true
+          return true
+        }
+
         const reader = res.body?.getReader()
+        if (!reader) return false
+
         const decoder = new TextDecoder()
         let buffer = ''
 
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            buffer += decoder.decode(value, { stream: true })
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
 
-            const lines = buffer.split(/\r?\n/)
-            buffer = lines.pop() || ''
+          const lines = buffer.split(/\r?\n/)
+          buffer = lines.pop() || ''
 
-            let eventType = ''
-            for (const line of lines) {
-              if (line.startsWith('event: ')) {
-                eventType = line.slice(7)
-              } else if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6))
-                  if (eventType === 'text') {
-                    finalText = data.content || ''
-                    if (!messageAdded) {
-                      addChatMessage({ role: 'assistant', content: finalText })
-                      messageAdded = true
-                    } else {
-                      updateLastChatMessage({ content: finalText })
-                    }
-                  } else if (eventType === 'tool') {
-                    if (!messageAdded) {
-                      addChatMessage({ role: 'assistant', content: data.label || 'Thinking...' })
-                      messageAdded = true
-                    } else {
-                      updateLastChatMessage({ content: data.label || 'Thinking...' })
-                    }
-                  } else if (eventType === 'actions') {
-                    finalActions = data.actions || []
-                    if (finalActions.length > 0) {
-                      updateLastChatMessage({ actions: finalActions })
-                    }
+          let eventType = ''
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              eventType = line.slice(7)
+            } else if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (eventType === 'text') {
+                  finalText = data.content || ''
+                  if (!messageAdded) {
+                    addChatMessage({ role: 'assistant', content: finalText })
+                    messageAdded = true
+                  } else {
+                    updateLastChatMessage({ content: finalText })
                   }
-                } catch { /* skip malformed */ }
-              }
+                } else if (eventType === 'tool') {
+                  if (!messageAdded) {
+                    addChatMessage({ role: 'assistant', content: data.label || 'Thinking...' })
+                    messageAdded = true
+                  } else {
+                    updateLastChatMessage({ content: data.label || 'Thinking...' })
+                  }
+                } else if (eventType === 'actions') {
+                  finalActions = data.actions || []
+                  if (finalActions.length > 0) {
+                    updateLastChatMessage({ actions: finalActions })
+                  }
+                }
+              } catch { /* skip malformed */ }
             }
           }
         }
 
         if (!messageAdded) {
           addChatMessage({ role: 'assistant', content: finalText || 'I couldn\'t process that.' })
+          messageAdded = true
         }
-      } else {
-        // Fallback non-streaming
-        const data = await res.json()
-        addChatMessage({ role: 'assistant', content: data.text || data.reply || 'I couldn\'t process that.', actions: data.actions })
+        return true
+      } catch {
+        return false // Stream failed — network error, proxy timeout, etc.
       }
-    } catch {
-      if (messageAdded) {
-        updateLastChatMessage({ content: 'Connection lost — try again.' })
-      } else {
-        addChatMessage({ role: 'assistant', content: 'Connection lost — try again.' })
-      }
-    } finally {
-      setStreaming(false)
     }
+
+    // Helper: non-streaming fallback
+    const tryNonStream = async (): Promise<boolean> => {
+      try {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tripId, message: msg, stream: false }),
+        })
+        if (!res.ok) return false
+        const data = await res.json()
+        const content = data.text || data.reply || 'I couldn\'t process that.'
+        if (messageAdded) {
+          updateLastChatMessage({ content, actions: data.actions })
+        } else {
+          addChatMessage({ role: 'assistant', content, actions: data.actions })
+          messageAdded = true
+        }
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    // Try SSE first → fall back to non-streaming → show error only if both fail
+    const streamOk = await tryStream()
+    if (!streamOk) {
+      const nonStreamOk = await tryNonStream()
+      if (!nonStreamOk) {
+        if (messageAdded) {
+          updateLastChatMessage({ content: 'Drift couldn\'t connect. Check your internet and try again.' })
+        } else {
+          addChatMessage({ role: 'assistant', content: 'Drift couldn\'t connect. Check your internet and try again.' })
+        }
+      }
+    }
+
+    setStreaming(false)
   }, [token, tripId, streaming, addChatMessage, updateLastChatMessage])
 
   return (

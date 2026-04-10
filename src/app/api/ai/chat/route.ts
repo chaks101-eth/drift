@@ -116,25 +116,9 @@ export async function POST(req: NextRequest) {
     const { readable, writable } = new TransformStream<Uint8Array>()
     const writer = writable.getWriter()
 
-    // Run agent in background, stream events to client
-    const streamPromise = (async () => {
-      try {
-        await chatWithAgentStream(fullMessages, agentContext, writer)
-      } catch (error) {
-        console.error('AI chat stream error:', error)
-        const encoder = new TextEncoder()
-        try {
-          writer.write(encoder.encode(`event: text\ndata: ${JSON.stringify({ content: "Sorry, something went wrong. Try again?" })}\n\n`))
-          writer.write(encoder.encode(`event: done\ndata: {}\n\n`))
-          await writer.close()
-        } catch { /* writer may already be closed */ }
-      }
+    const encoder = new TextEncoder()
 
-      // Save messages to DB after stream completes
-      // Re-read isn't needed — the last text event has the full response
-    })()
-
-    // Save user message immediately
+    // Save user message immediately (non-blocking)
     if (tripId) {
       supabase.from('chat_messages').insert({
         trip_id: tripId,
@@ -145,17 +129,27 @@ export async function POST(req: NextRequest) {
       }).then(() => {})
     }
 
-    // We need to save the assistant message after streaming is done
-    // The frontend will call a separate save endpoint, or we save from the last text event
-    streamPromise.then(async () => {
-      // Read back the stream result isn't possible here, so frontend saves via addMessage
-    })
+    // Run agent — stream events to client, always close the writer
+    ;(async () => {
+      try {
+        await chatWithAgentStream(fullMessages, agentContext, writer)
+      } catch (error) {
+        console.error('AI chat stream error:', error)
+        try {
+          await writer.write(encoder.encode(`event: text\ndata: ${JSON.stringify({ content: "Sorry, something went wrong. Try again?" })}\n\n`))
+          await writer.write(encoder.encode(`event: done\ndata: {}\n\n`))
+        } catch { /* writer may already be closed */ }
+      } finally {
+        try { await writer.close() } catch { /* already closed */ }
+      }
+    })()
 
     return new Response(readable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // Prevent Railway/nginx proxy buffering
       },
     })
   }
