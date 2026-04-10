@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import NavBar from '@/app/NavBar'
 import DesktopAuthProvider from '@/components/desktop/AuthProvider'
 import { useTripStore } from '@/stores/trip-store'
+import { supabase } from '@/lib/supabase'
 import { detectCurrencyFromOrigin, formatPrice } from '@/lib/currency'
 
 // ─── Vibe Library ─────────────────────────────────────────────────
@@ -44,7 +45,11 @@ export default function VibesPage() {
 function VibesContent() {
   const router = useRouter()
   const { setVibes, setOrigin, setDates, setBudget, setTravelers, setDestination, onboarding } = useTripStore()
+  const isAnonymous = useTripStore((s) => s.isAnonymous)
+  const userEmail = useTripStore((s) => s.userEmail)
   const preselectedDest = onboarding.destination
+  const [showAuthGate, setShowAuthGate] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
 
   // Sensible default: trip starts +7 days, lasts 5 days
   const defaultDates = useMemo(() => {
@@ -93,24 +98,72 @@ function VibesContent() {
   const canContinue = selected.length > 0
   const detailsComplete = canContinue && origin.trim().length > 0 && startDate && endDate && !datesInvalid
 
-  function handleContinue() {
-    if (!canContinue || navigating) return
-    setNavigating(true)
-
+  function saveOnboarding() {
     setVibes(selected)
     if (origin) setOrigin(origin)
     if (startDate && endDate) setDates(startDate, endDate)
     const budgetDef = BUDGETS.find(b => b.id === budget)
     setBudget(budget, budgetDef?.amount || 3000)
     setTravelers(travelers)
+  }
+
+  function handleContinue() {
+    if (!canContinue || navigating) return
+    saveOnboarding()
 
     // If destination was preselected from the orbital landing, update its vibes
-    // and skip the /destinations picker — go straight to generation
+    // and skip the /destinations picker — but check auth first
     if (preselectedDest) {
       setDestination({ ...preselectedDest, vibes: selected })
-      router.push('/loading-trip')
+      if (isAnonymous) {
+        setShowAuthGate(true)
+        return
+      }
+      proceedToGenerate()
     } else {
+      setNavigating(true)
       router.push('/destinations')
+    }
+  }
+
+  function proceedToGenerate() {
+    setNavigating(true)
+    router.push('/loading-trip')
+  }
+
+  // After OAuth return, auto-proceed if authenticated + preselected dest exists
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const checkPostAuth = () => {
+    if (!isAnonymous && userEmail && preselectedDest) {
+      const postAction = typeof window !== 'undefined' ? sessionStorage.getItem('drift-post-auth-action') : null
+      if (postAction === 'generate') {
+        sessionStorage.removeItem('drift-post-auth-action')
+        proceedToGenerate()
+      }
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useMemo(() => { checkPostAuth() }, [isAnonymous, userEmail])
+
+  async function handleGoogleAuth() {
+    setAuthLoading(true)
+    try {
+      sessionStorage.setItem('drift-login-return', '/vibes')
+      sessionStorage.setItem('drift-post-auth-action', 'generate')
+
+      const { error: err } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      })
+      if (err) {
+        const { error: err2 } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+        })
+        if (err2) setAuthLoading(false)
+      }
+    } catch {
+      setAuthLoading(false)
     }
   }
 
@@ -418,6 +471,57 @@ function VibesContent() {
           </button>
         </div>
       </div>
+
+      {/* Auth gate modal — only shows for preselected destination flow */}
+      {showAuthGate && (
+        <>
+          <div className="fixed inset-0 z-[240] bg-black/75 backdrop-blur-lg animate-[fadeIn_0.3s_ease]" onClick={() => !authLoading && setShowAuthGate(false)} />
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-8 pointer-events-none">
+            <div className="relative w-full max-w-[420px] rounded-3xl border border-white/[0.06] bg-[#0c0c12] p-10 shadow-[0_60px_140px_rgba(0,0,0,0.85)] pointer-events-auto animate-[fadeUp_0.4s_cubic-bezier(0.2,0.8,0.2,1)]">
+              <button
+                onClick={() => setShowAuthGate(false)}
+                disabled={authLoading}
+                className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full text-drift-text3 hover:bg-white/[0.06] transition-colors disabled:opacity-30"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+
+              <div className="font-serif text-[28px] font-light text-drift-text mb-2">
+                Save your trip with <em className="italic text-drift-gold">Google</em>
+              </div>
+              <p className="text-[13px] text-drift-text3 leading-relaxed mb-8">
+                Sign in so your {preselectedDest?.city} trip is saved across devices. Takes 2 seconds.
+              </p>
+
+              <button
+                onClick={handleGoogleAuth}
+                disabled={authLoading}
+                className="w-full flex items-center justify-center gap-3 rounded-full bg-white py-3.5 text-[13px] font-semibold text-[#1a1a1a] shadow-[0_2px_12px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60"
+              >
+                {authLoading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Continue with Google
+                  </>
+                )}
+              </button>
+
+              <p className="mt-4 text-center text-[10px] text-drift-text3">
+                We need an account to save your trip
+              </p>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
