@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme inline {
   --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* ─── Drift Design Tokens ─── */
   --color-drift-bg: #08080c;
@@ -186,6 +187,184 @@ body {
   0% { transform: translateY(0); opacity: 0.6; }
   50% { transform: translateY(8px); opacity: 1; }
   100% { transform: translateY(0); opacity: 0.6; }
+}
+
+/* Live indicator pulse — for "● LIVE" badges */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.4); }
+}
+.live-dot { animation: livePulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Hero scanning beam — sweeps down */
+@keyframes scanBeam {
+  0% { transform: translateY(-100px); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateY(calc(100vh + 100px)); opacity: 0; }
+}
+.scan-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(200, 164, 78, 0.35) 25%, rgba(200, 164, 78, 0.55) 50%, rgba(200, 164, 78, 0.35) 75%, transparent 100%);
+  box-shadow: 0 0 20px rgba(200, 164, 78, 0.3);
+  animation: scanBeam 9s linear infinite;
+  pointer-events: none;
+}
+
+/* Noise grain overlay — adds cinematic depth */
+.noise-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 5;
+}
+
+/* Terminal prompt cursor blink */
+@keyframes cursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.terminal-cursor { animation: cursorBlink 1.1s step-end infinite; }
+
+/* Compass rotation — very slow, ambient */
+@keyframes compassSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.compass-ring { animation: compassSpin 40s linear infinite; }
+.compass-ring-reverse { animation: compassSpin 60s linear infinite reverse; }
+
+/* ─── Orbital system: core + waves + scan beams + particles ─── */
+@keyframes corePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 100px rgba(200,164,78,0.5), 0 0 200px rgba(200,164,78,0.25);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 130px rgba(200,164,78,0.65), 0 0 260px rgba(200,164,78,0.35);
+  }
+}
+
+@keyframes coreWave {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+@keyframes particleDrift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  10%, 90% { opacity: 0.7; }
+  100% {
+    transform: translate(var(--drift-x, 30px), var(--drift-y, -40px));
+    opacity: 0;
+  }
+}
+
+@keyframes beamFire {
+  0% { opacity: 0; }
+  15% { opacity: 0.95; }
+  85% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+@keyframes beamFlow {
+  to { stroke-dashoffset: -7; }
+}
+
+/* ─── Variations: shared futuristic primitives ─── */
+
+/* Glitch text effect */
+@keyframes glitchX {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, 2px); }
+  80% { transform: translate(1px, -2px); }
+}
+.glitch-hover:hover { animation: glitchX 0.3s ease-in-out infinite; }
+
+/* Synthwave sun glow */
+@keyframes sunPulse {
+  0%, 100% { box-shadow: 0 0 60px rgba(255, 107, 158, 0.4), 0 0 120px rgba(138, 79, 255, 0.25); }
+  50% { box-shadow: 0 0 80px rgba(255, 107, 158, 0.55), 0 0 160px rgba(138, 79, 255, 0.35); }
+}
+.synthwave-sun { animation: sunPulse 4s ease-in-out infinite; }
+
+/* Constellation twinkle */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Orbital rotation */
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg); }
+}
+
+/* Generative blob morph */
+@keyframes blobMorph {
+  0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; }
+  33% { border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%; }
+  66% { border-radius: 40% 60% 30% 70% / 60% 40% 60% 40%; }
+}
+.blob-morph { animation: blobMorph 14s ease-in-out infinite; }
+
+/* Typing caret */
+@keyframes caretBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.caret { animation: caretBlink 1s step-end infinite; }
+
+/* Horizon grid perspective (synthwave) */
+.synth-grid {
+  background-image:
+    linear-gradient(rgba(255, 107, 158, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138, 79, 255, 0.25) 1px, transparent 1px);
+  background-size: 80px 80px;
+  transform: perspective(600px) rotateX(62deg) translateY(50%) scaleY(2);
+  transform-origin: center bottom;
+  mask-image: linear-gradient(to top, black 0%, transparent 100%);
+}
+
+/* Starfield twinkle */
+.starfield::before,
+.starfield::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, white, transparent),
+    radial-gradient(1px 1px at 40% 70%, white, transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(1px 1px at 90% 60%, white, transparent),
+    radial-gradient(1px 1px at 33% 80%, white, transparent),
+    radial-gradient(1px 1px at 15% 90%, white, transparent),
+    radial-gradient(1px 1px at 70% 20%, white, transparent);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.starfield::after {
+  background-size: 200% 200%;
+  animation: twinkle 4s ease-in-out infinite alternate;
 }
 
 /* Text reveal mask container */

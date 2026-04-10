@@ -43,7 +43,8 @@ export default function VibesPage() {
 
 function VibesContent() {
   const router = useRouter()
-  const { setVibes, setOrigin, setDates, setBudget, setTravelers, onboarding } = useTripStore()
+  const { setVibes, setOrigin, setDates, setBudget, setTravelers, setDestination, onboarding } = useTripStore()
+  const preselectedDest = onboarding.destination
 
   // Sensible default: trip starts +7 days, lasts 5 days
   const defaultDates = useMemo(() => {
@@ -100,7 +101,14 @@ function VibesContent() {
     setBudget(budget, budgetDef?.amount || 3000)
     setTravelers(travelers)
 
-    router.push('/destinations')
+    // If destination was preselected from the orbital landing, update its vibes
+    // and skip the /destinations picker — go straight to generation
+    if (preselectedDest) {
+      setDestination({ ...preselectedDest, vibes: selected })
+      router.push('/loading-trip')
+    } else {
+      router.push('/destinations')
+    }
   }
 
   return (
@@ -128,14 +136,36 @@ function VibesContent() {
       {/* ═══ Main Content ═══ */}
       <div className="relative z-10 mx-auto max-w-[1180px] px-8 pt-24 pb-40">
 
-        {/* Step + headline — refined, less loud */}
+        {/* Destination badge — shown when user arrived via orbital landing pick */}
+        {preselectedDest && (
+          <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-drift-gold/25 bg-drift-gold/[0.05] backdrop-blur-sm px-4 py-2 animate-[fadeUp_0.4s_ease]">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+            </svg>
+            <span className="text-[11px] text-drift-text3">Composing your trip to</span>
+            <span className="text-[12px] font-semibold text-drift-gold">{preselectedDest.city}</span>
+            {preselectedDest.country && <span className="text-[10px] text-drift-text3">· {preselectedDest.country}</span>}
+            <button
+              onClick={() => setDestination(null)}
+              className="ml-1 flex h-4 w-4 items-center justify-center rounded-full text-drift-text3 hover:bg-white/10 hover:text-drift-text transition-colors text-sm leading-none"
+              aria-label="Clear destination"
+            >×</button>
+          </div>
+        )}
+
+        {/* Step + headline */}
         <div className="mb-12 max-w-[640px]">
           <div className="mb-4 flex items-center gap-3">
             <div className="h-px w-6 bg-drift-gold/60" />
-            <span className="text-[9px] font-semibold tracking-[3px] uppercase text-drift-gold/80">Step 1 of 3</span>
+            <span className="text-[9px] font-semibold tracking-[3px] uppercase text-drift-gold/80">
+              {preselectedDest ? 'Step 1 of 2 · Pick the mood' : 'Step 1 of 3'}
+            </span>
           </div>
           <h1 className="font-serif text-[clamp(32px,4.2vw,52px)] font-light leading-[1.05] mb-3">
-            What&apos;s your <em className="italic text-drift-gold">vibe</em>?
+            {preselectedDest
+              ? <>What&apos;s your <em className="italic text-drift-gold">{preselectedDest.city}</em> vibe?</>
+              : <>What&apos;s your <em className="italic text-drift-gold">vibe</em>?</>
+            }
           </h1>
           <p className="text-[14px] text-drift-text2 leading-relaxed">
             Pick up to three. Drift composes the trip around your energy — not boring filters.
@@ -373,7 +403,7 @@ function VibesContent() {
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
             ) : (
               <>
-                Find destinations
+                {preselectedDest ? `Compose ${preselectedDest.city} trip` : 'Find destinations'}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
