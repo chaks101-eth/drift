@@ -87,8 +87,11 @@ function VibesContent() {
     return days
   }, [startDate, endDate])
 
+  // Fix endDate if it's before startDate
+  const datesInvalid = startDate && endDate && endDate <= startDate
+
   const canContinue = selected.length > 0
-  const detailsComplete = canContinue && origin.trim().length > 0 && startDate && endDate
+  const detailsComplete = canContinue && origin.trim().length > 0 && startDate && endDate && !datesInvalid
 
   function handleContinue() {
     if (!canContinue || navigating) return
@@ -274,7 +277,10 @@ function VibesContent() {
               {/* Dates */}
               <div className="col-span-12 lg:col-span-5">
                 <label className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-2 block">
-                  Dates {duration && <span className="text-drift-gold/70 normal-case tracking-normal">· {duration} {duration === 1 ? 'day' : 'days'}</span>}
+                  Dates {datesInvalid
+                    ? <span className="text-drift-err normal-case tracking-normal">· Return must be after departure</span>
+                    : duration && <span className="text-drift-gold/70 normal-case tracking-normal">· {duration} {duration === 1 ? 'day' : 'days'}</span>
+                  }
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 rounded-lg border border-drift-border bg-white/[0.02] px-3.5 py-2.5 focus-within:border-drift-gold/30 transition-colors">

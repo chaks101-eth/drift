@@ -24,16 +24,23 @@ export default function DesktopTripPage() {
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
 
   const detailItem = detailItemId ? currentItems.find(i => i.id === detailItemId) || null : null
+  const [isMobile, setIsMobile] = useState<boolean | null>(null)
 
-  // Mobile redirect
+  // Mobile redirect — check before any render
   useEffect(() => {
-    if (typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       window.location.href = `/m/board/${id}`
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsMobile(true)
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsMobile(false)
     }
   }, [id])
 
   // Auth + load trip
   useEffect(() => {
+    if (isMobile !== false) return // skip if still checking or redirecting
     let cancelled = false
 
     async function initAndLoad() {
@@ -70,10 +77,10 @@ export default function DesktopTripPage() {
     })
 
     return () => { cancelled = true; subscription.unsubscribe() }
-  }, [id, setAuth])
+  }, [id, setAuth, isMobile])
 
-  // Loading state
-  if (loading || !currentTrip) {
+  // Mobile check or loading
+  if (isMobile !== false || loading || !currentTrip) {
     return (
       <div className="min-h-screen bg-drift-bg">
         <NavBar />

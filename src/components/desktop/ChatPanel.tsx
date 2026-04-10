@@ -32,6 +32,28 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
   const [streaming, setStreaming] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const restoredRef = useRef(false)
+
+  // Restore chat history from sessionStorage on first open
+  useEffect(() => {
+    if (!open || restoredRef.current || !tripId) return
+    restoredRef.current = true
+    try {
+      const saved = sessionStorage.getItem(`drift-chat-${tripId}`)
+      if (saved && chatHistory.length === 0) {
+        const msgs = JSON.parse(saved)
+        if (Array.isArray(msgs)) msgs.forEach((m: { role: 'user' | 'assistant'; content: string }) => addChatMessage(m))
+      }
+    } catch { /* ignore corrupt data */ }
+  }, [open, tripId, chatHistory.length, addChatMessage])
+
+  // Save chat history to sessionStorage on change
+  useEffect(() => {
+    if (!tripId || chatHistory.length === 0) return
+    try {
+      sessionStorage.setItem(`drift-chat-${tripId}`, JSON.stringify(chatHistory.slice(-30)))
+    } catch { /* storage full */ }
+  }, [tripId, chatHistory])
 
   useEffect(() => {
     if (open) inputRef.current?.focus()

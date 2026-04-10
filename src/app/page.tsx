@@ -417,10 +417,12 @@ function OrbitalSystem({
 export default function Landing() {
   const router = useRouter()
   const setDestination = useTripStore((s) => s.setDestination)
+  const userEmail = useTripStore((s) => s.userEmail)
   const [ready, setReady] = useState(false)
   const [selected, setSelected] = useState<Planet | null>(null)
   const [hovered, setHovered] = useState<Planet | null>(null)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
+  const [recentTrips, setRecentTrips] = useState<Array<{ id: string; destination: string; country: string; start_date: string; vibes: string[] }>>([])
 
   useEffect(() => {
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
@@ -449,6 +451,17 @@ export default function Landing() {
     document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
     return () => obs.disconnect()
   }, [ready])
+
+  // Fetch recent trips for returning users
+  useEffect(() => {
+    if (!userEmail) return
+    import('@/lib/supabase').then(({ supabase }) => {
+      supabase.from('trips').select('id, destination, country, start_date, vibes')
+        .order('created_at', { ascending: false })
+        .limit(3)
+        .then(({ data }) => { if (data?.length) setRecentTrips(data) })
+    })
+  }, [userEmail])
 
   if (!ready) return <div className="min-h-screen bg-[#050509]" />
 
@@ -676,6 +689,53 @@ export default function Landing() {
           ))}
         </div>
       </section>
+
+      {/* ════════════════════════════════════════════════════════════ */}
+      {/* ─── RETURNING USER: Recent trips ──────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════ */}
+      {recentTrips.length > 0 && (
+        <section className="relative py-16 px-12 lg:px-24 reveal">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-px w-6 bg-[#c8a44e]/60" />
+                <span className="text-[10px] font-medium tracking-[2px] uppercase text-[#c8a44e]/80">Welcome back</span>
+              </div>
+              <button
+                onClick={() => router.push('/trips')}
+                className="text-[10px] font-medium tracking-[1.8px] uppercase text-white/50 hover:text-[#c8a44e] transition-colors"
+              >
+                All trips →
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-md:grid-cols-1">
+              {recentTrips.map(trip => (
+                <button
+                  key={trip.id}
+                  onClick={() => router.push(`/trip/${trip.id}`)}
+                  className="group rounded-2xl border border-white/[0.06] bg-white/[0.015] p-6 text-left transition-all duration-400 hover:border-[#c8a44e]/25 hover:-translate-y-1 hover:bg-white/[0.025]"
+                >
+                  <div className="font-serif text-[20px] font-light text-white/95 mb-1 group-hover:text-[#c8a44e] transition-colors">
+                    {trip.destination}
+                  </div>
+                  <div className="text-[10px] text-white/45 mb-3">
+                    {trip.country}
+                    {trip.start_date && ` · ${new Date(trip.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                  </div>
+                  {trip.vibes?.length > 0 && (
+                    <div className="flex gap-1.5 flex-wrap">
+                      {trip.vibes.slice(0, 3).map(v => (
+                        <span key={v} className="rounded-full bg-[#c8a44e]/10 px-2 py-0.5 text-[9px] text-[#c8a44e]/80">{v}</span>
+                      ))}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ════════════════════════════════════════════════════════════ */}
       {/* ─── INSIDE THE COMPOSER ───────────────────────────────────── */}
