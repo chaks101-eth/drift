@@ -424,16 +424,6 @@ export default function Landing() {
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
   const [recentTrips, setRecentTrips] = useState<Array<{ id: string; destination: string; country: string; start_date: string; vibes: string[] }>>([])
 
-  // URL extraction state
-  const [urlMode, setUrlMode] = useState(false)
-  const [urlValue, setUrlValue] = useState('')
-  const [urlExtracting, setUrlExtracting] = useState(false)
-  const [urlError, setUrlError] = useState('')
-  const [urlExtracted, setUrlExtracted] = useState<{
-    primaryDestination: string; country: string; vibes: string[]; suggestedDays: number;
-    highlights: Array<{ name: string; category: string; detail: string; estimatedPrice?: string; inferredFromDestination?: boolean }>;
-    budgetHint: string; summary: string; sourceType: string; sourceTitle: string;
-  } | null>(null)
 
   useEffect(() => {
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
@@ -481,61 +471,6 @@ export default function Landing() {
     Bali: 'Indonesia', Tokyo: 'Japan', Paris: 'France', Maldives: 'Maldives',
     Dubai: 'UAE', Santorini: 'Greece', Phuket: 'Thailand', Singapore: 'Singapore',
     Istanbul: 'Turkey', Marrakech: 'Morocco', Bangkok: 'Thailand', Goa: 'India',
-  }
-
-  // URL extraction handler
-  const handleUrlExtract = async () => {
-    if (!urlValue.trim()) return
-    try { new URL(urlValue) } catch { setUrlError('Paste a valid URL'); return }
-    setUrlError('')
-    setUrlExtracting(true)
-    try {
-      // Ensure we have a session (landing page doesn't have AuthProvider)
-      let token = useTripStore.getState().token
-      if (!token) {
-        const { supabase } = await import('@/lib/supabase')
-        let { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          const { data } = await supabase.auth.signInAnonymously()
-          session = data.session
-        }
-        if (session) {
-          useTripStore.getState().setAuth(session.access_token, session.user.id, session.user.email || null)
-          token = session.access_token
-        }
-      }
-
-      const res = await fetch('/api/ai/extract-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ url: urlValue }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) { setUrlError(data.error || 'Could not extract travel data from this link'); setUrlExtracting(false); return }
-      setUrlExtracted(data.extracted)
-    } catch {
-      setUrlError('Network error. Check your connection.')
-    } finally {
-      setUrlExtracting(false)
-    }
-  }
-
-  // Proceed with extracted URL data → set destination + vibes + navigate
-  const proceedWithExtraction = () => {
-    if (!urlExtracted) return
-    setDestination({
-      city: urlExtracted.primaryDestination,
-      country: urlExtracted.country || '',
-      tagline: urlExtracted.summary || '',
-      match: 100,
-      vibes: urlExtracted.vibes.slice(0, 5),
-    })
-    // Store highlights for loading page
-    sessionStorage.setItem('drift-url-highlights', JSON.stringify({
-      highlights: urlExtracted.highlights,
-      summary: urlExtracted.summary,
-    }))
-    router.push('/vibes')
   }
 
   // Compose trip to a specific planet — sets destination + routes to vibes
@@ -692,71 +627,6 @@ export default function Landing() {
                     </svg>
                   </button>
                 </div>
-              ) : urlExtracted ? (
-                /* URL extraction result */
-                <div className="rounded-2xl border border-[#c8a44e]/25 bg-gradient-to-br from-[#c8a44e]/[0.05] to-transparent backdrop-blur-sm p-5 animate-[fadeUp_0.4s_ease]">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
-                        <span className="font-mono text-[9px] tracking-[1.5px] text-[#c8a44e]/80 uppercase">Extracted</span>
-                      </div>
-                      <div className="font-serif text-[22px] font-light text-white leading-tight">
-                        {urlExtracted.primaryDestination}
-                        {urlExtracted.country && <span className="text-white/40 italic"> · {urlExtracted.country}</span>}
-                      </div>
-                    </div>
-                    <button onClick={() => { setUrlExtracted(null); setUrlMode(true); setUrlValue('') }} className="text-white/35 hover:text-white/70 transition-colors text-lg leading-none mt-1">×</button>
-                  </div>
-                  <p className="text-[11px] text-white/55 leading-relaxed mb-1.5">{urlExtracted.summary?.slice(0, 120)}{urlExtracted.summary?.length > 120 ? '…' : ''}</p>
-                  <div className="flex items-center gap-3 text-[9px] text-white/40 font-mono tracking-wider mb-4">
-                    <span>{urlExtracted.highlights.length} places</span>
-                    <span className="text-white/15">·</span>
-                    <span>{urlExtracted.suggestedDays}d</span>
-                    <span className="text-white/15">·</span>
-                    <span className="capitalize">{urlExtracted.budgetHint}</span>
-                  </div>
-                  <button
-                    onClick={proceedWithExtraction}
-                    className="group w-full flex items-center justify-between rounded-full bg-[#c8a44e] px-5 py-3 transition-all hover:shadow-[0_12px_36px_rgba(200,164,78,0.3)] hover:-translate-y-0.5"
-                  >
-                    <span className="font-mono text-[10px] font-bold tracking-[2px] uppercase text-[#08080c]">
-                      Build this trip
-                    </span>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              ) : urlMode ? (
-                /* URL input mode */
-                <div className="animate-[fadeUp_0.3s_ease]">
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      autoFocus
-                      value={urlValue}
-                      onChange={e => { setUrlValue(e.target.value); setUrlError('') }}
-                      onKeyDown={e => e.key === 'Enter' && handleUrlExtract()}
-                      placeholder="Paste a YouTube, Instagram, or TikTok URL…"
-                      className="flex-1 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-[13px] text-white placeholder:text-white/30 focus:border-[#c8a44e]/40 focus:outline-none transition-colors"
-                    />
-                    <button
-                      onClick={handleUrlExtract}
-                      disabled={!urlValue.trim() || urlExtracting}
-                      className="shrink-0 rounded-full bg-[#c8a44e] px-5 py-3 text-[10px] font-bold uppercase tracking-[2px] text-[#08080c] transition-all hover:-translate-y-0.5 disabled:opacity-40"
-                    >
-                      {urlExtracting ? '…' : 'Extract'}
-                    </button>
-                  </div>
-                  {urlError && <div className="text-[11px] text-[#e74c3c] mb-2 pl-1">{urlError}</div>}
-                  {urlExtracting && (
-                    <div className="flex items-center gap-2 pl-1 mt-2">
-                      <div className="h-3 w-3 animate-spin rounded-full border border-[#c8a44e]/30 border-t-[#c8a44e]" />
-                      <span className="text-[11px] text-white/50">Reading the content…</span>
-                    </div>
-                  )}
-                  <button onClick={() => setUrlMode(false)} className="mt-3 text-[10px] text-white/40 hover:text-white/60 transition-colors">
-                    ← Back to compose
-                  </button>
-                </div>
               ) : (
                 /* Default: two entry paths */
                 <div className="flex flex-col gap-3">
@@ -768,7 +638,7 @@ export default function Landing() {
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
                   <button
-                    onClick={() => setUrlMode(true)}
+                    onClick={() => router.push('/build')}
                     className="group flex items-center gap-3 rounded-full border border-white/[0.08] bg-white/[0.02] px-7 py-3.5 transition-all hover:border-[#c8a44e]/30 hover:bg-white/[0.04]"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/50 group-hover:text-[#c8a44e] transition-colors">
