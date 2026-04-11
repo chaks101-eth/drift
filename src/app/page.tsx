@@ -490,7 +490,21 @@ export default function Landing() {
     setUrlError('')
     setUrlExtracting(true)
     try {
-      const token = useTripStore.getState().token
+      // Ensure we have a session (landing page doesn't have AuthProvider)
+      let token = useTripStore.getState().token
+      if (!token) {
+        const { supabase } = await import('@/lib/supabase')
+        let { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          const { data } = await supabase.auth.signInAnonymously()
+          session = data.session
+        }
+        if (session) {
+          useTripStore.getState().setAuth(session.access_token, session.user.id, session.user.email || null)
+          token = session.access_token
+        }
+      }
+
       const res = await fetch('/api/ai/extract-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
