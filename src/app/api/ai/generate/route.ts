@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateItinerary, personalizeItinerary } from '@/lib/ai-agent'
+import { generateItinerary } from '@/lib/ai-agent'
 import { parsePrice } from '@/lib/parse-price'
 import { createServerClient } from '@/lib/supabase'
 import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
@@ -9,7 +9,7 @@ import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSu
 import { enrichUrlHighlights } from '@/lib/url-enrichment'
 import { rateLimit } from '@/lib/rate-limit'
 import { generatePlanningNotes, formatPlanningNotes } from '@/lib/ai-intelligence'
-import { batchGetPlaceData, applyPlaceData, getDestinationPhoto, getPlaceData } from '@/lib/google-places-photos'
+import { batchGetPlaceData, getDestinationPhoto, getPlaceData } from '@/lib/google-places-photos'
 import { getTripWeather, formatWeatherForLLM } from '@/lib/weather'
 import { buildItineraryMaps } from '@/lib/day-maps'
 import { addTravelTimesToItems } from '@/lib/google-routes'
@@ -422,26 +422,14 @@ export async function POST(req: NextRequest) {
       // Fix links: strip hallucinated URLs, add real Google Maps / Booking.com links
       fixItemLinks(nonFlightItems, body.destination, body.country)
 
-      // Google Places enrichment: sync for non-catalog destinations (need photos),
-      // skip for catalog destinations (already have photos/GPS from catalog)
+      // Google Places enrichment: deferred to background after DB insert
+      // Items get curated Unsplash images initially, then real photos fill in async
+      // This saves ~15-20s from the critical path
       const itemsNeedingEnrichment = nonFlightItems.filter(i =>
         ['hotel', 'activity', 'food'].includes(i.category) &&
         (!i.metadata.lat || !i.image_url || i.image_url.includes('unsplash.com'))
       )
-      if (itemsNeedingEnrichment.length > 0) {
-        try {
-          const placeDataMap = await batchGetPlaceData(
-            itemsNeedingEnrichment.map(i => ({ name: i.name, category: i.category })),
-            body.destination,
-            body.country,
-          )
-          applyPlaceData(nonFlightItems, placeDataMap)
-        } catch (e) {
-          console.warn(`[Generate] Google Places enrichment failed, using fallbacks: ${e}`)
-        }
-      }
 
-      // Travel times calculated after DB insert (non-blocking)
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)
 
       // ─── Attach transport alternatives for domestic trips ─────
@@ -635,37 +623,6 @@ export async function POST(req: NextRequest) {
         }, { status: 500 })
       }
 
-      // ─── Generate day maps (non-blocking) ────────────────────
-      // Build map URLs for each day and update day separators
-      try {
-        const dayMaps = buildItineraryMaps(itemsToInsert.map(i => ({
-          category: i.category,
-          name: i.name,
-          metadata: i.metadata as Record<string, unknown>,
-          position: i.position,
-        })))
-        if (dayMaps.size > 0) {
-          // Update day separator items with map URLs
-          let dayNum = 0
-          for (const item of itemsToInsert) {
-            if (item.category === 'day') {
-              dayNum++
-              const mapUrl = dayMaps.get(dayNum)
-              if (mapUrl) {
-                await supabase
-                  .from('itinerary_items')
-                  .update({ metadata: { ...(item.metadata as Record<string, unknown>), dayMapUrl: mapUrl } })
-                  .eq('trip_id', trip.id)
-                  .eq('position', item.position)
-              }
-            }
-          }
-          console.log(`[Generate] Day maps: ${dayMaps.size} maps generated`)
-        }
-      } catch (e) {
-        console.warn(`[Generate] Day maps failed: ${e}`)
-      }
-
       const catalogMatchCount = itemsToInsert.filter(i => (i.metadata as Record<string, unknown>)?.source === 'catalog').length
       const dataSource = enrichmentMap.size > 0 ? 'ai+serpapi' : catalogMatchCount > 0 ? 'ai+catalog' : groundedContextText ? 'ai+grounded' : 'ai'
       const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1)
@@ -673,21 +630,75 @@ export async function POST(req: NextRequest) {
       const categoryCounts = items.reduce((acc, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc }, {} as Record<string, number>)
       console.log(`[Generate] Item breakdown: ${Object.entries(categoryCounts).map(([k, v]) => `${k}:${v}`).join(', ')}`)
 
-      // ─── Fire-and-forget: travel times + day maps (non-blocking) ──
-      // These update DB items after response is sent — user sees them on next refresh
+      // ─── Fire-and-forget: Google Places + travel times + day maps ──
+      // All run in background AFTER response is sent to client.
+      // User sees board immediately with curated images. Real photos,
+      // GPS, ratings, travel times, and maps fill in within 10-15s.
       const bgTripId = trip.id
       const bgItems = [...nonFlightItems]
+      const bgItemsToInsert = [...itemsToInsert]
+      const bgDest = body.destination
+      const bgCountry = body.country || ''
       Promise.resolve().then(async () => {
+        // 1. Google Places enrichment (real photos, ratings, GPS)
+        if (itemsNeedingEnrichment.length > 0) {
+          try {
+            const placeDataMap = await batchGetPlaceData(
+              itemsNeedingEnrichment.map(i => ({ name: i.name, category: i.category })),
+              bgDest,
+              bgCountry,
+            )
+            // Update each enriched item in DB
+            for (const [name, data] of placeDataMap.entries()) {
+              const updates: Record<string, unknown> = {}
+              const item = bgItemsToInsert.find(i => i.name.toLowerCase() === name.toLowerCase())
+              if (!item) continue
+              const meta = { ...(item.metadata as Record<string, unknown>) }
+              if (data.photoUrl) updates.image_url = upsizeGoogleImage(data.photoUrl)
+              if (data.rating) meta.rating = data.rating
+              if (data.reviewCount) meta.reviewCount = data.reviewCount
+              if (data.lat) { meta.lat = data.lat; meta.lng = data.lng }
+              if (data.address) meta.address = data.address
+              if (data.mapsUrl) meta.mapsUrl = data.mapsUrl
+              updates.metadata = meta
+              await supabase.from('itinerary_items').update(updates).eq('trip_id', bgTripId).eq('name', item.name)
+            }
+            console.log(`[Generate] Background: ${placeDataMap.size} items enriched with Google Places`)
+          } catch (e) { console.warn(`[Generate] Background Places enrichment failed: ${e}`) }
+        }
+
+        // 2. Travel times
         try {
           await addTravelTimesToItems(bgItems)
-          // Update items in DB with travel times
           for (const item of bgItems) {
             if ((item.metadata as Record<string, unknown>)?.travelToNext) {
               await supabase.from('itinerary_items').update({ metadata: item.metadata }).eq('trip_id', bgTripId).eq('name', item.name)
             }
           }
-          console.log(`[Generate] Background: travel times updated for trip=${bgTripId}`)
+          console.log(`[Generate] Background: travel times updated`)
         } catch (e) { console.warn(`[Generate] Background travel times failed: ${e}`) }
+
+        // 3. Day maps
+        try {
+          const dayMaps = buildItineraryMaps(bgItemsToInsert.map(i => ({
+            category: i.category, name: i.name, metadata: i.metadata as Record<string, unknown>, position: i.position,
+          })))
+          if (dayMaps.size > 0) {
+            let dayNum = 0
+            for (const item of bgItemsToInsert) {
+              if (item.category === 'day') {
+                dayNum++
+                const mapUrl = dayMaps.get(dayNum)
+                if (mapUrl) {
+                  await supabase.from('itinerary_items')
+                    .update({ metadata: { ...(item.metadata as Record<string, unknown>), dayMapUrl: mapUrl } })
+                    .eq('trip_id', bgTripId).eq('position', item.position)
+                }
+              }
+            }
+            console.log(`[Generate] Background: ${dayMaps.size} day maps generated`)
+          }
+        } catch (e) { console.warn(`[Generate] Background day maps failed: ${e}`) }
       })
 
       return NextResponse.json({ trip, itemCount: items.length, dataSource })

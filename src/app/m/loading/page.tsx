@@ -295,26 +295,8 @@ export default function LoadingPage() {
           setActiveStep(s)
         }
 
-        // Run personalization while showing "finishing touches"
-        try {
-          const persRes = await fetch('/api/ai/personalize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ tripId: data.trip.id }),
-          })
-          const persData = await persRes.json()
-
-          if (persData.status === 'personalized' && persData.updated > 0) {
-            const freshItems = await supabase
-              .from('itinerary_items')
-              .select('*')
-              .eq('trip_id', data.trip.id)
-              .order('position')
-            if (freshItems.data) setCurrentItems(freshItems.data)
-          }
-        } catch {
-          console.warn('[Loading] Personalization failed, continuing with base trip')
-        }
+        // Personalization deferred to board page — saves 10-15s from loading.
+        // The board calls /api/ai/personalize lazily after it renders.
 
         // Release wake lock and navigate to board
         releaseWakeLock()
