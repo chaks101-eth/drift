@@ -73,8 +73,10 @@ function VibesContent() {
   const currency = useMemo(() => detectCurrencyFromOrigin(origin || 'Delhi'), [origin])
   const fmt = (usd: number) => formatPrice(usd, currency)
 
+  const MAX_VIBES = 5
+
   function toggleVibe(id: string) {
-    setSelected(prev => prev.includes(id) ? prev.filter(v => v !== id) : prev.length < 3 ? [...prev, id] : prev)
+    setSelected(prev => prev.includes(id) ? prev.filter(v => v !== id) : prev.length < MAX_VIBES ? [...prev, id] : prev)
     setPulseId(id)
     setTimeout(() => setPulseId(null), 600)
   }
@@ -224,7 +226,7 @@ function VibesContent() {
             }
           </h1>
           <p className="text-[14px] text-drift-text2 leading-relaxed">
-            Pick up to three. Drift composes the trip around your energy — not boring filters.
+            Pick up to five. Drift composes the trip around your energy — not boring filters.
           </p>
         </div>
 
@@ -233,7 +235,7 @@ function VibesContent() {
           {VIBES.map((v, i) => {
             const isSelected = selected.includes(v.id)
             const selectionOrder = isSelected ? selected.indexOf(v.id) + 1 : 0
-            const isDimmed = selected.length >= 3 && !isSelected
+            const isDimmed = selected.length >= MAX_VIBES && !isSelected
             const isPulsing = pulseId === v.id
 
             return (
@@ -420,9 +422,9 @@ function VibesContent() {
           <div className="flex items-center gap-4 min-w-0">
             {/* Progress indicator */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {[0, 1, 2].map(i => (
+              {Array.from({ length: MAX_VIBES }).map((_, i) => (
                 <div key={i} className={`h-1.5 rounded-full transition-all duration-400 ${
-                  i < selected.length ? 'w-5 bg-drift-gold' : 'w-1.5 bg-white/12'
+                  i < selected.length ? 'w-4 bg-drift-gold' : 'w-1.5 bg-white/12'
                 }`} />
               ))}
             </div>

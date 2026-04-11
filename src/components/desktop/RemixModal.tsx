@@ -23,7 +23,7 @@ const ALL_VIBES = [
   { id: 'hidden', name: 'Hidden Gems' },
 ]
 
-const MAX_VIBES = 3
+const MAX_VIBES = 5
 
 export default function RemixModal() {
   const showRemix = useUIStore((s) => s.showRemix)

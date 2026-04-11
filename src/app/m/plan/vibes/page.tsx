@@ -40,8 +40,9 @@ export default function VibesPage() {
 
   // Restore previously picked vibes if returning to this page
   const savedVibes = onboarding.pickedVibes
+  const MAX_VIBES = 5
   const [currentIdx, setCurrentIdx] = useState(() => {
-    if (savedVibes.length >= 3) return moods.length // all done
+    if (savedVibes.length >= MAX_VIBES) return moods.length // all done
     return savedVibes.length > 0
       ? moods.findIndex(m => !savedVibes.includes(m.id)) || 0
       : 0
@@ -59,10 +60,8 @@ export default function VibesPage() {
 
   const canContinue = picked.length >= 1
   const counterText = picked.length === 0
-    ? 'Pick up to 3 vibes'
-    : picked.length < 3
-      ? `${picked.length} of 3 picked`
-      : 'All 3 picked!'
+    ? 'Pick up to 5 vibes'
+    : `${picked.length} of ${MAX_VIBES} picked`
 
   const handleContinue = useCallback(() => {
     if (picked.length === 0) return
@@ -73,31 +72,25 @@ export default function VibesPage() {
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
     if (cardsExhausted) return
-    const newPicked = direction === 'right' && picked.length < 3
-      ? [...picked, moods[currentIdx].id]
-      : picked
+    const canPick = direction === 'right' && picked.length < MAX_VIBES
+    const newPicked = canPick ? [...picked, moods[currentIdx].id] : picked
 
-    if (direction === 'right' && picked.length < 3) setPicked(newPicked)
+    if (canPick) setPicked(newPicked)
 
-    // Auto-redirect when 3 vibes are picked
-    if (newPicked.length >= 3) {
-      setVibes(newPicked)
-      trackEvent('vibes_selected', 'onboarding', newPicked.join(','))
-      setTimeout(() => router.push('/m/plan/details'), 800)
-      setCardsExhausted(true) // hide remaining cards
+    // Hit max vibes — stop the card stack
+    if (newPicked.length >= MAX_VIBES) {
+      setCardsExhausted(true)
       return
     }
 
     const nextIdx = currentIdx + 1
-
     if (nextIdx >= moods.length) {
-      // Ran out of cards — show continue button, don't loop
       setCardsExhausted(true)
       return
     }
 
     setCurrentIdx(nextIdx)
-  }, [currentIdx, picked, cardsExhausted, setVibes, router])
+  }, [currentIdx, picked, cardsExhausted])
 
   // Touch handlers for the top card
   const onTouchStart = (e: React.TouchEvent) => {
@@ -184,11 +177,11 @@ export default function VibesPage() {
         <p className="text-xs text-drift-text3">Swipe right to pick, left to skip — or tap the card</p>
         {/* Progress dots */}
         <div className="mt-2 flex gap-2">
-          {[0, 1, 2].map((i) => (
+          {Array.from({ length: MAX_VIBES }).map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
-                i < picked.length ? 'bg-drift-gold scale-125' : 'bg-drift-border2'
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i < picked.length ? 'w-4 bg-drift-gold' : 'w-1.5 bg-drift-border2'
               }`}
             />
           ))}
@@ -197,7 +190,7 @@ export default function VibesPage() {
 
       {/* Card stack */}
       <div className="relative flex flex-1 items-center justify-center px-6">
-        {cardsExhausted || (picked.length >= 3 && currentIdx >= moods.length) ? (
+        {cardsExhausted || (picked.length >= MAX_VIBES && currentIdx >= moods.length) ? (
           /* Done / exhausted state */
           <div className="flex flex-col items-center gap-4 text-center animate-[fadeUp_0.5s_var(--ease-smooth)]">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-drift-gold-bg">
@@ -206,7 +199,7 @@ export default function VibesPage() {
               </svg>
             </div>
             <div className="text-lg font-medium text-drift-text">
-              {picked.length >= 3 ? 'Perfect picks' : `${picked.length} vibe${picked.length !== 1 ? 's' : ''} selected`}
+              {picked.length >= MAX_VIBES ? 'Great selection' : `${picked.length} vibe${picked.length !== 1 ? 's' : ''} selected`}
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {picked.map((id) => {
@@ -218,9 +211,9 @@ export default function VibesPage() {
                 ) : null
               })}
             </div>
-            {picked.length < 3 && (
+            {picked.length === 0 && (
               <p className="text-[11px] text-drift-text3">
-                {picked.length === 0 ? 'No vibes picked — go back and swipe right on ones you like' : "That's enough to find great destinations"}
+                No vibes picked — go back and swipe right on ones you like
               </p>
             )}
           </div>
@@ -246,8 +239,8 @@ export default function VibesPage() {
                     onTouchMove,
                     onTouchEnd,
                     onClick: () => {
-                      // Tap to pick (only if not mid-drag and not already at 3)
-                      if (Math.abs(dragRef.current.dx) < 10 && picked.length < 3 && !alreadyPicked) {
+                      // Tap to pick (only if not mid-drag and not at max)
+                      if (Math.abs(dragRef.current.dx) < 10 && picked.length < MAX_VIBES && !alreadyPicked) {
                         const card = cardRefs.current.get(currentIdx)
                         if (card) {
                           card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.3s'
