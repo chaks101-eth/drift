@@ -51,6 +51,17 @@ function VibesContent() {
   const [showAuthGate, setShowAuthGate] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
 
+  // URL extraction state
+  const [showUrlInput, setShowUrlInput] = useState(false)
+  const [urlValue, setUrlValue] = useState('')
+  const [urlExtracting, setUrlExtracting] = useState(false)
+  const [urlError, setUrlError] = useState('')
+  const [urlExtracted, setUrlExtracted] = useState<{
+    primaryDestination: string; country: string; vibes: string[]; suggestedDays: number;
+    highlights: Array<{ name: string; category: string; detail: string; estimatedPrice?: string; inferredFromDestination?: boolean }>;
+    budgetHint: string; summary: string; sourceType: string; sourceTitle: string;
+  } | null>(null)
+
   // Sensible default: trip starts +7 days, lasts 5 days
   const defaultDates = useMemo(() => {
     const now = new Date()
@@ -113,10 +124,19 @@ function VibesContent() {
     if (!canContinue || navigating) return
     saveOnboarding()
 
-    // If destination was preselected from the orbital landing, update its vibes
-    // and skip the /destinations picker — but check auth first
+    // If destination was preselected (orbital landing or URL extraction),
+    // skip /destinations — but check auth first
     if (preselectedDest) {
       setDestination({ ...preselectedDest, vibes: selected })
+
+      // Store URL highlights in sessionStorage for the loading page
+      if (urlExtracted) {
+        sessionStorage.setItem('drift-url-highlights', JSON.stringify({
+          highlights: urlExtracted.highlights,
+          summary: urlExtracted.summary,
+        }))
+      }
+
       if (isAnonymous) {
         setShowAuthGate(true)
         return
@@ -146,6 +166,46 @@ function VibesContent() {
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useMemo(() => { checkPostAuth() }, [isAnonymous, userEmail])
+
+  // ─── URL extraction ─────────────────────────────────────────
+  async function handleUrlExtract() {
+    if (!urlValue.trim()) return
+    try { new URL(urlValue) } catch { setUrlError('Enter a valid URL'); return }
+    setUrlError('')
+    setUrlExtracting(true)
+    try {
+      const token = useTripStore.getState().token
+      const res = await fetch('/api/ai/extract-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: urlValue }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) { setUrlError(data.error || 'Extraction failed'); setUrlExtracting(false); return }
+      setUrlExtracted(data.extracted)
+      // Pre-fill vibes + destination from extraction
+      const extractedVibes = (data.extracted.vibes || []).slice(0, MAX_VIBES)
+      setSelected(extractedVibes)
+      setDestination({
+        city: data.extracted.primaryDestination,
+        country: data.extracted.country || '',
+        tagline: data.extracted.summary || '',
+        match: 100,
+        vibes: extractedVibes,
+      })
+      // Pre-fill dates if suggested
+      if (data.extracted.suggestedDays) {
+        const start = new Date(Date.now() + 14 * 86400000)
+        const end = new Date(start.getTime() + (data.extracted.suggestedDays - 1) * 86400000)
+        setStartDate(start.toISOString().slice(0, 10))
+        setEndDate(end.toISOString().slice(0, 10))
+      }
+    } catch {
+      setUrlError('Network error. Try again.')
+    } finally {
+      setUrlExtracting(false)
+    }
+  }
 
   async function handleGoogleAuth() {
     setAuthLoading(true)
@@ -228,7 +288,78 @@ function VibesContent() {
           <p className="text-[14px] text-drift-text2 leading-relaxed">
             Pick up to five. Drift composes the trip around your energy — not boring filters.
           </p>
+
+          {/* Paste a link toggle */}
+          {!preselectedDest && !urlExtracted && (
+            <button
+              onClick={() => setShowUrlInput(!showUrlInput)}
+              className="mt-4 flex items-center gap-2 text-[11px] text-drift-text3 hover:text-drift-gold transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+              </svg>
+              Or paste a YouTube / Instagram / TikTok link
+            </button>
+          )}
         </div>
+
+        {/* URL extraction input */}
+        {showUrlInput && !urlExtracted && (
+          <div className="mb-10 max-w-[640px] animate-[fadeUp_0.3s_ease]">
+            <div className="flex gap-2">
+              <input
+                value={urlValue}
+                onChange={e => { setUrlValue(e.target.value); setUrlError('') }}
+                onKeyDown={e => e.key === 'Enter' && handleUrlExtract()}
+                placeholder="https://youtube.com/watch?v=... or instagram.com/reel/..."
+                className="flex-1 rounded-xl border border-drift-border bg-white/[0.02] px-4 py-3 text-[13px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none transition-colors"
+              />
+              <button
+                onClick={handleUrlExtract}
+                disabled={!urlValue.trim() || urlExtracting}
+                className="shrink-0 rounded-xl bg-drift-gold px-5 py-3 text-[10px] font-bold uppercase tracking-[2px] text-drift-bg transition-all hover:-translate-y-0.5 disabled:opacity-40"
+              >
+                {urlExtracting ? 'Extracting…' : 'Extract'}
+              </button>
+            </div>
+            {urlError && (
+              <div className="mt-2 text-[11px] text-drift-err">{urlError}</div>
+            )}
+            <div className="mt-2 flex gap-2 flex-wrap">
+              {['YouTube', 'Instagram Reels', 'TikTok', 'Travel blogs'].map(s => (
+                <span key={s} className="rounded-md bg-white/[0.03] border border-white/[0.05] px-2 py-1 text-[9px] text-drift-text3">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* URL extraction result banner */}
+        {urlExtracted && (
+          <div className="mb-10 max-w-[640px] rounded-2xl border border-drift-gold/20 bg-drift-gold/[0.04] p-6 animate-[fadeUp_0.4s_ease]">
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div>
+                <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-gold/70 mb-1">Extracted from link</div>
+                <div className="font-serif text-[22px] font-light text-drift-text">
+                  {urlExtracted.primaryDestination}
+                  {urlExtracted.country && <span className="text-drift-text3 italic"> · {urlExtracted.country}</span>}
+                </div>
+              </div>
+              <button
+                onClick={() => { setUrlExtracted(null); setDestination(null); setSelected([]); setShowUrlInput(true) }}
+                className="shrink-0 text-drift-text3 hover:text-drift-text transition-colors text-sm"
+              >×</button>
+            </div>
+            <p className="text-[12px] text-drift-text2 leading-relaxed mb-3">{urlExtracted.summary}</p>
+            <div className="flex items-center gap-4 text-[10px] text-drift-text3">
+              <span>{urlExtracted.highlights.length} places extracted</span>
+              <span className="text-white/15">·</span>
+              <span>{urlExtracted.suggestedDays} days suggested</span>
+              <span className="text-white/15">·</span>
+              <span className="capitalize">{urlExtracted.budgetHint} budget</span>
+            </div>
+          </div>
+        )}
 
         {/* ═══ Vibe Gallery ═══ */}
         <div className="grid grid-cols-5 gap-3 mb-14 max-lg:grid-cols-3 max-md:grid-cols-2">

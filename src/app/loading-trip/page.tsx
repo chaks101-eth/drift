@@ -54,6 +54,19 @@ function LoadingContent() {
     const dest = onboarding.destination
 
     async function generate() {
+      // Check for URL-extracted highlights
+      let urlHighlights: unknown[] | undefined
+      let urlSummary: string | undefined
+      try {
+        const saved = sessionStorage.getItem('drift-url-highlights')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          urlHighlights = parsed.highlights
+          urlSummary = parsed.summary
+          sessionStorage.removeItem('drift-url-highlights')
+        }
+      } catch { /* ignore */ }
+
       try {
         const res = await fetch('/api/ai/generate', {
           method: 'POST',
@@ -69,6 +82,7 @@ function LoadingContent() {
             budget: onboarding.budgetLevel,
             budgetAmount: onboarding.budgetAmount,
             origin: onboarding.origin || 'Delhi',
+            ...(urlHighlights ? { urlHighlights, urlSummary } : {}),
           }),
         })
 
