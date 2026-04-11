@@ -422,13 +422,37 @@ export async function POST(req: NextRequest) {
       // Fix links: strip hallucinated URLs, add real Google Maps / Booking.com links
       fixItemLinks(nonFlightItems, body.destination, body.country)
 
-      // Google Places enrichment: deferred to background after DB insert
-      // Items get curated Unsplash images initially, then real photos fill in async
-      // This saves ~15-20s from the critical path
+      // Google Places enrichment: blocking — real photos are critical for first impression
       const itemsNeedingEnrichment = nonFlightItems.filter(i =>
         ['hotel', 'activity', 'food'].includes(i.category) &&
         (!i.metadata.lat || !i.image_url || i.image_url.includes('unsplash.com'))
       )
+      if (itemsNeedingEnrichment.length > 0) {
+        try {
+          const placeDataMap = await batchGetPlaceData(
+            itemsNeedingEnrichment.map(i => ({ name: i.name, category: i.category })),
+            body.destination,
+            body.country,
+          )
+          // Apply enrichment directly to items
+          for (const item of nonFlightItems) {
+            const data = placeDataMap.get(item.name) || [...placeDataMap.entries()].find(([k]) =>
+              item.name.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(item.name.toLowerCase())
+            )?.[1]
+            if (!data) continue
+            if (data.photoUrl) item.image_url = upsizeGoogleImage(data.photoUrl)
+            if (data.rating) item.metadata.rating = data.rating
+            if (data.reviewCount) item.metadata.reviewCount = data.reviewCount
+            if (data.lat) { item.metadata.lat = data.lat; item.metadata.lng = data.lng }
+            if (data.address) item.metadata.address = data.address
+            if (data.mapsUrl) item.metadata.mapsUrl = data.mapsUrl
+          }
+          const enriched = [...placeDataMap.keys()].length
+          console.log(`[Generate] Google Places: ${enriched} items enriched with real photos/ratings`)
+        } catch (e) {
+          console.warn(`[Generate] Google Places enrichment failed, using fallbacks: ${e}`)
+        }
+      }
 
       items = mergeFlights(nonFlightItems, outboundFlights, returnFlights)
 
@@ -637,37 +661,8 @@ export async function POST(req: NextRequest) {
       const bgTripId = trip.id
       const bgItems = [...nonFlightItems]
       const bgItemsToInsert = [...itemsToInsert]
-      const bgDest = body.destination
-      const bgCountry = body.country || ''
       Promise.resolve().then(async () => {
-        // 1. Google Places enrichment (real photos, ratings, GPS)
-        if (itemsNeedingEnrichment.length > 0) {
-          try {
-            const placeDataMap = await batchGetPlaceData(
-              itemsNeedingEnrichment.map(i => ({ name: i.name, category: i.category })),
-              bgDest,
-              bgCountry,
-            )
-            // Update each enriched item in DB
-            for (const [name, data] of placeDataMap.entries()) {
-              const updates: Record<string, unknown> = {}
-              const item = bgItemsToInsert.find(i => i.name.toLowerCase() === name.toLowerCase())
-              if (!item) continue
-              const meta = { ...(item.metadata as Record<string, unknown>) }
-              if (data.photoUrl) updates.image_url = upsizeGoogleImage(data.photoUrl)
-              if (data.rating) meta.rating = data.rating
-              if (data.reviewCount) meta.reviewCount = data.reviewCount
-              if (data.lat) { meta.lat = data.lat; meta.lng = data.lng }
-              if (data.address) meta.address = data.address
-              if (data.mapsUrl) meta.mapsUrl = data.mapsUrl
-              updates.metadata = meta
-              await supabase.from('itinerary_items').update(updates).eq('trip_id', bgTripId).eq('name', item.name)
-            }
-            console.log(`[Generate] Background: ${placeDataMap.size} items enriched with Google Places`)
-          } catch (e) { console.warn(`[Generate] Background Places enrichment failed: ${e}`) }
-        }
-
-        // 2. Travel times
+        // 1. Travel times
         try {
           await addTravelTimesToItems(bgItems)
           for (const item of bgItems) {
