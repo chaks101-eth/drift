@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useTripStore } from '@/stores/trip-store'
 import NavBar from '@/app/NavBar'
+import CityAutocomplete from '@/components/desktop/CityAutocomplete'
 
 // ─── Types ────────────────────────────────────────────────────
 interface Highlight {
@@ -469,12 +470,7 @@ export default function BuildFromLinkPage() {
                   {/* Origin */}
                   <div className="mb-4">
                     <label className="block mb-1.5 text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3">Flying from</label>
-                    <input
-                      value={inputOrigin}
-                      onChange={e => setInputOrigin(e.target.value)}
-                      placeholder="Delhi, Mumbai, London…"
-                      className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[13px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none transition-colors"
-                    />
+                    <CityAutocomplete value={inputOrigin} onChange={setInputOrigin} />
                   </div>
 
                   {/* Dates */}

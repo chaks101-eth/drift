@@ -8,6 +8,7 @@ import DesktopAuthProvider from '@/components/desktop/AuthProvider'
 import { useTripStore } from '@/stores/trip-store'
 import { supabase } from '@/lib/supabase'
 import { detectCurrencyFromOrigin, formatPrice } from '@/lib/currency'
+import CityAutocomplete from '@/components/desktop/CityAutocomplete'
 
 // ─── Vibe Library ─────────────────────────────────────────────────
 const VIBES = [
@@ -449,15 +450,7 @@ function VibesContent() {
               {/* Origin */}
               <div className="col-span-12 lg:col-span-4">
                 <label className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-2 block">Flying from</label>
-                <div className="flex items-center gap-2 rounded-lg border border-drift-border bg-white/[0.02] px-3.5 py-2.5 focus-within:border-drift-gold/30 transition-colors">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                  <input
-                    value={origin}
-                    onChange={e => setOriginLocal(e.target.value)}
-                    placeholder="Delhi, Mumbai, London…"
-                    className="flex-1 bg-transparent text-[13px] text-drift-text placeholder:text-drift-text3 focus:outline-none"
-                  />
-                </div>
+                <CityAutocomplete value={origin} onChange={setOriginLocal} className="rounded-lg" />
               </div>
 
               {/* Dates */}
