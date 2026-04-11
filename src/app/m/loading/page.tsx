@@ -1,48 +1,54 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useTripStore } from '@/stores/trip-store'
 import { supabase } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
 const steps = [
-  { text: 'Searching flights & checking weather', duration: 5000 },
-  { text: 'Locking in must-see experiences', duration: 8000 },
-  { text: 'Planning your day-by-day itinerary', duration: 18000 },
-  { text: 'Filling in restaurants, transit & local tips', duration: 22000 },
+  { text: 'Searching flights & weather', duration: 5000 },
+  { text: 'Locking in must-see spots', duration: 8000 },
+  { text: 'Planning each day', duration: 18000 },
+  { text: 'Adding restaurants & local tips', duration: 22000 },
   { text: 'Fetching photos & ratings', duration: 20000 },
-  { text: 'Personalizing the finishing touches', duration: 10000 },
+  { text: 'Personalizing', duration: 10000 },
 ]
 
-// Destination-specific tips shown during loading
-const destTips: Record<string, string[]> = {
-  bangkok: ['Pro tip: street food stalls with long local queues are always the best', 'The BTS Skytrain is faster than taxis during rush hour'],
-  tokyo: ['Suica card works on all trains, buses, and even vending machines', 'Most restaurants in Tokyo are incredible — even the random ones'],
-  bali: ['Sunrise at Mount Batur is worth the 2am wake-up call', 'Negotiate prices at markets — start at 50% of the asking price'],
-  paris: ['Skip the Eiffel Tower restaurant — eat at Le Bouillon Chartier instead', 'The Marais on Sunday morning is pure magic'],
-  dubai: ['Friday brunch is a Dubai institution — book ahead', 'The old souks in Deira are more authentic than the malls'],
-  istanbul: ['Get a Museum Pass — it covers Topkapi, Hagia Sophia, and more', 'Take the ferry, not a taxi, to cross the Bosphorus'],
-  lisbon: ['Tram 28 is iconic but try Tram 12 for fewer crowds', 'Pastéis de Belém is worth the queue — the secret is in the cinnamon'],
-  singapore: ['Hawker centres are Michelin-quality food for $3', 'Gardens by the Bay light show at 7:45pm is free'],
-}
-
-const genericTips = [
-  'Drift picks restaurants based on local reviews, not tourist rankings',
-  'Every item in your trip has a reason — tap any card to see why',
-  'Don\'t like something? Tap the 3-dot menu to swap or remove it',
-  'Your trip is personalized to your vibes, not a copy-paste template',
-  'Ask the AI chat to adjust anything — budget, pace, or specific days',
+const FALLBACK_PHOTOS = [
+  'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80',
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80',
+  'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=1200&q=80',
+  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80',
 ]
 
-function getAllTips(dest: string): string[] {
-  const key = dest.toLowerCase()
-  for (const [k, tips] of Object.entries(destTips)) {
-    if (key.includes(k) || k.includes(key)) {
-      return [...tips, ...genericTips]
-    }
+function generateTips(city: string, vibes: string[], budget: string): string[] {
+  const tips: string[] = []
+  const destTips: Record<string, string[]> = {
+    bali: ['Bali has over 20,000 temples', 'Ubud\'s rice terraces are UNESCO-listed', 'Nasi goreng costs about ₹150 at a warung'],
+    tokyo: ['Tokyo has more Michelin stars than any city', 'Suica card works on trains, buses, and vending machines'],
+    dubai: ['Friday brunch is a Dubai institution', 'The metro is driverless and spotless'],
+    paris: ['The Louvre would take 100 days to see fully', 'Parisians eat dinner after 8pm'],
+    maldives: ['Only 200 of 1,192 islands are inhabited', 'Best snorkeling visibility: Jan to Apr'],
+    bangkok: ['Street food averages ₹100-200 per dish', 'BTS Skytrain beats taxis in rush hour'],
+    phuket: ['Andaman side has calmer water Nov-Apr', 'Longtail boats are cheaper than speedboats'],
+    singapore: ['Hawker centres are Michelin-rated at ₹200', 'Gardens by the Bay is free to walk around'],
+    jaipur: ['The Pink City was painted pink in 1876', 'Amer Fort is best before 10am'],
+    istanbul: ['The Grand Bazaar has 4,000+ shops', 'A Bosphorus ferry costs ₹30'],
+    manali: ['Old Manali has the best cafés', 'Rohtang Pass needs a permit — book ahead'],
   }
-  return genericTips
+  const key = city.toLowerCase()
+  if (destTips[key]) tips.push(...destTips[key])
+  if (vibes.includes('foodie')) tips.push('Drift prioritizes places with 4.5+ food ratings')
+  if (vibes.includes('beach')) tips.push('Beach spots are timed for golden hour when possible')
+  if (vibes.includes('romance')) tips.push('Romantic dinners are placed at sunset-facing venues')
+  if (vibes.includes('adventure')) tips.push('Outdoor activities are scheduled for cooler mornings')
+  if (budget === 'budget') tips.push('Budget trips use 3-star hotels with 4.0+ ratings')
+  tips.push('Every price in your trip is pulled live — not estimated')
+  tips.push('Zero invented places. Every venue is verified on Google Maps')
+  tips.push('Tap any card to see why Drift picked it')
+  return tips
 }
 
 export default function LoadingPage() {
@@ -58,6 +64,13 @@ export default function LoadingPage() {
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const generatedTripId = useRef<string | null>(null)
+
+  // Photo slideshow
+  const [photos, setPhotos] = useState<string[]>(
+    onboarding.destination?.image_url ? [onboarding.destination.image_url] : [FALLBACK_PHOTOS[0]]
+  )
+  const [photoIdx, setPhotoIdx] = useState(0)
+  const photosFetched = useRef(false)
 
   // ─── Screen Wake Lock: prevent phone from sleeping during generation ───
   const acquireWakeLock = useCallback(async () => {
@@ -166,16 +179,43 @@ export default function LoadingPage() {
     return () => clearInterval(t)
   }, [generationDone, error])
 
-  // Rotate tips every 8 seconds
+  // Fetch real destination photos
   useEffect(() => {
-    const destName = onboarding.destination?.city || ''
-    const tips = getAllTips(destName)
+    if (photosFetched.current || !onboarding.destination) return
+    photosFetched.current = true
+    const dest = onboarding.destination
+    const q = `${dest.city}${dest.country ? `, ${dest.country}` : ''}`
+    fetch(`/api/places/photos?q=${encodeURIComponent(q)}&count=5`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.photos?.length) {
+          setPhotos(prev => [...new Set([...prev, ...data.photos])].slice(0, 6))
+        } else {
+          setPhotos(prev => prev.length <= 1 ? [...prev, ...FALLBACK_PHOTOS] : prev)
+        }
+      })
+      .catch(() => setPhotos(prev => prev.length <= 1 ? [...prev, ...FALLBACK_PHOTOS] : prev))
+  }, [onboarding.destination])
+
+  // Photo rotation
+  useEffect(() => {
+    if (photos.length <= 1) return
+    const t = setInterval(() => setPhotoIdx(i => (i + 1) % photos.length), 5000)
+    return () => clearInterval(t)
+  }, [photos.length])
+
+  // Rotate contextual tips every 6 seconds
+  useEffect(() => {
+    const city = onboarding.destination?.city || ''
+    const vibes = onboarding.pickedVibes || []
+    const budget = onboarding.budgetLevel || 'mid'
+    const tips = generateTips(city, vibes, budget)
     let idx = 0
     const show = () => { setTip(tips[idx % tips.length]); idx++ }
-    const delay = setTimeout(show, 3000)
-    const interval = setInterval(show, 8000)
+    const delay = setTimeout(show, 2000)
+    const interval = setInterval(show, 6000)
     return () => { clearTimeout(delay); clearInterval(interval) }
-  }, [onboarding.destination?.city])
+  }, [onboarding.destination?.city, onboarding.pickedVibes, onboarding.budgetLevel])
 
   // Step progression — follows real timing of backend steps
   useEffect(() => {
@@ -362,7 +402,18 @@ export default function LoadingPage() {
         @keyframes progress { from { width: 0%; } to { width: 100%; } }
       `}</style>
 
-      <div className="flex h-full flex-col items-center justify-center px-9">
+      {/* Photo slideshow background */}
+      <div className="fixed inset-0 z-0">
+        {photos.map((src, i) => (
+          <div key={src} className="absolute inset-0 transition-opacity duration-[2000ms] ease-in-out" style={{ opacity: i === photoIdx ? 1 : 0 }}>
+            <Image src={src} alt="" fill className="object-cover" sizes="100vw" unoptimized priority={i === 0} />
+          </div>
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-drift-bg/75 via-drift-bg/85 to-drift-bg" />
+        <div className="absolute inset-0 bg-drift-bg/40 backdrop-blur-[2px]" />
+      </div>
+
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-9">
         {/* Destination name + vibes */}
         {destName && (
           <div className="mb-1 font-serif text-[28px] font-light tracking-tight text-drift-text opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.2s_forwards]">
