@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useTripStore } from '@/stores/trip-store'
-import { supabase } from '@/lib/supabase'
 
 // ─── Reactions ────────────────────────────────────────────────
 interface ReactionMap {
@@ -13,32 +12,23 @@ export function useReactions(tripId: string | undefined) {
   const [reactions, setReactions] = useState<ReactionMap>({})
   const token = useTripStore((s) => s.token)
 
-  // Fetch reactions on mount + subscribe to realtime changes
+  // Fetch reactions on mount + poll every 5s
   useEffect(() => {
     if (!tripId) return
     const userId = useTripStore.getState().userId
-    fetch(`/api/trips/${tripId}/reactions`, {
-      headers: userId ? { 'x-user-id': userId } : {},
-    })
-      .then(r => r.json())
-      .then(data => { if (data.reactions) setReactions(data.reactions) })
-      .catch(() => {})
 
-    // Realtime: listen for reaction changes from other users
-    const channel = supabase
-      .channel(`reactions:${tripId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions', filter: `trip_id=eq.${tripId}` }, () => {
-        // Re-fetch all reactions on any change (simple + reliable)
-        fetch(`/api/trips/${tripId}/reactions`, {
-          headers: userId ? { 'x-user-id': userId } : {},
-        })
-          .then(r => r.json())
-          .then(data => { if (data.reactions) setReactions(data.reactions) })
-          .catch(() => {})
+    const fetchReactions = () => {
+      fetch(`/api/trips/${tripId}/reactions`, {
+        headers: userId ? { 'x-user-id': userId } : {},
       })
-      .subscribe()
+        .then(r => r.json())
+        .then(data => { if (data.reactions) setReactions(data.reactions) })
+        .catch(() => {})
+    }
+    fetchReactions()
 
-    return () => { supabase.removeChannel(channel) }
+    const interval = setInterval(fetchReactions, 5000)
+    return () => clearInterval(interval)
   }, [tripId])
 
   const toggleReaction = useCallback(async (itemId: string) => {
@@ -99,27 +89,15 @@ export function useComments(tripId: string | undefined, itemId: string | undefin
   const [loading] = useState(false)
   const token = useTripStore((s) => s.token)
 
-  // Fetch comments + subscribe to realtime
+  // Fetch comments
   useEffect(() => {
     if (!tripId || !itemId) return
     let cancelled = false
-    const fetchComments = () => {
-      fetch(`/api/trips/${tripId}/comments?itemId=${itemId}`)
-        .then(r => r.json())
-        .then(data => { if (!cancelled && data.comments) setComments(data.comments) })
-        .catch(() => {})
-    }
-    fetchComments()
-
-    // Realtime: listen for new comments on this item
-    const channel = supabase
-      .channel(`comments:${itemId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments', filter: `item_id=eq.${itemId}` }, () => {
-        if (!cancelled) fetchComments()
-      })
-      .subscribe()
-
-    return () => { cancelled = true; supabase.removeChannel(channel) }
+    fetch(`/api/trips/${tripId}/comments?itemId=${itemId}`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled && data.comments) setComments(data.comments) })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [tripId, itemId])
 
   const addComment = useCallback(async (text: string) => {

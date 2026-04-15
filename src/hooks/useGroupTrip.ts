@@ -36,15 +36,8 @@ export function usePolls(tripId: string | undefined) {
     }
     fetchPolls()
 
-    // Realtime: re-fetch polls when any itinerary item is updated (poll votes, new polls)
-    const channel = supabase
-      .channel(`polls:${tripId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'itinerary_items', filter: `trip_id=eq.${tripId}` }, () => {
-        fetchPolls()
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    const interval = setInterval(fetchPolls, 3000)
+    return () => clearInterval(interval)
   }, [tripId])
 
   const createPoll = useCallback(async (itemId: string) => {
@@ -130,7 +123,7 @@ export function useGroupTrip(tripId: string | undefined) {
   const [notes, setNotes] = useState<GroupNote[]>([])
   const token = useTripStore((s) => s.token)
 
-  // Fetch group state + subscribe to realtime
+  // Fetch group state + poll every 3s for updates
   useEffect(() => {
     if (!tripId) return
 
@@ -139,21 +132,17 @@ export function useGroupTrip(tripId: string | undefined) {
         .then(r => r.json())
         .then(data => {
           if (data.group?.readyCheck) setReadyCheck(data.group.readyCheck)
+          else setReadyCheck(null)
           if (data.group?.notes) setNotes(data.group.notes)
         })
         .catch(() => {})
     }
     fetchGroup()
 
-    // Realtime: re-fetch when trips table is updated (notes, ready check stored in metadata)
-    const channel = supabase
-      .channel(`group:${tripId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, () => {
-        fetchGroup()
-      })
-      .subscribe()
+    // Poll every 3 seconds — more reliable than Supabase Realtime for JSONB columns
+    const interval = setInterval(fetchGroup, 3000)
 
-    return () => { supabase.removeChannel(channel) }
+    return () => clearInterval(interval)
   }, [tripId])
 
   const startReadyCheck = useCallback(async () => {
