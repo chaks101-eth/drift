@@ -64,5 +64,5 @@ export default async function SharePage({ params }: Props) {
     )
   }
 
-  return <ShareTripView trip={data.trip} items={data.items} />
+  return <ShareTripView trip={data.trip} items={data.items} tripId={data.trip.id} />
 }

@@ -10,7 +10,7 @@ import dynamic from 'next/dynamic'
 import DesktopItemCard from './ItemCard'
 import DesktopFlightCard from './FlightCard'
 import DayWeather from './DayWeather'
-import { useReactions } from '@/hooks/useCollaboration'
+import { useReactions, useSuggestions, useCollaborators } from '@/hooks/useCollaboration'
 
 const TripMap = dynamic(() => import('./TripMap'), { ssr: false })
 
@@ -47,6 +47,10 @@ const BUDGET_DEFAULTS: Record<string, number> = { budget: 1500, mid: 3000, luxur
 export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat }: Props) {
   const { formatBudget } = useTripStore()
   const { reactions, toggleReaction } = useReactions(trip.id)
+  const { suggestions, suggest, handleSuggestion } = useSuggestions(trip.id)
+  const { collaborators } = useCollaborators(trip.id)
+  const [suggestInput, setSuggestInput] = useState('')
+  const [showCollaborators, setShowCollaborators] = useState(false)
   const setCurrentItems = useTripStore((s) => s.setCurrentItems)
   const toast = useUIStore((s) => s.toast)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -470,6 +474,100 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
 
             </section>
           ))}
+
+          {/* ─── Suggestions bucket ─── */}
+          {(suggestions.length > 0 || collaborators.length > 0) && (
+            <section className="mt-12 mb-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-px w-6 bg-drift-gold/60" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[2px] text-drift-text3">
+                    Ideas from friends {suggestions.length > 0 && `· ${suggestions.length}`}
+                  </span>
+                </div>
+                {/* Collaborator avatars */}
+                {collaborators.length > 0 && (
+                  <button onClick={() => setShowCollaborators(!showCollaborators)} className="flex items-center -space-x-1.5">
+                    {collaborators.slice(0, 5).map((c, i) => (
+                      <div key={c.id} className="h-6 w-6 rounded-full bg-drift-gold/15 border-2 border-drift-bg flex items-center justify-center text-[8px] font-bold text-drift-gold" style={{ zIndex: 5 - i }}>
+                        {c.email?.[0]?.toUpperCase() || c.user_id?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    ))}
+                    {collaborators.length > 5 && (
+                      <div className="h-6 w-6 rounded-full bg-white/[0.06] border-2 border-drift-bg flex items-center justify-center text-[8px] text-drift-text3">
+                        +{collaborators.length - 5}
+                      </div>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Suggestion cards */}
+              {suggestions.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {suggestions.map(s => (
+                    <div key={s.id} className="flex items-center gap-3 rounded-xl border border-drift-gold/15 bg-drift-gold/[0.03] px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-semibold text-drift-text">{s.name}</div>
+                        <div className="text-[10px] text-drift-text3 mt-0.5">
+                          {s.detail && <span>{s.detail} · </span>}
+                          Suggested by <span className="text-drift-gold">{s.suggested_name}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleSuggestion(s.id, 'accept')}
+                          className="rounded-lg bg-drift-ok/15 px-2.5 py-1.5 text-[9px] font-bold text-drift-ok uppercase tracking-wider hover:bg-drift-ok/25 transition-colors"
+                        >Accept</button>
+                        <button
+                          onClick={() => handleSuggestion(s.id, 'dismiss')}
+                          className="rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-[9px] font-medium text-drift-text3 uppercase tracking-wider hover:bg-white/[0.08] transition-colors"
+                        >Dismiss</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Suggest input */}
+              <div className="flex gap-2">
+                <input
+                  value={suggestInput}
+                  onChange={e => setSuggestInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && suggestInput.trim()) {
+                      suggest(suggestInput)
+                      setSuggestInput('')
+                    }
+                  }}
+                  placeholder="Suggest a place…"
+                  className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-2.5 text-[12px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={() => { if (suggestInput.trim()) { suggest(suggestInput); setSuggestInput('') } }}
+                  disabled={!suggestInput.trim()}
+                  className="shrink-0 rounded-xl bg-drift-gold/10 px-4 py-2.5 text-[10px] font-semibold text-drift-gold disabled:opacity-30 hover:bg-drift-gold/20 transition-colors"
+                >Suggest</button>
+              </div>
+
+              {/* Collaborator list dropdown */}
+              {showCollaborators && collaborators.length > 0 && (
+                <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                  <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-2">Collaborators</div>
+                  <div className="space-y-2">
+                    {collaborators.map(c => (
+                      <div key={c.id} className="flex items-center justify-between text-[11px]">
+                        <span className="text-drift-text2">{c.email || 'Invited via link'}</span>
+                        <span className={`text-[9px] uppercase tracking-wider ${c.accepted_at ? 'text-drift-ok' : 'text-drift-text3'}`}>
+                          {c.accepted_at ? c.role : 'pending'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Cost Breakdown — restrained */}
           <div className="mt-12 rounded-xl border border-white/[0.05] bg-white/[0.015] px-8 py-7">

@@ -1,13 +1,58 @@
 'use client'
 import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
+import { supabase } from '@/lib/supabase'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 
 type Trip = {
   destination: string; country: string; vibes: string[];
   start_date: string; end_date: string; travelers: number; budget: string
+}
+
+// Lightweight reaction state for share page (no trip store dependency)
+function useShareReactions(tripId: string | undefined) {
+  const [reactions, setReactions] = useState<Record<string, { count: number; reacted: boolean }>>({})
+  const [token, setToken] = useState<string | null>(null)
+
+  // Auto-create anonymous session for reactions
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        const { data } = await supabase.auth.signInAnonymously()
+        if (data.session) setToken(data.session.access_token)
+      } else {
+        setToken(session.access_token)
+      }
+    })
+  }, [])
+
+  // Fetch reactions
+  useEffect(() => {
+    if (!tripId) return
+    fetch(`/api/trips/${tripId}/reactions`)
+      .then(r => r.json())
+      .then(data => { if (data.reactions) setReactions(data.reactions) })
+      .catch(() => {})
+  }, [tripId])
+
+  const toggle = useCallback(async (itemId: string) => {
+    if (!tripId || !token) return
+    setReactions(prev => {
+      const c = prev[itemId] || { count: 0, reacted: false }
+      return { ...prev, [itemId]: { count: c.reacted ? c.count - 1 : c.count + 1, reacted: !c.reacted } }
+    })
+    try {
+      await fetch(`/api/trips/${tripId}/reactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ itemId }),
+      })
+    } catch {}
+  }, [tripId, token])
+
+  return { reactions, toggle }
 }
 
 type Item = {
@@ -32,9 +77,10 @@ const FALLBACK_IMAGES: Record<string, string> = {
   activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400',
 }
 
-export default function ShareTripView({ trip, items }: { trip: Trip; items: Item[] }) {
+export default function ShareTripView({ trip, items, tripId }: { trip: Trip; items: Item[]; tripId?: string }) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  const { reactions, toggle: toggleReaction } = useShareReactions(tripId)
 
   useEffect(() => {
     trackEvent('share_page_view', 'engagement', trip.destination)
@@ -233,6 +279,18 @@ export default function ShareTripView({ trip, items }: { trip: Trip; items: Item
                         {item.time && <span className="text-[9px] text-[#4a4a55] bg-[rgba(255,255,255,0.03)] px-1.5 py-0.5 rounded">{item.time}</span>}
                         {rating && <span className="text-[9px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">{rating}★</span>}
                         {reason && <span className="text-[9px] text-[#c8a44e] bg-[rgba(200,164,78,0.06)] px-1.5 py-0.5 rounded line-clamp-1">{reason}</span>}
+                        {/* Heart reaction */}
+                        <button
+                          onClick={() => toggleReaction(item.id)}
+                          className={`flex items-center gap-1 text-[9px] ml-auto transition-colors ${
+                            reactions[item.id]?.reacted ? 'text-[#ff6b9e]' : 'text-[#4a4a55] hover:text-[#ff6b9e]'
+                          }`}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill={reactions[item.id]?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                          {reactions[item.id]?.count > 0 && <span>{reactions[item.id].count}</span>}
+                        </button>
                       </div>
                     </div>
                   </div>

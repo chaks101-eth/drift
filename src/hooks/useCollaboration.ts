@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useTripStore } from '@/stores/trip-store'
+import { supabase } from '@/lib/supabase'
 
 // ─── Reactions ────────────────────────────────────────────────
 interface ReactionMap {
@@ -12,7 +13,7 @@ export function useReactions(tripId: string | undefined) {
   const [reactions, setReactions] = useState<ReactionMap>({})
   const token = useTripStore((s) => s.token)
 
-  // Fetch reactions on mount
+  // Fetch reactions on mount + subscribe to realtime changes
   useEffect(() => {
     if (!tripId) return
     const userId = useTripStore.getState().userId
@@ -22,6 +23,22 @@ export function useReactions(tripId: string | undefined) {
       .then(r => r.json())
       .then(data => { if (data.reactions) setReactions(data.reactions) })
       .catch(() => {})
+
+    // Realtime: listen for reaction changes from other users
+    const channel = supabase
+      .channel(`reactions:${tripId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions', filter: `trip_id=eq.${tripId}` }, () => {
+        // Re-fetch all reactions on any change (simple + reliable)
+        fetch(`/api/trips/${tripId}/reactions`, {
+          headers: userId ? { 'x-user-id': userId } : {},
+        })
+          .then(r => r.json())
+          .then(data => { if (data.reactions) setReactions(data.reactions) })
+          .catch(() => {})
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [tripId])
 
   const toggleReaction = useCallback(async (itemId: string) => {
@@ -82,15 +99,27 @@ export function useComments(tripId: string | undefined, itemId: string | undefin
   const [loading] = useState(false)
   const token = useTripStore((s) => s.token)
 
-  // Fetch comments for a specific item
+  // Fetch comments + subscribe to realtime
   useEffect(() => {
     if (!tripId || !itemId) return
     let cancelled = false
-    fetch(`/api/trips/${tripId}/comments?itemId=${itemId}`)
-      .then(r => r.json())
-      .then(data => { if (!cancelled && data.comments) setComments(data.comments) })
-      .catch(() => {})
-    return () => { cancelled = true }
+    const fetchComments = () => {
+      fetch(`/api/trips/${tripId}/comments?itemId=${itemId}`)
+        .then(r => r.json())
+        .then(data => { if (!cancelled && data.comments) setComments(data.comments) })
+        .catch(() => {})
+    }
+    fetchComments()
+
+    // Realtime: listen for new comments on this item
+    const channel = supabase
+      .channel(`comments:${itemId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments', filter: `item_id=eq.${itemId}` }, () => {
+        if (!cancelled) fetchComments()
+      })
+      .subscribe()
+
+    return () => { cancelled = true; supabase.removeChannel(channel) }
   }, [tripId, itemId])
 
   const addComment = useCallback(async (text: string) => {
@@ -128,6 +157,50 @@ export function useComments(tripId: string | undefined, itemId: string | undefin
   }, [tripId, token])
 
   return { comments, loading, addComment, deleteComment }
+}
+
+// ─── Suggestions ──────────────────────────────────────────────
+export function useSuggestions(tripId: string | undefined) {
+  const [suggestions, setSuggestions] = useState<Array<{
+    id: string; name: string; category: string; detail: string;
+    suggested_name: string; created_at: string
+  }>>([])
+  const token = useTripStore((s) => s.token)
+
+  useEffect(() => {
+    if (!tripId) return
+    fetch(`/api/trips/${tripId}/suggest`)
+      .then(r => r.json())
+      .then(data => { if (data.suggestions) setSuggestions(data.suggestions) })
+      .catch(() => {})
+  }, [tripId])
+
+  const suggest = useCallback(async (name: string, category = 'activity', detail = '') => {
+    if (!tripId || !token || !name.trim()) return
+    try {
+      const res = await fetch(`/api/trips/${tripId}/suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, category, detail }),
+      })
+      const data = await res.json()
+      if (data.suggestion) setSuggestions(prev => [data.suggestion, ...prev])
+    } catch {}
+  }, [tripId, token])
+
+  const handleSuggestion = useCallback(async (itemId: string, action: 'accept' | 'dismiss') => {
+    if (!tripId || !token) return
+    setSuggestions(prev => prev.filter(s => s.id !== itemId))
+    try {
+      await fetch(`/api/trips/${tripId}/suggest`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ itemId, action }),
+      })
+    } catch {}
+  }, [tripId, token])
+
+  return { suggestions, suggest, handleSuggestion }
 }
 
 // ─── Collaborators ────────────────────────────────────────────
