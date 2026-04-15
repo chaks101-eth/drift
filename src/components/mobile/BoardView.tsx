@@ -54,11 +54,12 @@ interface BoardViewProps {
 
 export default function BoardView({ trip, items }: BoardViewProps) {
   const { openDetail, openCardMenu, openChat, authPromptDismissed, dismissAuthPrompt } = useUIStore()
-  const { formatBudget, isAnonymous, token } = useTripStore()
+  const { formatBudget, isAnonymous, token, userId } = useTripStore()
   const { reactions, toggleReaction } = useReactions(trip.id)
   const { polls, createPoll, vote, applyPoll, closePoll } = usePolls(trip.id)
   const { collaborators } = useCollaborators(trip.id)
   const hasGroup = collaborators.length > 0
+  const isOwner = trip.user_id === userId
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeDay, setActiveDay] = useState(0)
   const [sharing, setSharing] = useState(false)
@@ -457,7 +458,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       tripVibes={vibes}
                       onTap={() => openDetail(item.id)}
                       onMenu={() => openCardMenu(item.id)}
-                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id) } : {})}
+                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id), isOwner } : {})}
                     />
                   )
                 }
@@ -474,7 +475,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       tripVibes={vibes}
                       onTap={() => openDetail(item.id)}
                       onMenu={() => openCardMenu(item.id)}
-                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id) } : {})}
+                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id), isOwner } : {})}
                     />
                     {showTravel && (
                       <div className="flex items-center gap-2 py-2 pl-1">

@@ -27,10 +27,24 @@ export function usePolls(tripId: string | undefined) {
 
   useEffect(() => {
     if (!tripId) return
-    fetch(`/api/trips/${tripId}/polls`)
-      .then(r => r.json())
-      .then(data => { if (data.polls) setPolls(data.polls) })
-      .catch(() => {})
+
+    const fetchPolls = () => {
+      fetch(`/api/trips/${tripId}/polls`)
+        .then(r => r.json())
+        .then(data => { if (data.polls) setPolls(data.polls) })
+        .catch(() => {})
+    }
+    fetchPolls()
+
+    // Realtime: re-fetch polls when any itinerary item is updated (poll votes, new polls)
+    const channel = supabase
+      .channel(`polls:${tripId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'itinerary_items', filter: `trip_id=eq.${tripId}` }, () => {
+        fetchPolls()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [tripId])
 
   const createPoll = useCallback(async (itemId: string) => {

@@ -78,7 +78,18 @@ export default function DesktopTripPage() {
       else setAuth(null, null, null)
     })
 
-    return () => { cancelled = true; subscription.unsubscribe() }
+    // Realtime: refresh items when they're updated (poll swap, background enrichment)
+    const itemChannel = supabase
+      .channel(`items:${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'itinerary_items', filter: `trip_id=eq.${id}` }, () => {
+        // Re-fetch items from API
+        fetch(`/api/trips/${id}`).then(r => r.json()).then(data => {
+          if (data.items) useTripStore.getState().setCurrentItems(data.items)
+        }).catch(() => {})
+      })
+      .subscribe()
+
+    return () => { cancelled = true; subscription.unsubscribe(); supabase.removeChannel(itemChannel) }
   }, [id, setAuth, isMobile])
 
   // Mobile check or loading

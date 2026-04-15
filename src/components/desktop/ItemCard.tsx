@@ -49,9 +49,10 @@ interface Props {
   onVote?: (optionIndex: number) => void
   onApplyPoll?: () => void
   onClosePoll?: () => void
+  isOwner?: boolean
 }
 
-export default function DesktopItemCard({ item, onClick, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragTarget, reaction, onReact, onStartPoll, poll, onVote, onApplyPoll, onClosePoll }: Props) {
+export default function DesktopItemCard({ item, onClick, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragTarget, reaction, onReact, onStartPoll, poll, onVote, onApplyPoll, onClosePoll, isOwner }: Props) {
   const meta = (item.metadata || {}) as ItemMetadata
   const formatBudget = useTripStore((s) => s.formatBudget)
   const removeItem = useTripStore((s) => s.removeItem)
@@ -295,7 +296,7 @@ export default function DesktopItemCard({ item, onClick, draggable, onDragStart,
           <div className="mt-2.5 pt-2.5 border-t border-white/[0.06] bg-white/[0.02] -mx-4 -mb-4 px-4 pb-4 rounded-b-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[9px] font-semibold uppercase tracking-[1.5px] text-drift-gold">Group vote</span>
-              {onClosePoll && (
+              {isOwner && onClosePoll && (
                 <button onClick={onClosePoll} className="text-[8px] text-drift-text3 hover:text-drift-text2 transition-colors">Dismiss</button>
               )}
             </div>
@@ -325,7 +326,7 @@ export default function DesktopItemCard({ item, onClick, draggable, onDragStart,
             {/* Apply winner button — shows when there are votes */}
             {(() => {
               const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0)
-              if (totalVotes === 0 || !onApplyPoll) return null
+              if (totalVotes === 0 || !onApplyPoll || !isOwner) return null
               const winner = poll.options.reduce((a, b) => a.votes.length >= b.votes.length ? a : b)
               return (
                 <button

@@ -27,6 +27,7 @@ interface ItemCardProps {
   onVote?: (optionIndex: number) => void
   onApplyPoll?: () => void
   onClosePoll?: () => void
+  isOwner?: boolean
 }
 
 const tagConfig: Record<string, { cls: string; label: string }> = {
@@ -35,7 +36,7 @@ const tagConfig: Record<string, { cls: string; label: string }> = {
   activity: { cls: 'bg-drift-gold-bg text-drift-gold', label: 'Activity' },
 }
 
-export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onReact, onStartPoll, poll, onVote, onApplyPoll, onClosePoll }: ItemCardProps) {
+export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onReact, onStartPoll, poll, onVote, onApplyPoll, onClosePoll, isOwner }: ItemCardProps) {
   const meta = (item.metadata || {}) as ItemMetadata
   const tag = tagConfig[item.category] || tagConfig.activity
   const updateItem = useTripStore((s) => s.updateItem)
@@ -286,7 +287,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
         <div className="border-t border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[8px] font-bold uppercase tracking-wider text-drift-gold">Group vote</span>
-            {onClosePoll && <button onClick={(e) => { e.stopPropagation(); onClosePoll() }} className="text-[7px] text-drift-text3">Dismiss</button>}
+            {isOwner && onClosePoll && <button onClick={(e) => { e.stopPropagation(); onClosePoll() }} className="text-[7px] text-drift-text3">Dismiss</button>}
           </div>
           <div className="space-y-1">
             {poll.options.map((opt, i) => {
@@ -313,7 +314,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
           </div>
           {(() => {
             const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0)
-            if (totalVotes === 0 || !onApplyPoll) return null
+            if (totalVotes === 0 || !onApplyPoll || !isOwner) return null
             const winner = poll.options.reduce((a, b) => a.votes.length >= b.votes.length ? a : b)
             return (
               <button

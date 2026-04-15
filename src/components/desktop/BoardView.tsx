@@ -50,8 +50,10 @@ const BUDGET_DEFAULTS: Record<string, number> = { budget: 1500, mid: 3000, luxur
 export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat, onToggleGroup, groupPanelOpen }: Props) {
   const { formatBudget } = useTripStore()
   const { reactions, toggleReaction } = useReactions(trip.id)
+  const userId = useTripStore((s) => s.userId)
   const { collaborators } = useCollaborators(trip.id)
   const { polls, createPoll, vote, applyPoll, closePoll } = usePolls(trip.id)
+  const isOwner = trip.user_id === userId
   const { readyCheck, notes, startReadyCheck, respondReady, addNote } = useGroupTrip(trip.id)
   const hasGroup = collaborators.length > 0
   const [noteInput, setNoteInput] = useState('')
@@ -395,7 +397,7 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
                 item.category === 'flight'
                   ? <DesktopFlightCard key={item.id} item={item} onClick={() => onOpenDetail(item.id)} />
                   : <DesktopItemCard key={item.id} item={item} onClick={() => onOpenDetail(item.id)}
-                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id) } : {})}
+                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id), isOwner } : {})}
                     />
               ))}
             </div>
@@ -456,7 +458,7 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
                                   onDragEnd={handleDragEnd}
                                   isDragging={draggedId === item.id}
                                   isDragTarget={dragOverId === item.id}
-                                  {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id) } : {})}
+                                  {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id), isOwner } : {})}
                                 />
                             }
 
