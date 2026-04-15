@@ -8,6 +8,7 @@ import { parsePrice } from '@/lib/parse-price'
 import FlightCard from '@/components/mobile/cards/FlightCard'
 import ItemCard from '@/components/mobile/cards/ItemCard'
 import { trackEvent } from '@/lib/analytics'
+import { useReactions } from '@/hooks/useCollaboration'
 
 interface DayWeatherData {
   tempMax: number
@@ -52,6 +53,7 @@ interface BoardViewProps {
 export default function BoardView({ trip, items }: BoardViewProps) {
   const { openDetail, openCardMenu, openChat, authPromptDismissed, dismissAuthPrompt } = useUIStore()
   const { formatBudget, isAnonymous, token } = useTripStore()
+  const { reactions, toggleReaction } = useReactions(trip.id)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeDay, setActiveDay] = useState(0)
   const [sharing, setSharing] = useState(false)
@@ -450,6 +452,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       tripVibes={vibes}
                       onTap={() => openDetail(item.id)}
                       onMenu={() => openCardMenu(item.id)}
+                      reaction={reactions[item.id]}
+                      onReact={() => toggleReaction(item.id)}
                     />
                   )
                 }
@@ -466,6 +470,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       tripVibes={vibes}
                       onTap={() => openDetail(item.id)}
                       onMenu={() => openCardMenu(item.id)}
+                      reaction={reactions[item.id]}
+                      onReact={() => toggleReaction(item.id)}
                     />
                     {showTravel && (
                       <div className="flex items-center gap-2 py-2 pl-1">

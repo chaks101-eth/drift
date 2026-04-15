@@ -20,6 +20,8 @@ interface ItemCardProps {
   tripVibes: string[]
   onTap: () => void
   onMenu: () => void
+  reaction?: { count: number; reacted: boolean }
+  onReact?: () => void
 }
 
 const tagConfig: Record<string, { cls: string; label: string }> = {
@@ -28,7 +30,7 @@ const tagConfig: Record<string, { cls: string; label: string }> = {
   activity: { cls: 'bg-drift-gold-bg text-drift-gold', label: 'Activity' },
 }
 
-export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardProps) {
+export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onReact }: ItemCardProps) {
   const meta = (item.metadata || {}) as ItemMetadata
   const tag = tagConfig[item.category] || tagConfig.activity
   const updateItem = useTripStore((s) => s.updateItem)
@@ -155,9 +157,26 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
         </div>
       </div>
 
-      {/* Inline actions — Why this? + Alternatives */}
-      {(reason || alts.length > 0) && (
-        <div className="border-t border-drift-border2 px-3 py-1.5 flex gap-3">
+      {/* Heart reaction + inline actions */}
+      <div className="border-t border-drift-border2 px-3 py-1.5 flex items-center gap-3">
+        {/* Heart */}
+        {onReact && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onReact() }}
+            className={`flex items-center gap-1 text-[10px] transition-colors active:scale-90 ${
+              reaction?.reacted ? 'text-[#ff6b9e]' : 'text-drift-text3'
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            {reaction && reaction.count > 0 && <span className="tabular-nums">{reaction.count}</span>}
+          </button>
+        )}
+
+        {/* Why + Alts */}
+        {(reason || alts.length > 0) && (
+          <>
           {reason && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowWhy(!showWhy); setShowAlts(false) }}
@@ -180,8 +199,9 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu }: ItemCardPro
               {alts.length} alternative{alts.length > 1 ? 's' : ''}
             </button>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {/* Expanded: Why this? */}
       {showWhy && reason && (
