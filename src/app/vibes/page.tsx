@@ -109,8 +109,7 @@ function VibesContent() {
   // Fix endDate if it's before startDate
   const datesInvalid = startDate && endDate && endDate <= startDate
 
-  const canContinue = selected.length > 0
-  const detailsComplete = canContinue && origin.trim().length > 0 && startDate && endDate && !datesInvalid
+  const canContinue = selected.length > 0 && origin.trim().length > 0 && startDate && endDate && !datesInvalid
 
   function saveOnboarding() {
     setVibes(selected)
@@ -208,17 +207,18 @@ function VibesContent() {
   async function handleGoogleAuth() {
     setAuthLoading(true)
     try {
-      sessionStorage.setItem('drift-login-return', '/vibes')
       sessionStorage.setItem('drift-post-auth-action', 'generate')
+
+      const redirectUrl = `${window.location.origin}/api/auth/callback?next=/vibes`
 
       const { error: err } = await supabase.auth.linkIdentity({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+        options: { redirectTo: redirectUrl },
       })
       if (err) {
         const { error: err2 } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+          options: { redirectTo: redirectUrl },
         })
         if (err2) setAuthLoading(false)
       }
@@ -560,7 +560,7 @@ function VibesContent() {
                   </span>
                 ) : null
               })}
-              {detailsComplete && (
+              {canContinue && origin.trim() && (
                 <>
                   <span className="text-drift-text3 mx-2">|</span>
                   <span className="text-drift-text2 whitespace-nowrap">

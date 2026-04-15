@@ -139,17 +139,18 @@ function DestinationsContent() {
   async function handleGoogleAuth() {
     setAuthLoading(true)
     try {
-      sessionStorage.setItem('drift-login-return', '/destinations')
       sessionStorage.setItem('drift-post-auth-action', 'generate')
+
+      const redirectUrl = `${window.location.origin}/api/auth/callback?next=/destinations`
 
       const { error: err } = await supabase.auth.linkIdentity({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+        options: { redirectTo: redirectUrl },
       })
       if (err) {
         const { error: err2 } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+          options: { redirectTo: redirectUrl },
         })
         if (err2) setAuthLoading(false)
       }

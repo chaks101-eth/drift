@@ -16,9 +16,10 @@ function isMobileUA(req: NextRequest): boolean {
 export async function GET(req: NextRequest) {
   const base = getBaseUrl(req)
   const code = req.nextUrl.searchParams.get('code')
+  const next = req.nextUrl.searchParams.get('next') // return path from the initiating page
   const isMobile = isMobileUA(req)
   const loginPath = isMobile ? '/m/login' : '/login'
-  const homePath = isMobile ? '/m' : '/trips'
+  const defaultHome = isMobile ? '/m' : '/trips'
 
   if (!code) return NextResponse.redirect(`${base}${loginPath}`)
 
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${base}${loginPath}?error=auth_failed`)
   }
 
-  // Redirect to the appropriate home page
-  // Client-side auth listener + sessionStorage('drift-login-return') handles final routing
-  return NextResponse.redirect(`${base}${homePath}`)
+  // Redirect to the page that started the auth flow, or default home
+  const redirectTo = next && next.startsWith('/') ? next : defaultHome
+  return NextResponse.redirect(`${base}${redirectTo}`)
 }
