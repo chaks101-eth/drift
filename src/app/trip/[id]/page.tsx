@@ -124,6 +124,7 @@ export default function DesktopTripPage() {
       {detailItem && (
         <DetailModal
           item={detailItem}
+          tripId={id}
           onClose={() => setDetailItemId(null)}
           onChat={() => { setDetailItemId(null); openChat() }}
         />

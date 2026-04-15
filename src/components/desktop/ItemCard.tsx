@@ -42,9 +42,11 @@ interface Props {
   onDragEnd?: (e: React.DragEvent) => void
   isDragging?: boolean
   isDragTarget?: boolean
+  reaction?: { count: number; reacted: boolean }
+  onReact?: () => void
 }
 
-export default function DesktopItemCard({ item, onClick, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragTarget }: Props) {
+export default function DesktopItemCard({ item, onClick, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragTarget, reaction, onReact }: Props) {
   const meta = (item.metadata || {}) as ItemMetadata
   const formatBudget = useTripStore((s) => s.formatBudget)
   const removeItem = useTripStore((s) => s.removeItem)
@@ -253,6 +255,23 @@ export default function DesktopItemCard({ item, onClick, draggable, onDragStart,
                 {t}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Reaction heart */}
+        {onReact && (
+          <div className="mt-3 pt-2.5 border-t border-white/[0.04]">
+            <button
+              onClick={(e) => { e.stopPropagation(); onReact() }}
+              className={`flex items-center gap-1.5 text-[10px] transition-colors ${
+                reaction?.reacted ? 'text-[#ff6b9e]' : 'text-drift-text3 hover:text-[#ff6b9e]'
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {reaction && reaction.count > 0 && <span className="tabular-nums">{reaction.count}</span>}
+            </button>
           </div>
         )}
       </div>

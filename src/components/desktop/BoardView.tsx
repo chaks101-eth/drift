@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import DesktopItemCard from './ItemCard'
 import DesktopFlightCard from './FlightCard'
 import DayWeather from './DayWeather'
+import { useReactions } from '@/hooks/useCollaboration'
 
 const TripMap = dynamic(() => import('./TripMap'), { ssr: false })
 
@@ -45,6 +46,7 @@ const BUDGET_DEFAULTS: Record<string, number> = { budget: 1500, mid: 3000, luxur
 
 export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat }: Props) {
   const { formatBudget } = useTripStore()
+  const { reactions, toggleReaction } = useReactions(trip.id)
   const setCurrentItems = useTripStore((s) => s.setCurrentItems)
   const toast = useUIStore((s) => s.toast)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -235,6 +237,33 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            {/* Invite — share with collaborators */}
+            <button
+              onClick={() => {
+                // Generate invite link and copy to clipboard
+                const token = useTripStore.getState().token
+                if (!token) return
+                fetch(`/api/trips/${trip.id}/collaborators`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ role: 'editor' }),
+                }).then(r => r.json()).then(data => {
+                  if (data.inviteLink) {
+                    navigator.clipboard.writeText(data.inviteLink)
+                    toast('Invite link copied — share it with your travel buddies')
+                  } else {
+                    toast(data.error || 'Could not create invite', true)
+                  }
+                }).catch(() => toast('Failed to create invite', true))
+              }}
+              className="flex items-center gap-1.5 rounded-full border border-white/[0.06] px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-drift-text3 transition-all hover:text-drift-gold hover:border-drift-gold/25"
+            >
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              Invite
+            </button>
+
             {/* Remix — opens vibes modal */}
             <button
               onClick={() => useUIStore.getState().openRemix()}
@@ -351,7 +380,7 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
               {preItems.map(item => (
                 item.category === 'flight'
                   ? <DesktopFlightCard key={item.id} item={item} onClick={() => onOpenDetail(item.id)} />
-                  : <DesktopItemCard key={item.id} item={item} onClick={() => onOpenDetail(item.id)} />
+                  : <DesktopItemCard key={item.id} item={item} onClick={() => onOpenDetail(item.id)} reaction={reactions[item.id]} onReact={() => toggleReaction(item.id)} />
               ))}
             </div>
           )}
@@ -411,6 +440,8 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
                                   onDragEnd={handleDragEnd}
                                   isDragging={draggedId === item.id}
                                   isDragTarget={dragOverId === item.id}
+                                  reaction={reactions[item.id]}
+                                  onReact={() => toggleReaction(item.id)}
                                 />
                             }
 
