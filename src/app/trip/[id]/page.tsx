@@ -7,6 +7,7 @@ import { useTripStore } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
 import DesktopBoardView from '@/components/desktop/BoardView'
 import ChatPanel from '@/components/desktop/ChatPanel'
+import GroupPanel from '@/components/desktop/GroupPanel'
 import DetailModal from '@/components/desktop/DetailModal'
 import RemixModal from '@/components/desktop/RemixModal'
 import DesktopToast from '@/components/desktop/Toast'
@@ -22,6 +23,7 @@ export default function DesktopTripPage() {
   const closeChat = useUIStore((s) => s.closeChat)
   const [loading, setLoading] = useState(true)
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
+  const [groupPanelOpen, setGroupPanelOpen] = useState(false)
 
   const detailItem = detailItemId ? currentItems.find(i => i.id === detailItemId) || null : null
   const [isMobile, setIsMobile] = useState<boolean | null>(null)
@@ -103,6 +105,8 @@ export default function DesktopTripPage() {
           items={currentItems}
           onOpenDetail={(itemId) => setDetailItemId(itemId)}
           onOpenChat={() => openChat()}
+          onToggleGroup={() => setGroupPanelOpen(!groupPanelOpen)}
+          groupPanelOpen={groupPanelOpen}
         />
       </div>
 
@@ -134,6 +138,13 @@ export default function DesktopTripPage() {
       <ChatPanel
         open={showChat}
         onClose={() => closeChat()}
+        tripId={id}
+      />
+
+      {/* Group Panel */}
+      <GroupPanel
+        open={groupPanelOpen}
+        onClose={() => setGroupPanelOpen(false)}
         tripId={id}
       />
 

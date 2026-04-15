@@ -27,9 +27,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: 'Invalid or expired invite' }, { status: 404 })
   }
 
-  // Accept — set user_id and accepted_at
+  // Accept — set user_id, email, name, and accepted_at
+  const userName = (user.user_metadata?.full_name as string) || (user.user_metadata?.name as string) || user.email?.split('@')[0] || null
   await db.from('collaborators').update({
     user_id: user.id,
+    email: user.email || null,
     accepted_at: new Date().toISOString(),
   }).eq('id', invite.id)
 

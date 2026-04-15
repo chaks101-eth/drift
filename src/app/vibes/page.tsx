@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import NavBar from '@/app/NavBar'
@@ -155,8 +155,7 @@ function VibesContent() {
   }
 
   // After OAuth return, auto-proceed if authenticated + preselected dest exists
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const checkPostAuth = () => {
+  useEffect(() => {
     if (!isAnonymous && userEmail && preselectedDest) {
       const postAction = typeof window !== 'undefined' ? sessionStorage.getItem('drift-post-auth-action') : null
       if (postAction === 'generate') {
@@ -164,9 +163,7 @@ function VibesContent() {
         proceedToGenerate()
       }
     }
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useMemo(() => { checkPostAuth() }, [isAnonymous, userEmail])
+  }, [isAnonymous, userEmail]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── URL extraction ─────────────────────────────────────────
   async function handleUrlExtract() {

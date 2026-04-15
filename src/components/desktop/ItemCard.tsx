@@ -22,7 +22,7 @@ const catIcons: Record<string, { icon: React.ReactNode; cls: string; label: stri
   },
   food: {
     icon: <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3" /></svg>,
-    cls: 'text-drift-warn',
+    cls: 'text-drift-gold',
     label: 'Food',
   },
   activity: {
@@ -44,9 +44,14 @@ interface Props {
   isDragTarget?: boolean
   reaction?: { count: number; reacted: boolean }
   onReact?: () => void
+  onStartPoll?: () => void
+  poll?: { options: Array<{ name: string; votes: string[] }>; status: string }
+  onVote?: (optionIndex: number) => void
+  onApplyPoll?: () => void
+  onClosePoll?: () => void
 }
 
-export default function DesktopItemCard({ item, onClick, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragTarget, reaction, onReact }: Props) {
+export default function DesktopItemCard({ item, onClick, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragTarget, reaction, onReact, onStartPoll, poll, onVote, onApplyPoll, onClosePoll }: Props) {
   const meta = (item.metadata || {}) as ItemMetadata
   const formatBudget = useTripStore((s) => s.formatBudget)
   const removeItem = useTripStore((s) => s.removeItem)
@@ -258,20 +263,79 @@ export default function DesktopItemCard({ item, onClick, draggable, onDragStart,
           </div>
         )}
 
-        {/* Reaction heart */}
-        {onReact && (
-          <div className="mt-3 pt-2.5 border-t border-white/[0.04]">
-            <button
-              onClick={(e) => { e.stopPropagation(); onReact() }}
-              className={`flex items-center gap-1.5 text-[10px] transition-colors ${
-                reaction?.reacted ? 'text-[#ff6b9e]' : 'text-drift-text3 hover:text-[#ff6b9e]'
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              {reaction && reaction.count > 0 && <span className="tabular-nums">{reaction.count}</span>}
-            </button>
+        {/* Reaction + poll trigger */}
+        {(onReact || onStartPoll) && (
+          <div className="mt-3 pt-2.5 border-t border-white/[0.04] flex items-center gap-3">
+            {onReact && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onReact() }}
+                className={`flex items-center gap-1.5 text-[10px] transition-colors ${
+                  reaction?.reacted ? 'text-drift-gold' : 'text-drift-text3 hover:text-drift-gold'
+                }`}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {reaction && reaction.count > 0 && <span className="tabular-nums">{reaction.count}</span>}
+              </button>
+            )}
+            {onStartPoll && !poll && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onStartPoll() }}
+                className="text-[9px] text-drift-text3 hover:text-drift-gold transition-colors"
+              >
+                Not sure?
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Active poll */}
+        {poll && poll.status === 'open' && onVote && (
+          <div className="mt-2.5 pt-2.5 border-t border-white/[0.06] bg-white/[0.02] -mx-4 -mb-4 px-4 pb-4 rounded-b-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-semibold uppercase tracking-[1.5px] text-drift-gold">Group vote</span>
+              {onClosePoll && (
+                <button onClick={onClosePoll} className="text-[8px] text-drift-text3 hover:text-drift-text2 transition-colors">Dismiss</button>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {poll.options.map((opt, i) => {
+                const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0)
+                const pct = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0
+                const userId = useTripStore.getState().userId
+                const voted = opt.votes.includes(userId || '')
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onVote(i)}
+                    className={`relative w-full rounded-lg border px-3 py-2 text-left text-[11px] overflow-hidden transition-all ${
+                      voted ? 'border-drift-gold/40 text-drift-text' : 'border-white/[0.06] text-drift-text2 hover:border-white/15'
+                    }`}
+                  >
+                    <div className="absolute inset-0 bg-drift-gold/10 rounded-lg" style={{ width: `${pct}%` }} />
+                    <div className="relative flex justify-between">
+                      <span className="truncate font-medium">{opt.name}</span>
+                      <span className="shrink-0 ml-2 text-drift-text3 tabular-nums">{opt.votes.length}</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            {/* Apply winner button — shows when there are votes */}
+            {(() => {
+              const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0)
+              if (totalVotes === 0 || !onApplyPoll) return null
+              const winner = poll.options.reduce((a, b) => a.votes.length >= b.votes.length ? a : b)
+              return (
+                <button
+                  onClick={onApplyPoll}
+                  className="mt-2 w-full rounded-lg bg-drift-gold/10 border border-drift-gold/25 py-2 text-[10px] font-semibold text-drift-gold hover:bg-drift-gold/20 transition-colors"
+                >
+                  Apply winner: {winner.name}
+                </button>
+              )
+            })()}
           </div>
         )}
       </div>

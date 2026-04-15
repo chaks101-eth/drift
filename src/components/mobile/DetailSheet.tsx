@@ -9,7 +9,7 @@ import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
 import { getBookableState, getBookableCTA, getOutboundUrl, getBookableStateLabel } from '@/lib/bookable-state'
 import type { ItemMetadata } from '@/stores/trip-store'
-import { useComments } from '@/hooks/useCollaboration'
+// Comments removed — replaced with trip-level group notes
 
 function generateFallbackReason(item: { name: string; category: string }, vibes: string[]): string {
   const v = vibes[0] || 'travel'
@@ -36,8 +36,6 @@ export default function DetailSheet() {
   const { currentItems, currentTrip, formatBudget, updateItem } = useTripStore()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activePhoto, setActivePhoto] = useState(0)
-  const [commentText, setCommentText] = useState('')
-  const { comments, addComment } = useComments(currentTrip?.id, detailItemId || undefined)
 
   const item = currentItems.find((i) => i.id === detailItemId)
   const meta = (item?.metadata || {}) as ItemMetadata
@@ -361,46 +359,6 @@ export default function DetailSheet() {
             </div>
           )}
 
-          {/* Comments */}
-          {currentTrip?.id && (
-            <div className="mt-5 pt-4 border-t border-drift-border2">
-              <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-drift-text3 mb-3">
-                Comments {comments.length > 0 && `· ${comments.length}`}
-              </div>
-              {comments.length > 0 && (
-                <div className="space-y-3 mb-4">
-                  {comments.map(c => (
-                    <div key={c.id} className="flex items-start gap-2">
-                      <div className="h-5 w-5 shrink-0 rounded-full bg-drift-gold/10 flex items-center justify-center text-[8px] font-bold text-drift-gold">
-                        {c.user_name?.[0]?.toUpperCase() || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[10px] font-semibold text-drift-text">{c.user_name}</span>
-                          <span className="text-[8px] text-drift-text3">{new Date(c.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-[11px] text-drift-text2 leading-relaxed mt-0.5">{c.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <input
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && commentText.trim()) { addComment(commentText); setCommentText('') } }}
-                  placeholder="Add a comment…"
-                  className="flex-1 rounded-xl border border-drift-border2 bg-transparent px-3 py-2 text-[11px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none"
-                />
-                <button
-                  onClick={() => { if (commentText.trim()) { addComment(commentText); setCommentText('') } }}
-                  disabled={!commentText.trim()}
-                  className="shrink-0 rounded-xl bg-drift-gold/10 px-3 py-2 text-[9px] font-bold text-drift-gold disabled:opacity-30"
-                >Post</button>
-              </div>
-            </div>
-          )}
 
           {/* Bottom actions */}
           <div className="mt-4 flex gap-2">

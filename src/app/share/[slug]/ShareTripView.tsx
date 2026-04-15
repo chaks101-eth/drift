@@ -283,7 +283,7 @@ export default function ShareTripView({ trip, items, tripId }: { trip: Trip; ite
                         <button
                           onClick={() => toggleReaction(item.id)}
                           className={`flex items-center gap-1 text-[9px] ml-auto transition-colors ${
-                            reactions[item.id]?.reacted ? 'text-[#ff6b9e]' : 'text-[#4a4a55] hover:text-[#ff6b9e]'
+                            reactions[item.id]?.reacted ? 'text-[#c8a44e]' : 'text-[#4a4a55] hover:text-[#c8a44e]'
                           }`}
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill={reactions[item.id]?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">

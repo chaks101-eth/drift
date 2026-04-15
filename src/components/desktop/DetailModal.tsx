@@ -7,7 +7,7 @@ import { parsePrice } from '@/lib/parse-price'
 import { supabase } from '@/lib/supabase'
 import { useTripStore, type ItineraryItem, type ItemMetadata } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
-import { useComments } from '@/hooks/useCollaboration'
+// Comments removed — replaced with trip-level group notes
 
 const TripMap = dynamic(() => import('./TripMap'), { ssr: false })
 
@@ -38,8 +38,6 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
   const updateItem = useTripStore((s) => s.updateItem)
   const toast = useUIStore((s) => s.toast)
   const firstButtonRef = useRef<HTMLButtonElement>(null)
-  const { comments, addComment } = useComments(tripId, item.id)
-  const [commentText, setCommentText] = useState('')
 
   const categoryLabel = CATEGORY_LABELS[item.category] || 'Item'
   const price = parsePrice(item.price)
@@ -294,55 +292,6 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
               </div>
             )}
 
-              {/* Comments section */}
-              {tripId && (
-                <div className="mb-6">
-                  <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-3">
-                    Comments {comments.length > 0 && `· ${comments.length}`}
-                  </div>
-
-                  {comments.length > 0 && (
-                    <div className="space-y-3 mb-4">
-                      {comments.map(c => (
-                        <div key={c.id} className="flex items-start gap-2.5">
-                          <div className="h-6 w-6 shrink-0 rounded-full bg-drift-gold/10 flex items-center justify-center text-[9px] font-bold text-drift-gold">
-                            {c.user_name?.[0]?.toUpperCase() || '?'}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-[11px] font-semibold text-drift-text">{c.user_name}</span>
-                              <span className="text-[9px] text-drift-text3">{new Date(c.created_at).toLocaleDateString()}</span>
-                            </div>
-                            <p className="text-[12px] text-drift-text2 leading-relaxed mt-0.5">{c.text}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <input
-                      value={commentText}
-                      onChange={e => setCommentText(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && commentText.trim()) {
-                          addComment(commentText)
-                          setCommentText('')
-                        }
-                      }}
-                      placeholder="Add a comment…"
-                      className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => { if (commentText.trim()) { addComment(commentText); setCommentText('') } }}
-                      disabled={!commentText.trim()}
-                      className="shrink-0 rounded-lg bg-drift-gold/10 px-3 py-2 text-[10px] font-semibold text-drift-gold disabled:opacity-30 hover:bg-drift-gold/20 transition-colors"
-                    >
-                      Post
-                    </button>
-                  </div>
-                </div>
-              )}
 
               </div>
             </div>

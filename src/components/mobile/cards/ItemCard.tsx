@@ -22,15 +22,20 @@ interface ItemCardProps {
   onMenu: () => void
   reaction?: { count: number; reacted: boolean }
   onReact?: () => void
+  onStartPoll?: () => void
+  poll?: { options: Array<{ name: string; votes: string[] }>; status: string }
+  onVote?: (optionIndex: number) => void
+  onApplyPoll?: () => void
+  onClosePoll?: () => void
 }
 
 const tagConfig: Record<string, { cls: string; label: string }> = {
   hotel: { cls: 'bg-drift-ok/10 text-drift-ok', label: 'Hotel' },
-  food: { cls: 'bg-drift-warn/10 text-drift-warn', label: 'Food' },
+  food: { cls: 'bg-drift-gold/10 text-drift-gold', label: 'Food' },
   activity: { cls: 'bg-drift-gold-bg text-drift-gold', label: 'Activity' },
 }
 
-export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onReact }: ItemCardProps) {
+export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onReact, onStartPoll, poll, onVote, onApplyPoll, onClosePoll }: ItemCardProps) {
   const meta = (item.metadata || {}) as ItemMetadata
   const tag = tagConfig[item.category] || tagConfig.activity
   const updateItem = useTripStore((s) => s.updateItem)
@@ -159,18 +164,26 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
 
       {/* Heart reaction + inline actions */}
       <div className="border-t border-drift-border2 px-3 py-1.5 flex items-center gap-3">
-        {/* Heart */}
+        {/* Heart + Not sure */}
         {onReact && (
           <button
             onClick={(e) => { e.stopPropagation(); onReact() }}
             className={`flex items-center gap-1 text-[10px] transition-colors active:scale-90 ${
-              reaction?.reacted ? 'text-[#ff6b9e]' : 'text-drift-text3'
+              reaction?.reacted ? 'text-drift-gold' : 'text-drift-text3'
             }`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             {reaction && reaction.count > 0 && <span className="tabular-nums">{reaction.count}</span>}
+          </button>
+        )}
+        {onStartPoll && !poll && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onStartPoll() }}
+            className="text-[9px] text-drift-text3 active:text-drift-gold"
+          >
+            Not sure?
           </button>
         )}
 
@@ -265,6 +278,52 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Active poll */}
+      {poll && poll.status === 'open' && onVote && (
+        <div className="border-t border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[8px] font-bold uppercase tracking-wider text-drift-gold">Group vote</span>
+            {onClosePoll && <button onClick={(e) => { e.stopPropagation(); onClosePoll() }} className="text-[7px] text-drift-text3">Dismiss</button>}
+          </div>
+          <div className="space-y-1">
+            {poll.options.map((opt, i) => {
+              const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0)
+              const pct = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0
+              const userId = useTripStore.getState().userId
+              const voted = opt.votes.includes(userId || '')
+              return (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); onVote(i) }}
+                  className={`relative w-full rounded-lg border px-2.5 py-1.5 text-left text-[10px] overflow-hidden ${
+                    voted ? 'border-drift-gold/40 text-drift-text' : 'border-drift-border2 text-drift-text2'
+                  }`}
+                >
+                  <div className="absolute inset-0 bg-drift-gold/10 rounded-lg" style={{ width: `${pct}%` }} />
+                  <div className="relative flex justify-between">
+                    <span className="truncate font-medium">{opt.name}</span>
+                    <span className="shrink-0 ml-1 text-drift-text3 tabular-nums">{opt.votes.length}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          {(() => {
+            const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0)
+            if (totalVotes === 0 || !onApplyPoll) return null
+            const winner = poll.options.reduce((a, b) => a.votes.length >= b.votes.length ? a : b)
+            return (
+              <button
+                onClick={(e) => { e.stopPropagation(); onApplyPoll() }}
+                className="mt-1.5 w-full rounded-lg bg-drift-gold/10 border border-drift-gold/25 py-1.5 text-[9px] font-semibold text-drift-gold active:scale-95"
+              >
+                Apply: {winner.name}
+              </button>
+            )
+          })()}
         </div>
       )}
     </div>

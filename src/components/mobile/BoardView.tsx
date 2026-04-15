@@ -9,6 +9,8 @@ import FlightCard from '@/components/mobile/cards/FlightCard'
 import ItemCard from '@/components/mobile/cards/ItemCard'
 import { trackEvent } from '@/lib/analytics'
 import { useReactions } from '@/hooks/useCollaboration'
+import { usePolls } from '@/hooks/useGroupTrip'
+import { useCollaborators } from '@/hooks/useCollaboration'
 
 interface DayWeatherData {
   tempMax: number
@@ -54,6 +56,9 @@ export default function BoardView({ trip, items }: BoardViewProps) {
   const { openDetail, openCardMenu, openChat, authPromptDismissed, dismissAuthPrompt } = useUIStore()
   const { formatBudget, isAnonymous, token } = useTripStore()
   const { reactions, toggleReaction } = useReactions(trip.id)
+  const { polls, createPoll, vote, applyPoll, closePoll } = usePolls(trip.id)
+  const { collaborators } = useCollaborators(trip.id)
+  const hasGroup = collaborators.length > 0
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeDay, setActiveDay] = useState(0)
   const [sharing, setSharing] = useState(false)
@@ -452,8 +457,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       tripVibes={vibes}
                       onTap={() => openDetail(item.id)}
                       onMenu={() => openCardMenu(item.id)}
-                      reaction={reactions[item.id]}
-                      onReact={() => toggleReaction(item.id)}
+                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id) } : {})}
                     />
                   )
                 }
@@ -470,8 +474,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       tripVibes={vibes}
                       onTap={() => openDetail(item.id)}
                       onMenu={() => openCardMenu(item.id)}
-                      reaction={reactions[item.id]}
-                      onReact={() => toggleReaction(item.id)}
+                      {...(hasGroup ? { reaction: reactions[item.id], onReact: () => toggleReaction(item.id), onStartPoll: () => createPoll(item.id), poll: polls.find(p => p.itemId === item.id), onVote: (i: number) => vote(item.id, i), onApplyPoll: () => applyPoll(item.id), onClosePoll: () => closePoll(item.id) } : {})}
                     />
                     {showTravel && (
                       <div className="flex items-center gap-2 py-2 pl-1">
@@ -506,6 +509,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
           </div>
         ))}
       </div>
+
 
       {/* Trip Summary */}
       <div className="mx-5 mt-4 rounded-2xl border border-drift-border bg-drift-card p-5">
