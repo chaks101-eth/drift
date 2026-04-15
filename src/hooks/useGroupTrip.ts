@@ -130,25 +130,26 @@ export function useGroupTrip(tripId: string | undefined) {
   const [notes, setNotes] = useState<GroupNote[]>([])
   const token = useTripStore((s) => s.token)
 
-  // Fetch group state
+  // Fetch group state + subscribe to realtime
   useEffect(() => {
     if (!tripId) return
-    fetch(`/api/trips/${tripId}/group`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.group?.readyCheck) setReadyCheck(data.group.readyCheck)
-        if (data.group?.notes) setNotes(data.group.notes)
-      })
-      .catch(() => {})
 
-    // Realtime: listen for trip metadata changes
+    const fetchGroup = () => {
+      fetch(`/api/trips/${tripId}/group`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.group?.readyCheck) setReadyCheck(data.group.readyCheck)
+          if (data.group?.notes) setNotes(data.group.notes)
+        })
+        .catch(() => {})
+    }
+    fetchGroup()
+
+    // Realtime: re-fetch when trips table is updated (notes, ready check stored in metadata)
     const channel = supabase
       .channel(`group:${tripId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, (payload) => {
-        const meta = (payload.new as Record<string, unknown>).metadata as Record<string, unknown> | undefined
-        const group = meta?.group as { readyCheck?: ReadyCheck; notes?: GroupNote[] } | undefined
-        if (group?.readyCheck) setReadyCheck(group.readyCheck)
-        if (group?.notes) setNotes(group.notes)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, () => {
+        fetchGroup()
       })
       .subscribe()
 
