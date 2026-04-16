@@ -472,17 +472,56 @@ export function flightToItineraryItem(flight: FlightOffer, position: number) {
 }
 
 // ─── Grounded Transport Search (Trains/Buses for Domestic) ─────
+//
+// Honest design: we don't have real IRCTC/RedBus API access, so we don't
+// pretend to. Instead of hallucinating train numbers and prices, we ask
+// Gemini for what it can know reliably — ROUTE FEASIBILITY and TYPICAL
+// DURATION RANGE. We then build a search URL to the real provider so the
+// user sees actual live data on IRCTC/RedBus, not our guess.
+//
+// What we ASK Gemini for (reliable):
+//   - Is there a train route? A bus route?
+//   - What's the approximate duration by that mode?
+//   - What's the class of service (e.g. "Superfast Express", "AC Sleeper Bus")?
+//
+// What we DON'T ask for (unreliable, varies by day):
+//   - Specific train numbers (often hallucinated)
+//   - Specific service names on a given date
+//   - Prices (change daily)
+//   - Seat availability
+//
+// What we return to the user:
+//   - A route hint card: "By train · ~5h · Superfast Express · Search on IRCTC"
+//   - Clicking takes them to IRCTC/RedBus search pre-filled with origin+dest
 
 export interface TransportOption {
   mode: 'train' | 'bus'
-  operatorName: string
-  serviceNumber?: string
+  serviceClass: string // "Superfast Express", "AC Sleeper Bus" — no specific names
   departureStation: string
   arrivalStation: string
-  duration: string
-  price: string
-  class?: string
-  bookingUrl: string
+  duration: string // "~5h", "4-5h" — range allowed
+  bookingUrl: string // search URL, pre-filled with route
+}
+
+// Build pre-filled search URLs to real providers
+function buildTrainSearchUrl(origin: string, destination: string): string {
+  // IRCTC doesn't have a good deep-link, but we can pre-fill the from/to on search
+  // Fall back to the main search page — user types origin/dest (already visible from the card)
+  const params = new URLSearchParams({ q: `${origin} to ${destination} train` })
+  // Use a train-booking meta-search that accepts pre-filled queries and works reliably
+  return `https://www.google.com/search?${params.toString()}`
+}
+
+function buildBusSearchUrl(origin: string, destination: string): string {
+  // RedBus supports /bus-tickets/origin-to-destination slugified route
+  const slug = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return `https://www.redbus.in/bus-tickets/${slug(origin)}-to-${slug(destination)}`
+}
+
+function buildIrctcSearchUrl(origin: string, destination: string): string {
+  // IRCTC's train-search page accepts from/to as URL params
+  const slug = (s: string) => s.toUpperCase().trim().replace(/[^A-Z0-9 ]+/g, '').replace(/\s+/g, '+')
+  return `https://www.irctc.co.in/nget/train-search?from=${slug(origin)}&to=${slug(destination)}`
 }
 
 export async function searchGroundedTransport(params: {
@@ -494,20 +533,30 @@ export async function searchGroundedTransport(params: {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return []
 
-  const { origin, destination, departureDate } = params
+  const { origin, destination } = params
 
   try {
-    console.log(`[Transport] Searching trains/buses: ${origin} → ${destination}`)
+    console.log(`[Transport] Checking route feasibility: ${origin} → ${destination}`)
     const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `List 3 real transport options from ${origin} to ${destination} India on ${departureDate}. Include trains and buses. Return ONLY a JSON array:
-[{"mode":"train","serviceName":"Vande Bharat","serviceNumber":"22457","departureStation":"New Delhi","arrivalStation":"Chandigarh","duration":"4h","priceUSD":15,"class":"AC Chair Car","bookingUrl":"https://www.irctc.co.in/nget/train-search"}]
-Use real booking URLs: irctc.co.in for trains, redbus.in for buses (with route in URL like /bus-tickets/delhi-to-manali). Real names, prices in USD. JSON only.` }] }],
+        contents: [{ parts: [{ text: `For a traveler going from ${origin} to ${destination} in India, what domestic transport options commonly exist?
+
+Return ONLY facts you're confident about — no specific train numbers or prices. If a mode isn't reasonably available between these cities, omit it.
+
+Respond with a JSON array of up to 2 items (one train, one bus if both exist):
+[{"mode":"train","serviceClass":"Superfast Express","duration":"~5h","departureStation":"New Delhi","arrivalStation":"Jaipur Junction"},{"mode":"bus","serviceClass":"AC Sleeper","duration":"~6h","departureStation":"Delhi ISBT","arrivalStation":"Jaipur Bus Stand"}]
+
+Rules:
+- serviceClass is the general TYPE (e.g. "Vande Bharat", "Rajdhani", "Superfast", "Volvo AC Sleeper") — NOT a specific train number or service name
+- duration is a rough estimate with ~ prefix or range (e.g. "~4h", "4-5h")
+- Use actual station names (e.g. "New Delhi Railway Station", "Mumbai Central")
+- Skip modes that would take >12h or don't make sense (e.g. overnight buses for short routes, trains for routes without rail connection)
+- JSON only, no markdown.` }] }],
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(15000),
     })
 
     if (!res.ok) {
@@ -517,77 +566,85 @@ Use real booking URLs: irctc.co.in for trains, redbus.in for buses (with route i
 
     const data = await res.json()
     const rawText = data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || ''
-    // Strip markdown code fences
     const text = rawText.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim()
-
-    console.log(`[Transport] Got ${text.length} chars response`)
 
     const jsonMatch = text.match(/\[[\s\S]*\]/)
     if (!jsonMatch) {
-      console.warn(`[Transport] No JSON array found in response: ${text.slice(0, 200)}`)
+      console.warn(`[Transport] No JSON found: ${text.slice(0, 200)}`)
       return []
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, any>>
+    console.log(`[Transport] Parsed ${parsed.length} route options`)
 
-    const originSlug = origin.toLowerCase().replace(/\s+/g, '-')
-    const destSlug = destination.toLowerCase().replace(/\s+/g, '-')
+    return parsed
+      .slice(0, 2)
+      .map(t => {
+        const mode = String(t.mode || '').toLowerCase()
+        const isBus = mode.includes('bus')
+        const serviceClass = String(t.serviceClass || t.class || '').trim()
+        const duration = String(t.duration || '').trim()
+        const departureStation = String(t.departureStation || origin).trim()
+        const arrivalStation = String(t.arrivalStation || destination).trim()
 
-    console.log(`[Transport] Parsed ${parsed.length} transport options`)
+        // Skip if the essentials are missing — don't show an empty card
+        if (!serviceClass || !duration) return null
 
-    return parsed.slice(0, 4).map(t => {
-      const mode = String(t.mode || 'bus')
-      const isBus = mode.includes('bus')
-      const price = t.priceUSD || t.price || 10
-      return {
-      mode: (isBus ? 'bus' : 'train') as 'train' | 'bus',
-      operatorName: t.serviceName || t.name || t.operatorName || (isBus ? 'Bus' : 'Indian Railways'),
-      serviceNumber: t.serviceNumber || t.trainNumber || undefined,
-      departureStation: t.departureStation || origin,
-      arrivalStation: t.arrivalStation || destination,
-      duration: t.duration || '',
-      price: `$${typeof price === 'number' ? price : 10}`,
-      class: t.class || undefined,
-      bookingUrl: t.bookingUrl || (isBus
-        ? `https://www.redbus.in/bus-tickets/${originSlug}-to-${destSlug}`
-        : `https://www.irctc.co.in/nget/train-search`),
-    }})
+        return {
+          mode: (isBus ? 'bus' : 'train') as 'train' | 'bus',
+          serviceClass,
+          departureStation,
+          arrivalStation,
+          duration,
+          bookingUrl: isBus
+            ? buildBusSearchUrl(origin, destination)
+            : buildIrctcSearchUrl(origin, destination),
+        } as TransportOption
+      })
+      .filter((t): t is TransportOption => t !== null)
   } catch (e) {
     console.warn(`[Transport] Grounded search failed: ${e}`)
     return []
   }
 }
 
+// Keep for backward compatibility — search URL fallback
+export { buildTrainSearchUrl }
+
 export function transportToItineraryItem(transport: TransportOption, position: number) {
   const modeLabel = transport.mode === 'train' ? 'Train' : 'Bus'
   const whyFactors: string[] = [
-    `${transport.operatorName}${transport.serviceNumber ? ` (${transport.serviceNumber})` : ''}`,
-    `${transport.duration} travel time`,
-    transport.class || (transport.mode === 'train' ? 'AC class' : 'AC bus'),
+    `Route available by ${transport.mode}`,
+    `${transport.duration} typical travel time`,
+    transport.serviceClass,
   ]
 
   return {
     category: 'flight' as const,
     image_url: '',
     name: `${transport.departureStation} → ${transport.arrivalStation}`,
-    detail: `${transport.operatorName}${transport.serviceNumber ? ` ${transport.serviceNumber}` : ''}`,
-    description: `${modeLabel} from ${transport.departureStation} to ${transport.arrivalStation}. ${transport.duration}, ${transport.class || ''}.`,
-    price: transport.price,
+    // Detail is the user-facing label — no fake train numbers, just class + duration
+    detail: `${transport.serviceClass} · ${transport.duration}`,
+    description: `${modeLabel} route from ${transport.departureStation} to ${transport.arrivalStation}. Typically ${transport.duration} by ${transport.serviceClass}. Live times and prices on the booking site.`,
+    // No price — we don't have real prices. Empty string parses to 0 which hides it in UI.
+    price: '',
     time: '',
     position,
     metadata: {
       transport_mode: transport.mode,
-      reason: `Best ${modeLabel.toLowerCase()} option on this route`,
+      reason: `Common ${modeLabel.toLowerCase()} route for this journey`,
       whyFactors,
       info: [
-        { l: modeLabel, v: transport.operatorName },
-        ...(transport.serviceNumber ? [{ l: 'Number', v: transport.serviceNumber }] : []),
+        { l: 'Mode', v: modeLabel },
+        { l: 'Class', v: transport.serviceClass },
         { l: 'Duration', v: transport.duration },
-        { l: 'Class', v: transport.class || 'Standard' },
+        { l: 'Note', v: 'Live times & fares on booking site' },
       ],
-      features: [transport.class].filter(Boolean),
+      features: [transport.serviceClass].filter(Boolean),
       bookingUrl: transport.bookingUrl,
+      // Signal to UI that this is a route hint, not a specific service
+      isRouteHint: true,
       alts: [] as Array<{ name: string; detail: string; price: string }>,
     },
   }

@@ -461,11 +461,13 @@ export async function POST(req: NextRequest) {
         console.log(`[Generate] Domestic transport results: ${domesticTransport.length} options found`)
       }
       if (domesticTransport.length > 0) {
+        // Each alt is a route hint — class + duration, no fabricated train numbers.
+        // Tapping opens IRCTC/RedBus search for real live times.
         const transportAlts = domesticTransport.map(t => ({
           mode: t.mode,
           name: `${t.departureStation} → ${t.arrivalStation}`,
-          detail: `${t.operatorName} · ${t.duration}${t.class ? ` · ${t.class}` : ''}`,
-          price: t.price,
+          detail: `${t.serviceClass} · ${t.duration}`,
+          price: '', // No price — we don't have real prices
           bookingUrl: t.bookingUrl,
         }))
 
@@ -483,7 +485,7 @@ export async function POST(req: NextRequest) {
           items.forEach((item, idx) => { item.position = idx })
           console.log(`[Generate] No flights — using ${best.mode} as primary transport`)
         }
-        console.log(`[Generate] Attached ${transportAlts.length} transport alternatives (trains/buses)`)
+        console.log(`[Generate] Attached ${transportAlts.length} transport route hints`)
       }
 
       // ─── Create trip in DB ────────────────────────────────────
