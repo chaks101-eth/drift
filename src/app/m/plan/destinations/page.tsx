@@ -506,23 +506,29 @@ export default function DestinationsPage() {
 
       {/* ── Auth Gate Overlay ── */}
       {showAuthGate && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease]">
-          <div className="w-full max-w-[430px] rounded-t-3xl bg-drift-bg px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] pt-8 animate-[slideUp_0.3s_var(--ease-smooth)]">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease]"
+          onClick={() => setShowAuthGate(false)}
+        >
+          <div
+            className="w-full max-w-[430px] rounded-t-3xl bg-drift-bg px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] pt-5 animate-[slideUp_0.3s_var(--ease-smooth)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Handle */}
             <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-drift-border2" />
 
-            <h2 className="mb-2 font-serif text-2xl font-light text-drift-text">
-              Save your trip with <em className="font-normal italic text-drift-gold">Google</em>
+            <h2 className="mb-1.5 font-serif text-[22px] font-light text-drift-text leading-tight">
+              Your trip is <em className="font-normal italic text-drift-gold">ready</em>
             </h2>
-            <p className="mb-6 text-[13px] leading-relaxed text-drift-text3">
-              Sign in so your trip is saved across devices. Takes 2 seconds.
+            <p className="mb-5 text-[12px] leading-relaxed text-drift-text3">
+              Sign in to keep it saved and come back anytime.
             </p>
 
             {/* Google button */}
             <button
               onClick={handleGoogleAuth}
               disabled={authLoading}
-              className="mb-3 flex w-full items-center justify-center gap-3 rounded-[14px] bg-white py-4 text-sm font-semibold text-[#1a1a1a] shadow-[0_2px_12px_rgba(0,0,0,0.1)] transition-all duration-200 active:scale-[0.97]"
+              className="flex w-full items-center justify-center gap-3 rounded-[14px] bg-white py-4 text-sm font-semibold text-[#1a1a1a] shadow-[0_2px_12px_rgba(0,0,0,0.1)] transition-all duration-200 active:scale-[0.97]"
             >
               {authLoading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
@@ -539,8 +545,9 @@ export default function DestinationsPage() {
               )}
             </button>
 
-            <p className="mt-1 text-center text-[10px] text-drift-text3">
-              We need an account to save your trip
+            {/* Fine print */}
+            <p className="mt-3 text-center text-[10px] text-drift-text3">
+              Takes 2 seconds. We never post to your account.
             </p>
           </div>
         </div>

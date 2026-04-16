@@ -67,11 +67,10 @@ export default function UrlPage() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.replace('/m/login')
-      setAuthResolved(true)
-    })
-  }, [router])
+    // Guests can use this flow — layout creates anon session if needed.
+    // Auth gate only triggers at destination/generate step for saving the trip.
+    supabase.auth.getSession().then(() => setAuthResolved(true))
+  }, [])
 
   useEffect(() => {
     if (!authResolved) return

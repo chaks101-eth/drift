@@ -7,8 +7,7 @@ import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
-  const token = useTripStore((s) => s.token)
-  const userEmail = useTripStore((s) => s.userEmail)
+  const setAuth = useTripStore((s) => s.setAuth)
   const emailRef = useRef<HTMLInputElement>(null)
 
   const [isSignUp, setIsSignUp] = useState(false)
@@ -19,14 +18,30 @@ export default function LoginPage() {
   const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Redirect if already logged in (real account, not anonymous)
+  // Initialize auth listener — login page needs its own since there's no AuthProvider
   useEffect(() => {
-    if (token && userEmail) {
-      const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
-      sessionStorage.removeItem('drift-login-return')
-      router.replace(returnTo || '/trips')
-    }
-  }, [token, userEmail, router])
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user?.email) {
+        setAuth(session.access_token, session.user.id, session.user.email)
+        // Signed in with real account — redirect
+        const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
+        sessionStorage.removeItem('drift-login-return')
+        router.replace(returnTo || '/trips')
+      }
+    })
+
+    // Check if already signed in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) {
+        setAuth(session.access_token, session.user.id, session.user.email)
+        const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
+        sessionStorage.removeItem('drift-login-return')
+        router.replace(returnTo || '/trips')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [setAuth, router])
 
   // Mobile redirect
   useEffect(() => {
@@ -78,29 +93,14 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    // If anonymous user, link Google identity to preserve trips
-    const isAnon = useTripStore.getState().isAnonymous
-    if (isAnon) {
-      const { error: err } = await supabase.auth.linkIdentity({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-      })
-      if (err) {
-        // linkIdentity failed — fall back to regular OAuth
-        console.warn('[Login] linkIdentity failed, falling back:', err.message)
-        const { error: err2 } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-        })
-        if (err2) { setError(err2.message); setLoading(false) }
-      }
-    } else {
-      const { error: err } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-      })
-      if (err) { setError(err.message); setLoading(false) }
-    }
+    const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('drift-login-return') : null
+    const redirectUrl = `${window.location.origin}/api/auth/callback${returnTo ? `?next=${encodeURIComponent(returnTo)}` : ''}`
+
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: redirectUrl },
+    })
+    if (err) { setError(err.message); setLoading(false) }
   }
 
   const handleForgotPassword = async () => {

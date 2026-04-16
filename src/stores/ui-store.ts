@@ -1,12 +1,6 @@
 import { create } from 'zustand'
 
-type ActiveTab = 'board' | 'trips' | 'profile'
-
 interface UIStore {
-  // Tab navigation
-  activeTab: ActiveTab
-  setActiveTab: (tab: ActiveTab) => void
-
   // Overlays
   showDetail: boolean
   detailItemId: string | null
@@ -46,10 +40,6 @@ interface UIStore {
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  // Tabs
-  activeTab: 'board',
-  setActiveTab: (tab) => set({ activeTab: tab }),
-
   // Detail
   showDetail: false,
   detailItemId: null,

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useTripStore } from '@/stores/trip-store'
-import { useUIStore } from '@/stores/ui-store'
 import BottomNav from '@/components/mobile/BottomNav'
 import Toast from '@/components/mobile/Toast'
 import DetailSheet from '@/components/mobile/DetailSheet'
@@ -11,14 +10,11 @@ import ChatOverlay from '@/components/mobile/ChatOverlay'
 import CardMenu from '@/components/mobile/CardMenu'
 import RemixOverlay from '@/components/mobile/RemixOverlay'
 import BoardView from '@/components/mobile/BoardView'
-import TripsTab from '@/components/mobile/tabs/TripsTab'
-import ProfileTab from '@/components/mobile/tabs/ProfileTab'
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { loadTrip, currentTrip, currentItems, token } = useTripStore()
-  const { activeTab } = useUIStore()
   const [loading, setLoading] = useState(true)
 
   // Don't redirect immediately — token may be loading from session
@@ -78,24 +74,16 @@ export default function BoardPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Tab content — all tabs stay mounted for instant switching */}
+      {/* Board view */}
       <div className="flex-1 overflow-hidden">
-        <div className={activeTab === 'board' ? 'h-full' : 'hidden'}>
-          <BoardView trip={currentTrip} items={currentItems} />
-        </div>
-        <div className={activeTab === 'trips' ? 'h-full' : 'hidden'}>
-          <TripsTab />
-        </div>
-        <div className={activeTab === 'profile' ? 'h-full' : 'hidden'}>
-          <ProfileTab />
-        </div>
+        <BoardView trip={currentTrip} items={currentItems} />
       </div>
 
       {/* Bottom nav */}
       <BottomNav />
 
       {/* Remix FAB + Overlay */}
-      {activeTab === 'board' && <RemixOverlay />}
+      <RemixOverlay />
 
       {/* Overlays */}
       <DetailSheet />

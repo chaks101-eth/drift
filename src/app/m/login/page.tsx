@@ -49,8 +49,9 @@ export default function LoginPage() {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password })
         if (err) throw err
       }
-      // Auth state listener in layout will update the store
-      router.push('/m')
+      // Don't navigate here — the useEffect at line 23 watches token+userEmail
+      // and handles the redirect once auth state resolves. Two redirects race
+      // each other and drop the user on /m instead of their returnTo path.
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
       // Human-readable errors

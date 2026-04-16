@@ -26,42 +26,33 @@ export default function GroupPanel({ open, onClose, tripId }: Props) {
       }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const { collaborators, invite } = useCollaborators(tripId)
+  const { collaborators, getShareLink } = useCollaborators(tripId)
   const { readyCheck, notes, startReadyCheck, respondReady, addNote } = useGroupTrip(tripId)
   const { polls } = usePolls(tripId)
 
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteLoading, setInviteLoading] = useState(false)
-  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [linkLoading, setLinkLoading] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [noteInput, setNoteInput] = useState('')
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim() && !inviteLink) {
-      // Generate link-only invite
-      setInviteLoading(true)
-      const link = await invite(undefined, 'editor')
-      if (link) {
-        setInviteLink(link)
-        navigator.clipboard.writeText(link)
-      }
-      setInviteLoading(false)
-      return
+  const handleShareLink = async () => {
+    if (linkLoading) return
+    setLinkLoading(true)
+    const link = await getShareLink()
+    if (link) {
+      try {
+        await navigator.clipboard.writeText(link)
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 2500)
+      } catch {}
     }
-
-    if (inviteEmail.includes('@')) {
-      setInviteLoading(true)
-      const link = await invite(inviteEmail, 'editor')
-      if (link) {
-        setInviteLink(link)
-        navigator.clipboard.writeText(link)
-        setInviteEmail('')
-      }
-      setInviteLoading(false)
-    }
+    setLinkLoading(false)
   }
 
   const readyCount = readyCheck ? Object.values(readyCheck.responses).filter(r => r === 'ready').length : 0
-  const totalPeople = collaborators.length + 1 // +1 for owner
+  // Only count joined collaborators — pending invites don't inflate the number
+  const joinedCollaborators = collaborators.filter(c => c.accepted_at)
+  const pendingCollaborators = collaborators.filter(c => !c.accepted_at)
+  const totalPeople = joinedCollaborators.length + 1 // +1 for owner
   const openPolls = polls.filter(p => p.status === 'open')
 
   return (
@@ -71,7 +62,7 @@ export default function GroupPanel({ open, onClose, tripId }: Props) {
       <div className="flex items-center justify-between border-b border-white/[0.04] px-6 py-4">
         <div className="flex items-center gap-2.5">
           <div className="flex items-center -space-x-1.5">
-            {collaborators.slice(0, 3).map((c, i) => (
+            {joinedCollaborators.slice(0, 3).map((c, i) => (
               <div key={c.id} className="h-7 w-7 rounded-full bg-drift-gold/15 border-2 border-drift-bg flex items-center justify-center text-[9px] font-bold text-drift-gold" style={{ zIndex: 3 - i }}>
                 {c.email?.[0]?.toUpperCase() || '?'}
               </div>
@@ -92,31 +83,37 @@ export default function GroupPanel({ open, onClose, tripId }: Props) {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
 
-        {/* ─── Invite section (Google Workspace style) ─── */}
+        {/* ─── Invite section — link-based only ─── */}
         <div className="px-6 py-5 border-b border-white/[0.04]">
-          <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-3">Add people</div>
-          <div className="flex gap-2 mb-3">
-            <input
-              value={inviteEmail}
-              onChange={e => { setInviteEmail(e.target.value); setInviteLink(null) }}
-              onKeyDown={e => e.key === 'Enter' && handleInvite()}
-              placeholder="Email or generate link"
-              className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-[12px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none"
-            />
-            <button
-              onClick={handleInvite}
-              disabled={inviteLoading}
-              className="shrink-0 rounded-lg bg-drift-gold px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-drift-bg disabled:opacity-50 hover:-translate-y-0.5 transition-all"
-            >
-              {inviteLoading ? '…' : inviteEmail.includes('@') ? 'Invite' : 'Get link'}
-            </button>
-          </div>
-          {inviteLink && (
-            <div className="flex items-center gap-2 rounded-lg bg-drift-gold/[0.06] border border-drift-gold/15 px-3 py-2 text-[10px] text-drift-gold animate-[fadeUp_0.3s_ease]">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-              Link copied to clipboard
+          <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-3">Invite friends</div>
+          <button
+            onClick={handleShareLink}
+            disabled={linkLoading}
+            className="flex w-full items-center gap-3 rounded-xl border border-drift-gold/20 bg-drift-gold/[0.06] px-4 py-3 text-left transition-all hover:border-drift-gold/40 hover:bg-drift-gold/[0.1] disabled:opacity-60"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-drift-gold/15">
+              {linkCopied ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : linkLoading ? (
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-drift-gold/30 border-t-drift-gold" />
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="1.5">
+                  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                </svg>
+              )}
             </div>
-          )}
+            <div className="min-w-0 flex-1">
+              <div className="text-[12px] font-semibold text-drift-text">
+                {linkCopied ? 'Link copied' : 'Copy invite link'}
+              </div>
+              <div className="text-[10px] text-drift-text3 mt-0.5">
+                {linkCopied ? 'Paste it in WhatsApp, iMessage, or Slack' : 'Friends who open it can join the group'}
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* ─── Collaborator list ─── */}
@@ -137,39 +134,49 @@ export default function GroupPanel({ open, onClose, tripId }: Props) {
               )}
             </div>
 
-            {/* Collaborators */}
-            {collaborators.map(c => {
-              const displayName = c.email?.split('@')[0] || 'Invited'
+            {/* Joined collaborators */}
+            {joinedCollaborators.map(c => {
               const initial = c.email?.[0]?.toUpperCase() || '?'
               return (
                 <div key={c.id} className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    c.accepted_at ? 'bg-drift-gold/10 text-drift-gold' : 'bg-white/[0.06] text-drift-text3'
-                  }`}>
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold bg-drift-gold/10 text-drift-gold">
                     {initial}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-medium text-drift-text truncate">
-                      {c.email || 'Invited via link'}
+                      {c.email || 'Joined'}
                     </div>
-                    <div className="text-[9px] text-drift-text3">
-                      {c.accepted_at ? `${c.role} · Joined` : 'Pending invite…'}
-                    </div>
+                    <div className="text-[9px] text-drift-text3">Joined</div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {readyCheck?.responses[c.user_id || ''] && (
-                      readyCheck.responses[c.user_id || ''] === 'ready'
-                        ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-                        : <span className="h-1.5 w-1.5 rounded-full bg-drift-text3" />
-                    )}
-                    {!c.accepted_at && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-drift-gold " />
-                    )}
-                  </div>
+                  {readyCheck?.responses[c.user_id || ''] && (
+                    readyCheck.responses[c.user_id || ''] === 'ready'
+                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                      : <span className="h-1.5 w-1.5 rounded-full bg-drift-text3" />
+                  )}
                 </div>
               )
             })}
           </div>
+
+          {/* Pending invites — legacy rows from email invites */}
+          {pendingCollaborators.length > 0 && (
+            <div className="mt-5 pt-5 border-t border-white/[0.04]">
+              <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-3">Pending</div>
+              <div className="space-y-2 opacity-70">
+                {pendingCollaborators.map(c => (
+                  <div key={c.id} className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-full border border-dashed border-drift-text3/40 flex items-center justify-center text-[10px] font-bold text-drift-text3">
+                      {c.email?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] text-drift-text2 truncate">{c.email || 'Invited'}</div>
+                      <div className="text-[9px] text-drift-text3">Not yet joined</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ─── Ready check ─── */}

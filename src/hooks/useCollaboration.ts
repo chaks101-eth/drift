@@ -197,14 +197,40 @@ export function useCollaborators(tripId: string | undefined) {
 
   useEffect(() => {
     if (!tripId || !token) return
-    fetch(`/api/trips/${tripId}/collaborators`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => { if (data.collaborators) setCollaborators(data.collaborators) })
-      .catch(() => {})
+    const fetchCollaborators = () => {
+      fetch(`/api/trips/${tripId}/collaborators`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.json())
+        .then(data => { if (data.collaborators) setCollaborators(data.collaborators) })
+        .catch(() => {})
+    }
+    fetchCollaborators()
+    // Poll every 10s so owners see new members join
+    const interval = setInterval(fetchCollaborators, 10000)
+    return () => clearInterval(interval)
   }, [tripId, token])
 
+  // Returns the trip's share URL — used for link-based invites (preferred).
+  // Lazily creates a share_slug if the trip doesn't have one yet.
+  const getShareLink = useCallback(async (): Promise<string | null> => {
+    if (!tripId || !token) return null
+    try {
+      const res = await fetch('/api/trips/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tripId }),
+      })
+      const data = await res.json()
+      if (data.url) return `${window.location.origin}${data.url}`
+      return null
+    } catch {
+      return null
+    }
+  }, [tripId, token])
+
+  // Deprecated email invite path — kept for desktop backwards-compat.
+  // Prefer getShareLink() for new code.
   const invite = useCallback(async (email?: string, role = 'editor'): Promise<string | null> => {
     if (!tripId || !token) return null
 
@@ -225,6 +251,20 @@ export function useCollaborators(tripId: string | undefined) {
     }
   }, [tripId, token])
 
+  // Authed user joins an existing trip they've been shared to.
+  const join = useCallback(async (): Promise<{ status: string } | null> => {
+    if (!tripId || !token) return null
+    try {
+      const res = await fetch(`/api/trips/${tripId}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return await res.json()
+    } catch {
+      return null
+    }
+  }, [tripId, token])
+
   const remove = useCallback(async (collaboratorId: string) => {
     if (!tripId || !token) return
 
@@ -239,5 +279,5 @@ export function useCollaborators(tripId: string | undefined) {
     } catch {}
   }, [tripId, token])
 
-  return { collaborators, invite, remove }
+  return { collaborators, invite, getShareLink, join, remove }
 }

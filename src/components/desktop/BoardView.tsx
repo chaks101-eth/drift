@@ -55,7 +55,9 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
   const { polls, createPoll, vote, applyPoll, closePoll } = usePolls(trip.id)
   const isOwner = trip.user_id === userId
   const { readyCheck, notes, startReadyCheck, respondReady, addNote } = useGroupTrip(trip.id)
-  const hasGroup = collaborators.length > 0
+  // Only treat as "group" when at least one invite has been accepted — avoids pending-pollution
+  const joinedCount = collaborators.filter(c => c.accepted_at).length
+  const hasGroup = joinedCount > 0
   const [noteInput, setNoteInput] = useState('')
   const setCurrentItems = useTripStore((s) => s.setCurrentItems)
   const toast = useUIStore((s) => s.toast)
@@ -259,13 +261,13 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
               {hasGroup ? (
                 <>
                   <div className="flex -space-x-1">
-                    {collaborators.slice(0, 3).map((c, i) => (
+                    {collaborators.filter(c => c.accepted_at).slice(0, 3).map((c, i) => (
                       <div key={c.id} className="h-4 w-4 rounded-full bg-drift-gold/20 border border-drift-bg flex items-center justify-center text-[6px] font-bold text-drift-gold" style={{ zIndex: 3 - i }}>
                         {c.email?.[0]?.toUpperCase() || '?'}
                       </div>
                     ))}
                   </div>
-                  Group ({collaborators.length + 1})
+                  Group ({joinedCount + 1})
                   {polls.filter(p => p.status === 'open').length > 0 && (
                     <span className="h-2 w-2 rounded-full bg-drift-gold" />
                   )}
@@ -279,6 +281,37 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
                 </>
               )}
             </button>
+
+            {/* Publish toggle — owner only */}
+            {isOwner && (
+              <button
+                onClick={async () => {
+                  const t = useTripStore.getState().token
+                  if (!t) return
+                  const res = await fetch(`/api/trips/${trip.id}/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+                    body: JSON.stringify({ is_public: !(trip as Trip & { is_public?: boolean }).is_public }),
+                  })
+                  const data = await res.json()
+                  if (data.is_public !== undefined) {
+                    toast(data.is_public ? 'Trip is now public — visible on /explore' : 'Trip is now private')
+                    // Update the trip object locally
+                    useTripStore.getState().setCurrentTrip({ ...trip, is_public: data.is_public } as Trip)
+                  }
+                }}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-all ${
+                  (trip as Trip & { is_public?: boolean }).is_public
+                    ? 'bg-drift-gold/10 text-drift-gold border border-drift-gold/25'
+                    : 'border border-white/[0.06] text-drift-text3 hover:text-drift-gold hover:border-drift-gold/25'
+                }`}
+              >
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+                </svg>
+                {(trip as Trip & { is_public?: boolean }).is_public ? 'Public' : 'Publish'}
+              </button>
+            )}
 
             {/* Remix — opens vibes modal */}
             <button

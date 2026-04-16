@@ -18,7 +18,6 @@ export default function NavBar({ showBack = false }: { showBack?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Hydrate user from session
   useEffect(() => {
     const hydrate = (session: { user: { email?: string | null; user_metadata?: Record<string, unknown>; is_anonymous?: boolean } } | null) => {
       if (!session) { setUser(null); return }
@@ -35,7 +34,6 @@ export default function NavBar({ showBack = false }: { showBack?: boolean }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!menuOpen) return
     const handleClick = (e: MouseEvent) => {
@@ -53,6 +51,9 @@ export default function NavBar({ showBack = false }: { showBack?: boolean }) {
   const initial = user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'G'
   const displayName = user?.name || user?.email?.split('@')[0] || 'Guest'
 
+  // Logo goes to /trips when logged in, / when not
+  const logoHref = authed ? '/trips' : '/'
+
   async function handleSignOut() {
     setMenuOpen(false)
     await supabase.auth.signOut()
@@ -64,7 +65,7 @@ export default function NavBar({ showBack = false }: { showBack?: boolean }) {
       {/* ─── Left: Logo + back ─── */}
       <div className="flex items-center gap-5">
         <div
-          onClick={() => router.push('/')}
+          onClick={() => router.push(logoHref)}
           className="cursor-pointer transition-opacity hover:opacity-80"
         >
           <span className="font-serif text-[20px] italic text-[#c8a44e]">Drift</span>
@@ -81,39 +82,24 @@ export default function NavBar({ showBack = false }: { showBack?: boolean }) {
         )}
       </div>
 
-      {/* ─── Right: Context-aware actions ─── */}
+      {/* ─── Right: New Trip + Profile ─── */}
       <div className="flex items-center gap-1">
         {isOnboarding ? (
           /* Onboarding: minimal — just profile */
           <ProfileDropdown user={user} initial={initial} displayName={displayName} authed={authed} menuOpen={menuOpen} setMenuOpen={setMenuOpen} menuRef={menuRef} onSignOut={handleSignOut} router={router} />
         ) : (
           <>
-            {/* My Trips link */}
-            {authed && (
-              <button
-                onClick={() => router.push('/trips')}
-                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] uppercase tracking-[1.5px] transition-colors ${
-                  pathname === '/trips' ? 'text-drift-gold' : 'text-drift-text3 hover:text-drift-text2'
-                }`}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" /></svg>
-                Trips
-              </button>
-            )}
-
-            {/* New Trip CTA */}
+            {/* New Trip CTA — single primary action */}
             <button
               onClick={() => router.push('/vibes')}
-              className="ml-2 flex items-center gap-1.5 px-4 py-[7px] rounded-full text-[10px] font-bold uppercase tracking-[1.5px] bg-drift-gold text-drift-bg hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,164,78,0.3)] transition-all"
+              className="mr-2 flex items-center gap-1.5 px-4 py-[7px] rounded-full text-[10px] font-bold uppercase tracking-[1.5px] bg-drift-gold text-drift-bg hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,164,78,0.3)] transition-all"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               New Trip
             </button>
 
             {/* Profile dropdown */}
-            <div className="ml-1.5">
-              <ProfileDropdown user={user} initial={initial} displayName={displayName} authed={authed} menuOpen={menuOpen} setMenuOpen={setMenuOpen} menuRef={menuRef} onSignOut={handleSignOut} router={router} />
-            </div>
+            <ProfileDropdown user={user} initial={initial} displayName={displayName} authed={authed} menuOpen={menuOpen} setMenuOpen={setMenuOpen} menuRef={menuRef} onSignOut={handleSignOut} router={router} />
           </>
         )}
       </div>
@@ -179,11 +165,6 @@ function ProfileDropdown({ user, initial, displayName, authed, menuOpen, setMenu
               icon={<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" /></svg>}
               label="My Trips"
               onClick={() => { setMenuOpen(false); router.push('/trips') }}
-            />
-            <MenuItem
-              icon={<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>}
-              label="Plan New Trip"
-              onClick={() => { setMenuOpen(false); router.push('/vibes') }}
             />
             <div className="my-1.5 mx-3 border-t border-white/[0.04]" />
 

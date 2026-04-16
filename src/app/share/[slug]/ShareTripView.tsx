@@ -82,9 +82,77 @@ export default function ShareTripView({ trip, items, tripId }: { trip: Trip; ite
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const { reactions, toggle: toggleReaction } = useShareReactions(tripId)
 
+  // Join-trip state — only for authed, non-owner, non-member users
+  const [joinState, setJoinState] = useState<'loading' | 'owner' | 'member' | 'can-join' | 'guest'>('loading')
+  const [joining, setJoining] = useState(false)
+
   useEffect(() => {
     trackEvent('share_page_view', 'engagement', trip.destination)
   }, [trip.destination])
+
+  // Check if the viewer can join this trip
+  useEffect(() => {
+    if (!tripId) return
+    let cancelled = false
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (cancelled) return
+      // Anonymous / no session → guest, can't join without signing in
+      if (!session?.user || session.user.is_anonymous) {
+        setJoinState('guest')
+        return
+      }
+
+      // Fetch the trip to check ownership + collaborators to check membership
+      const [{ data: tripRow }, { data: collabRow }] = await Promise.all([
+        supabase.from('trips').select('user_id').eq('id', tripId).single(),
+        supabase.from('collaborators').select('id, accepted_at').eq('trip_id', tripId).eq('user_id', session.user.id).maybeSingle(),
+      ])
+
+      if (cancelled) return
+      if (tripRow?.user_id === session.user.id) {
+        setJoinState('owner')
+      } else if (collabRow?.accepted_at) {
+        setJoinState('member')
+      } else {
+        setJoinState('can-join')
+      }
+    })
+    return () => { cancelled = true }
+  }, [tripId])
+
+  async function handleJoin() {
+    if (!tripId || joining) return
+    setJoining(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        // Shouldn't happen if joinState === 'can-join', but fallback
+        sessionStorage.setItem('drift-login-return', window.location.pathname)
+        window.location.href = '/m/login'
+        return
+      }
+      const res = await fetch(`/api/trips/${tripId}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.status === 'joined' || data.status === 'owner') {
+        // Redirect to the actual board — mobile or desktop
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        window.location.href = isMobile ? `/m/board/${tripId}` : `/trip/${tripId}`
+      }
+    } finally {
+      setJoining(false)
+    }
+  }
+
+  function handleSignInToJoin() {
+    if (typeof window === 'undefined') return
+    sessionStorage.setItem('drift-login-return', window.location.pathname)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    window.location.href = isMobile ? '/m/login' : '/login'
+  }
 
   // Parse days
   const days: { label: string; items: Item[]; insight?: string; mapUrl?: string; weather?: Record<string, unknown> }[] = []
@@ -195,15 +263,77 @@ export default function ShareTripView({ trip, items, tripId }: { trip: Trip; ite
           </div>
         )}
 
-        <div className="flex justify-center gap-3 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.6s]">
+        <div className="flex justify-center gap-3 flex-wrap opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.6s]">
+          {/* Join CTA — shown to authed users who aren't already in the group */}
+          {joinState === 'can-join' && (
+            <button
+              onClick={handleJoin}
+              disabled={joining}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(200,164,78,0.3)] transition-all active:scale-95 disabled:opacity-60"
+            >
+              {joining ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+                  Joining…
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
+                  </svg>
+                  Join this trip
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Guest CTA — sign in, then land back here to join */}
+          {joinState === 'guest' && (
+            <button
+              onClick={handleSignInToJoin}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(200,164,78,0.3)] transition-all active:scale-95"
+            >
+              Sign in to join
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </button>
+          )}
+
+          {/* Already a member — deep link into the trip */}
+          {joinState === 'member' && (
+            <a
+              href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? `/m/board/${tripId}` : `/trip/${tripId}`}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 transition-all active:scale-95"
+            >
+              Open trip
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </a>
+          )}
+
+          {/* Owner — can manage from their own board */}
+          {joinState === 'owner' && (
+            <a
+              href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? `/m/board/${tripId}` : `/trip/${tripId}`}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 transition-all active:scale-95"
+            >
+              Manage trip
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </a>
+          )}
+
           <button onClick={copyLink}
-            className="px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(200,164,78,0.3)] transition-all active:scale-95">
+            className="px-6 py-2.5 border border-[rgba(255,255,255,0.1)] text-sm rounded-full hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all active:scale-95">
             {copiedLink ? 'Link Copied!' : 'Copy Link'}
           </button>
-          <a href="/m"
-            className="px-6 py-2.5 border border-[rgba(255,255,255,0.1)] text-sm rounded-full hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all">
-            Plan Your Own Trip
-          </a>
+
+          {joinState !== 'member' && joinState !== 'owner' && (
+            <a href="/m"
+              className="px-6 py-2.5 border border-[rgba(255,255,255,0.1)] text-sm rounded-full hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all">
+              Plan Your Own Trip
+            </a>
+          )}
         </div>
       </div>
 
