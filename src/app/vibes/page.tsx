@@ -432,9 +432,9 @@ function VibesContent() {
           })}
         </div>
 
-        {/* ═══ Trip Details — fade in once vibes selected ═══ */}
+        {/* ═══ Trip Details — fade in once at least 1 vibe selected ═══ */}
         <div className={`transition-all duration-700 ease-out ${
-          canContinue ? 'opacity-100 translate-y-0' : 'opacity-25 translate-y-3 pointer-events-none'
+          selected.length > 0 ? 'opacity-100 translate-y-0' : 'opacity-25 translate-y-3 pointer-events-none'
         }`}>
           <div className="mb-5 flex items-center gap-3">
             <div className="h-px w-6 bg-drift-gold/60" />
