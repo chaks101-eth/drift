@@ -22,7 +22,7 @@ const DESTINATION_COVERS: Record<string, string> = {
   'jaipur': u('photo-1477587458883-47145ed94245'),
   'mumbai': u('photo-1529253355930-ddbe423a2ac7'),
   'delhi': u('photo-1587474260584-136574528ed5'),
-  'sri lanka': u('photo-1586613835032-26f28d5d9b60'),
+  'sri lanka': u('photo-1550754706-432b118ee3d7'),
   'vietnam': u('photo-1528127269322-539801943592'),
   'hong kong': u('photo-1536599018102-9f803c140fc1'),
   'phuket': u('photo-1589394815804-964ed0be2eb5'),
@@ -54,25 +54,25 @@ const DESTINATION_COVERS: Record<string, string> = {
 
   // Africa & Middle East
   'cape town': u('photo-1580060839134-75a5edca2e99'),
-  'marrakech': u('photo-1509003652919-9d7cc6d2f8f5'),
-  'cairo': u('photo-1539768942893-daf53e736b68'),
+  'marrakech': u('photo-1702211374779-792e3df71b59'),
+  'cairo': u('photo-1692986172150-ec32dccfa5f0'),
   'zanzibar': u('photo-1547471080-7cc2caa01a7e'),
   'nairobi': u('photo-1611348524140-53c9a25263d6'),
 
   // Oceania
   'sydney': u('photo-1506973035872-a4ec16b8e8d9'),
-  'queenstown': u('photo-1589871973318-9ca1258faa7d'),
+  'queenstown': u('photo-1630850790886-2af9c3b1d6af'),
   'fiji': u('photo-1518548419970-58e3b4079ab2'),
   'melbourne': u('photo-1514395462725-fb4566210144'),
 
   // Southeast Asia (expanded)
   'ho chi minh': u('photo-1583417319070-4a69db38a482'),
   'ho chi minh city': u('photo-1583417319070-4a69db38a482'),
-  'chiang mai': u('photo-1512553861092-d09b5c5f36d1'),
+  'chiang mai': u('photo-1719886369730-bfa59fad5f39'),
   'siem reap': u('photo-1569242840510-9fe6f0112cee'),
   'luang prabang': u('photo-1583417267826-aebc4d1542e1'),
   'koh samui': u('photo-1537956965359-7573183d1f57'),
-  'langkawi': u('photo-1609946860441-a418e48f4731'),
+  'langkawi': u('photo-1703855433576-bc21410b1582'),
 
   // South Asia
   'kathmandu': u('photo-1558799401-1dcba79834c2'),
@@ -83,62 +83,62 @@ const DESTINATION_COVERS: Record<string, string> = {
   'tbilisi': u('photo-1565008576549-57569a49371d'),
   'bishkek': u('photo-1530841377377-3ff06c0ca713'),
   'tashkent': u('photo-1596484552834-6a58f850e0a1'),
-  'yerevan': u('photo-1603622472128-60db72a0e785'),
-  'baku': u('photo-1603522829425-27961ff5a69c'),
+  'yerevan': u('photo-1640218576855-48345acf073b'),
+  'baku': u('photo-1689188930114-6a6824a21390'),
 
   // More Europe
-  'dubrovnik': u('photo-1555990538-1a0f4b2c32f5'),
+  'dubrovnik': u('photo-1655560585033-67e928edd1f7'),
   'edinburgh': u('photo-1506377585622-bedcbb027afc'),
   'florence': u('photo-1541370976299-4d24ebbc9077'),
   'budapest': u('photo-1549923746-c502d488b3ea'),
   'copenhagen': u('photo-1513622470522-26c3c8a854bc'),
   'reykjavik': u('photo-1504829857797-ddff29c27927'),
-  'sarajevo': u('photo-1590150736578-1b1e048d2c3e'),
+  'sarajevo': u('photo-1690323027535-d5fc4dc4f72f'),
 
   // South America
-  'bogota': u('photo-1568226989693-79cd4baec54e'),
-  'cartagena': u('photo-1583353480235-4e54a5fb6113'),
+  'bogota': u('photo-1706417391330-f35673bb0b27'),
+  'cartagena': u('photo-1678422151003-4a920e7a3de8'),
   'cusco': u('photo-1526392060635-9d6019884377'),
-  'santiago': u('photo-1510253687831-5b7e35082241'),
+  'santiago': u('photo-1528759081949-f736c5d4aa8b'),
   'medellin': u('photo-1599493758267-c6c884c7071f'),
 
   // Winter destinations — each unique
   'gudauri': u('photo-1516426122078-c23e76319801'), // snowy mountains Georgia
   'karakol': u('photo-1486870591958-9b9d0d1dda99'), // Kyrgyz mountains
   'niseko': u('photo-1551524559-8af4e6624178'),      // snowy Japan
-  'chamonix': u('photo-1522080231080-d60ea3f69a2a'), // Mont Blanc
+  'chamonix': u('photo-1509960321709-862b62e45d69'), // Mont Blanc
   'zermatt': u('photo-1520531158340-44015069e78e'),   // Matterhorn
 
   // Caribbean / Islands
-  'mauritius': u('photo-1589979481223-deb893e50a70'),
+  'mauritius': u('photo-1687049417784-f5ea5659f2d6'),
   'belle mare': u('photo-1544550581-1bcabf842b77'), // Mauritius beach
   'paro': u('photo-1553856622-d1b352e9a211'),
-  'bhutan': u('photo-1609766857326-18a204604cf7'), // Tiger's Nest different angle
+  'bhutan': u('photo-1665731235408-130bf915c424'), // Tiger's Nest
 
   // India — expanded (popular with Drift users)
   'manali': u('photo-1626621341517-bbf3d9990a23'),
-  'rishikesh': u('photo-1585116868675-a1ce0e3a2cfc'),
-  'udaipur': u('photo-1598976993966-b37aad033e49'),
+  'rishikesh': u('photo-1683318528842-bd5f1fd0ff9a'),
+  'udaipur': u('photo-1675772120474-b9d7811220f9'),
   'varanasi': u('photo-1570168007204-dfb528c6958f'),
-  'leh': u('photo-1626015365107-82c4bce61755'),
-  'ladakh': u('photo-1626015365107-82c4bce61755'),
+  'leh': u('photo-1653112122775-855a525a5846'),
+  'ladakh': u('photo-1653112122775-855a525a5846'),
   'port blair': u('photo-1507525428034-b723cf961d3e'),
   'andaman': u('photo-1544551763-46a013bb70d5'),
   'kochi': u('photo-1602216056096-3b40cc0c9944'),
   'kerala': u('photo-1602216056096-3b40cc0c9944'),
-  'shimla': u('photo-1597074866923-dc0589150458'),
-  'darjeeling': u('photo-1622308644420-1f7aff155591'),
+  'shimla': u('photo-1655884569008-97ee67cd6e72'),
+  'darjeeling': u('photo-1776271377434-f549e3e19881'),
   'pondicherry': u('photo-1582510003544-4d00b7f74220'),
-  'agra': u('photo-1564507592924-fe71b1a20b7b'),
+  'agra': u('photo-1564507592333-c60657eea523'),
 
   // Thailand — expanded
-  'pattaya': u('photo-1562602833-0f4ab2fc46e5'),
+  'pattaya': u('photo-1652346637723-83799b99ea87'),
   'krabi': u('photo-1552465011-b4e21bf6e79a'),
-  'koh phi phi': u('photo-1504203328185-2474e00fac8e'),
+  'koh phi phi': u('photo-1673627114942-88d7a578e295'),
   'chiang rai': u('photo-1523059623039-a9ed027e7fad'),
 
   // More destinations users plan
-  'galle': u('photo-1590058028879-4e1f8e95d3e0'),
+  'galle': u('photo-1704797390682-76479a29dc9a'),
   'zurich': u('photo-1515488764276-beab7607c1e6'),
 }
 
