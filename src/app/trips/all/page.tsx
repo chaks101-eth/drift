@@ -40,6 +40,7 @@ export default function AllTripsPage() {
       const { data } = await supabase
         .from('trips')
         .select('id, destination, country, vibes, start_date, end_date, travelers, budget, status, share_slug, is_public, created_at')
+        .eq('user_id', session.user.id)
         .order('created_at', { ascending: false })
       setTrips((data || []) as TripSummary[])
       setLoading(false)
