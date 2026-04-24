@@ -1,7 +1,7 @@
 'use client'
 import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureAnonSession } from '@/lib/supabase'
 
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
@@ -16,15 +16,10 @@ function useShareReactions(tripId: string | undefined) {
   const [reactions, setReactions] = useState<Record<string, { count: number; reacted: boolean }>>({})
   const [token, setToken] = useState<string | null>(null)
 
-  // Auto-create anonymous session for reactions
+  // Only read an existing session. Reactions lazy-create an anon session on first toggle.
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        const { data } = await supabase.auth.signInAnonymously()
-        if (data.session) setToken(data.session.access_token)
-      } else {
-        setToken(session.access_token)
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setToken(session.access_token)
     })
   }, [])
 
@@ -38,7 +33,16 @@ function useShareReactions(tripId: string | undefined) {
   }, [tripId])
 
   const toggle = useCallback(async (itemId: string) => {
-    if (!tripId || !token) return
+    if (!tripId) return
+    // Lazy-create anon session on first reaction (a write).
+    let authToken = token
+    if (!authToken) {
+      const session = await ensureAnonSession()
+      authToken = session?.access_token ?? null
+      if (authToken) setToken(authToken)
+    }
+    if (!authToken) return // sign-in failed; bail silently
+
     setReactions(prev => {
       const c = prev[itemId] || { count: 0, reacted: false }
       return { ...prev, [itemId]: { count: c.reacted ? c.count - 1 : c.count + 1, reacted: !c.reacted } }
@@ -46,7 +50,7 @@ function useShareReactions(tripId: string | undefined) {
     try {
       await fetch(`/api/trips/${tripId}/reactions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ itemId }),
       })
     } catch {}

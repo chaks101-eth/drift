@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
 import { useTripStore, type Destination } from '@/stores/trip-store'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureAnonSession } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 
 function DestCard({ dest, isSelected, onSelect, rank }: {
@@ -106,6 +106,9 @@ export default function DestinationsPage() {
     setToast(msg)
     setTimeout(() => setToast(null), 3500)
   }, [])
+
+  // First write moment — entering destinations means user committed to suggestions. Create anon session if none.
+  useEffect(() => { ensureAnonSession() }, [])
 
   // Fetch destinations on mount
   useEffect(() => {

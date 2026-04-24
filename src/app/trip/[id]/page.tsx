@@ -46,17 +46,12 @@ export default function DesktopTripPage() {
     let cancelled = false
 
     async function initAndLoad() {
-      // Get or create session
-      let { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        const { data } = await supabase.auth.signInAnonymously()
-        session = data.session
-      }
+      // Load trip via service-role API — works for any viewer (including anon/no-session).
+      // Write interactions (save, chat, reactions) call ensureAnonSession() lazily.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (cancelled) return
+      if (session) setAuth(session.access_token, session.user.id, session.user.email || null)
 
-      if (!session || cancelled) return
-      setAuth(session.access_token, session.user.id, session.user.email || null)
-
-      // Load trip via admin API (bypasses RLS — desktop board should work for any trip, like shared trips)
       try {
         const res = await fetch(`/api/trips/${id}`)
         if (res.ok) {

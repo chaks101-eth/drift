@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureAnonSession } from '@/lib/supabase'
 import { useTripStore } from '@/stores/trip-store'
 import NavBar from '@/app/NavBar'
 import CityAutocomplete from '@/components/desktop/CityAutocomplete'
@@ -84,15 +84,11 @@ export default function BuildFromLinkPage() {
     }
   }, [])
 
-  // Ensure session exists
+  // Read existing session if any — do not auto-create anon.
+  // Anon session is created when the user actually submits a URL (write moment).
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        const { data } = await supabase.auth.signInAnonymously()
-        if (data.session) {
-          useTripStore.getState().setAuth(data.session.access_token, data.session.user.id, null)
-        }
-      } else {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         useTripStore.getState().setAuth(session.access_token, session.user.id, session.user.email || null)
       }
     })
@@ -140,6 +136,8 @@ export default function BuildFromLinkPage() {
     setStep('extracting')
 
     try {
+      // First write moment — ensure session before calling Gemini-backed extract.
+      await ensureAnonSession()
       const t = useTripStore.getState().token
       const res = await fetch('/api/ai/extract-url', {
         method: 'POST',

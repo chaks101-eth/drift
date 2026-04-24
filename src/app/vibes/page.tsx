@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import NavBar from '@/app/NavBar'
 import DesktopAuthProvider from '@/components/desktop/AuthProvider'
 import { useTripStore } from '@/stores/trip-store'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureAnonSession } from '@/lib/supabase'
 import { detectCurrencyFromOrigin, formatPrice } from '@/lib/currency'
 import CityAutocomplete from '@/components/desktop/CityAutocomplete'
 
@@ -171,6 +171,8 @@ function VibesContent() {
     setUrlError('')
     setUrlExtracting(true)
     try {
+      // First write moment — URL extract calls Gemini (requires auth). Create anon session if needed.
+      await ensureAnonSession()
       const token = useTripStore.getState().token
       const res = await fetch('/api/ai/extract-url', {
         method: 'POST',

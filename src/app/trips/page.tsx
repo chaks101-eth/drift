@@ -101,25 +101,26 @@ export default function HomePage() {
   }, [handleKey])
 
   // ─── Load data ───
+  // Do NOT auto-create an anonymous session here. A fresh visitor with no
+  // session should see the showroom + launcher without being silently signed in.
+  // Anon sign-in is deferred to the first write (ensureAnonSession in @/lib/supabase).
   useEffect(() => {
     async function load() {
-      let { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        const { data } = await supabase.auth.signInAnonymously()
-        session = data.session
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (session) {
+        const name = (session.user.user_metadata?.full_name as string) || (session.user.user_metadata?.name as string) || session.user.email?.split('@')[0] || ''
+        setUserName(name)
+
+        const { data: trips } = await supabase
+          .from('trips')
+          .select('id, destination, country, vibes, start_date, end_date, travelers, budget, status, share_slug, is_public, created_at')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+        setMyTrips((trips || []) as TripSummary[])
       }
-      if (!session) { router.push('/login'); return }
 
-      const name = (session.user.user_metadata?.full_name as string) || (session.user.user_metadata?.name as string) || session.user.email?.split('@')[0] || ''
-      setUserName(name)
-
-      const { data: trips } = await supabase
-        .from('trips')
-        .select('id, destination, country, vibes, start_date, end_date, travelers, budget, status, share_slug, is_public, created_at')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-      setMyTrips((trips || []) as TripSummary[])
-
+      // Trending always loads — it's from a service-role endpoint, no auth needed.
       fetch('/api/trips/public?limit=6').then(r => r.json()).then(d => setTrending(d.trips || [])).catch(() => {})
       setLoading(false)
     }

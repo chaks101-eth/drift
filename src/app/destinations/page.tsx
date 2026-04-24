@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import NavBar from '@/app/NavBar'
 import DesktopAuthProvider from '@/components/desktop/AuthProvider'
 import { useTripStore, type Destination } from '@/stores/trip-store'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureAnonSession } from '@/lib/supabase'
 
 export default function DestinationsPage() {
   return (
@@ -42,6 +42,12 @@ function DestinationsContent() {
   useEffect(() => {
     if (pickedVibes.length === 0) router.push('/vibes')
   }, [pickedVibes, router])
+
+  // First write moment — user committed to seeing suggestions. Create anon session if needed.
+  // The DesktopAuthProvider's onAuthStateChange listener will propagate the token into the store.
+  useEffect(() => {
+    if (pickedVibes.length > 0) { ensureAnonSession() }
+  }, [pickedVibes.length])
 
   // Fetch destinations
   useEffect(() => {

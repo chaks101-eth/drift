@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
 import { useTripStore } from '@/stores/trip-store'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureAnonSession } from '@/lib/supabase'
 
 interface Highlight {
   name: string
@@ -106,9 +106,13 @@ export default function UrlPage() {
     setExtractStep(0)
 
     try {
+      // First write moment — ensure session before calling Gemini-backed extract.
+      // Read token AFTER ensureAnonSession so we pick up a freshly-created anon session.
+      await ensureAnonSession()
+      const activeToken = useTripStore.getState().token
       const res = await fetch('/api/ai/extract-url', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeToken}` },
         body: JSON.stringify({ url }),
       })
       const data = await res.json()
@@ -147,9 +151,11 @@ export default function UrlPage() {
     if (inputOrigin) setOrigin(inputOrigin)
 
     try {
+      await ensureAnonSession()
+      const activeToken = useTripStore.getState().token
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeToken}` },
         body: JSON.stringify({
           type: 'itinerary',
           destination: extracted.primaryDestination,
