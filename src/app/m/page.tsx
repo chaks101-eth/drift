@@ -310,10 +310,11 @@ export default function MobileHomePage() {
     const onVis = () => { if (document.visibilityState === 'visible') fetchTrips() }
     document.addEventListener('visibilitychange', onVis)
 
-    // Fetch trending in background (only once)
+    // Fetch trending in background (only once).
+    // minItems=5 filters out empty-draft trips so the showroom only surfaces finished itineraries.
     if (!checked) {
       setChecked(true)
-      fetch('/api/trips/public?limit=6')
+      fetch('/api/trips/public?limit=6&minItems=5')
         .then(r => r.json())
         .then(d => setTrending(d.trips || []))
         .catch(() => {})
@@ -656,6 +657,153 @@ export default function MobileHomePage() {
             <span className="text-white/10">◆</span>
             <span>{new Set(trips.map(t => t.destination)).size} destinations</span>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Signed-in but zero trips: personal empty state with showroom + launcher ───
+  // This is the "I just signed up, now what?" moment. It must feel like their space,
+  // not a marketing page. Fallback to the anon hero below if !authResolved or isAnonymous.
+  if (!isAnonymous && trips.length === 0) {
+    return (
+      <div className="relative h-full overflow-y-auto overflow-x-hidden bg-drift-bg">
+        {/* Atmosphere — softer than hero so the personal content reads as inhabited space */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden">
+          <div className="absolute inset-0 starfield opacity-60" />
+          <div
+            className="aurora-blob h-[460px] w-[460px] left-[50%] top-[28%] -translate-x-1/2"
+            style={{ background: auroraColor, opacity: 0.05 }}
+          />
+          <div className="absolute inset-0 noise-grain opacity-50" />
+        </div>
+
+        {/* Profile menu — same as returning-user view, so muscle memory holds */}
+        <div className="relative z-20 flex items-center justify-between px-5 pt-[calc(env(safe-area-inset-top)+14px)]">
+          <div className="flex items-center gap-2">
+            <div className="h-px w-4 bg-drift-gold/60" />
+            <span className="font-serif text-[13px] italic text-drift-gold">Drift</span>
+          </div>
+          <button
+            onClick={() => setProfileOpen(v => !v)}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-drift-gold/25 bg-drift-gold/5 text-[10px] font-bold uppercase text-drift-gold active:scale-95"
+          >
+            {firstName?.[0] || 'G'}
+          </button>
+          {profileOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setProfileOpen(false)} />
+              <div className="absolute right-5 top-14 z-40 w-44 rounded-xl border border-white/[0.08] bg-black/80 backdrop-blur-xl py-1.5 text-[12px] shadow-[0_12px_36px_rgba(0,0,0,0.5)]">
+                <button onClick={handleSignOut} className="w-full px-3.5 py-2 text-left text-white/70 active:bg-white/[0.04]">Sign out</button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="relative z-10 flex min-h-[calc(100dvh-56px)] flex-col px-5 pt-8 pb-10">
+          {/* Personal greeting */}
+          <div className="mb-7 opacity-0 animate-[fadeUp_0.7s_var(--ease-smooth)_0.15s_forwards]">
+            <div className="mb-2 font-mono text-[8px] tracking-[2.5px] uppercase text-drift-gold/70">
+              {(() => { const h = new Date().getHours(); return h < 5 ? 'Late night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Late night' })()}{firstName ? `, ${firstName}` : ''}
+            </div>
+            <h1 className="font-serif text-[32px] font-light leading-[1.05] tracking-[-0.02em]">
+              Where will you <em className="italic text-drift-gold">drift</em> first?
+            </h1>
+          </div>
+
+          {/* Launcher portal — clickable, glowing, centered */}
+          <div className="flex justify-center mb-8 opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.3s_forwards]">
+            <button
+              onClick={handleStart}
+              disabled={starting}
+              className="group relative active:scale-[0.97] transition-transform duration-200"
+            >
+              {/* Orbital rings */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-drift-gold/[0.08] compass-ring-reverse pointer-events-none" style={{ width: 320, height: 320 }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-drift-gold/[0.12] compass-ring pointer-events-none" style={{ width: 260, height: 260, animationDuration: '30s' }} />
+              {/* Energy waves */}
+              {[0, 1, 2].map(i => (
+                <div key={i} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-drift-gold/25 pointer-events-none"
+                  style={{ width: 230, height: 230, animation: 'coreWave 5s ease-out infinite', animationDelay: `${i * 1.66}s` }}
+                />
+              ))}
+              {/* Core */}
+              <div
+                className="relative w-[220px] h-[220px] rounded-full overflow-hidden border-2 border-drift-gold/40 flex items-center justify-center"
+                style={{
+                  background: 'radial-gradient(circle at 30% 30%, #1a1608 0%, #0a0906 60%, #050509 100%)',
+                  animation: 'corePulse 4s ease-in-out infinite',
+                  boxShadow: '0 0 60px rgba(200,164,78,0.18), inset 0 0 80px rgba(200,164,78,0.1)',
+                }}
+              >
+                <div className="absolute inset-0 rounded-full opacity-70 group-active:opacity-100 transition-opacity" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(200,164,78,0.3), transparent 65%)' }} />
+                <div className="relative flex flex-col items-center gap-2 px-5">
+                  <span className="font-serif italic text-[54px] text-drift-gold leading-none translate-y-[-2px]">D</span>
+                  <div className="font-serif text-[13px] italic text-white/90 text-center">Begin your first drift</div>
+                  <div className="flex items-center gap-1.5 font-mono text-[7px] tracking-[2px] uppercase text-drift-gold/80">
+                    <span>{starting ? 'Starting…' : 'Tap to start'}</span>
+                    {!starting && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>}
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Showroom — public trips others have built */}
+          {trending.length > 0 && (
+            <div className="mb-8 opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.5s_forwards]">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-px w-4 bg-drift-gold/40" />
+                  <span className="font-mono text-[7px] tracking-[2px] uppercase text-drift-gold/60">Drifts in motion</span>
+                </div>
+                <button onClick={() => router.push('/explore')} className="font-mono text-[7px] tracking-[1.5px] uppercase text-white/30 active:text-drift-gold">Explore →</button>
+              </div>
+              <p className="mb-3 font-serif italic text-[12px] text-white/50 leading-relaxed">
+                Fresh trips other travelers are drifting through right now. Tap one to see how Drift plans.
+              </p>
+              <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-5 px-5 pb-1">
+                {trending.map((trip) => (
+                  <button
+                    key={trip.id}
+                    onClick={() => trip.share_slug ? router.push(`/share/${trip.share_slug}`) : null}
+                    className="shrink-0 w-[180px] rounded-xl overflow-hidden border border-white/[0.05] bg-white/[0.015] active:scale-[0.97] transition-transform"
+                  >
+                    <div className="relative h-[110px]">
+                      <Image src={getDestinationImage(trip.destination)} alt={trip.destination} fill className="object-cover" sizes="180px" unoptimized />
+                      <div className="absolute inset-0 bg-gradient-to-t from-drift-bg via-drift-bg/20 to-transparent" />
+                    </div>
+                    <div className="p-2.5">
+                      <div className="text-[11px] text-white/80 truncate">{trip.destination}</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {trip.vibes?.slice(0, 2).map(v => (
+                          <span key={v} className="text-[7px] text-white/30 uppercase tracking-wide">{v}</span>
+                        ))}
+                        {trip.heartCount > 0 && (
+                          <span className="ml-auto flex items-center gap-0.5">
+                            <svg width="7" height="7" viewBox="0 0 24 24" fill="#c8a44e" stroke="none" opacity={0.5}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                            <span className="text-[7px] text-drift-gold/50 tabular-nums">{trip.heartCount}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Secondary: Build from reel — small link, not a competing primary CTA */}
+          <button
+            onClick={() => router.push('/m/plan/url')}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 text-[10px] font-semibold tracking-[1.5px] uppercase text-white/55 active:scale-[0.97] transition-transform opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.7s_forwards]"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            Or build from a reel link
+          </button>
         </div>
       </div>
     )

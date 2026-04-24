@@ -120,8 +120,9 @@ export default function HomePage() {
         setMyTrips((trips || []) as TripSummary[])
       }
 
-      // Trending always loads — it's from a service-role endpoint, no auth needed.
-      fetch('/api/trips/public?limit=6').then(r => r.json()).then(d => setTrending(d.trips || [])).catch(() => {})
+      // Trending always loads — service-role endpoint, no auth needed.
+      // minItems=5 filters out empty-draft trips so the showroom only surfaces finished itineraries.
+      fetch('/api/trips/public?limit=6&minItems=5').then(r => r.json()).then(d => setTrending(d.trips || [])).catch(() => {})
       setLoading(false)
     }
     load()
@@ -324,20 +325,142 @@ export default function HomePage() {
                   </div>
                 </button>
               ) : (
-                /* Empty: D core */
+                /* Empty-state showroom: clickable portal at the center with public trips orbiting.
+                   Two rings × 3 planets each = 6 total. Rings are at 280px + 360px radius, offset 60°
+                   so planets feel like a constellation, not a clock face. */
                 <div className="relative">
-                  <div className="absolute inset-0 -m-[40px] rounded-full border border-[#c8a44e]/[0.08] compass-ring-reverse" />
-                  <div className="absolute inset-0 -m-[20px] rounded-full border border-[#c8a44e]/[0.12] compass-ring" style={{ animationDuration: '30s' }} />
+                  {/* Compass rings — visible spokes of the orbit so the empty space reads as intentional */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c8a44e]/[0.08] compass-ring-reverse pointer-events-none" style={{ width: 560, height: 560 }} />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c8a44e]/[0.06] compass-ring pointer-events-none" style={{ width: 720, height: 720, animationDuration: '80s' }} />
+
+                  {/* Energy waves pulsing outward from the portal */}
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c8a44e]/30 pointer-events-none"
-                      style={{ width: 'calc(100% + 10px)', height: 'calc(100% + 10px)', animation: 'coreWave 5s ease-out infinite', animationDelay: `${i * 1.66}s` }}
+                    <div key={i} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c8a44e]/20 pointer-events-none"
+                      style={{ width: 340, height: 340, animation: 'coreWave 5s ease-out infinite', animationDelay: `${i * 1.66}s` }}
                     />
                   ))}
-                  <div className="relative w-[280px] h-[280px] rounded-full bg-gradient-to-br from-[#e8cc6e] via-[#c8a44e] to-[#8b7034] flex items-center justify-center"
-                    style={{ animation: 'corePulse 4s ease-in-out infinite' }}
+
+                  {/* The orbiting planets — public trips from trending.
+                      Layout adapts to however many trips we have so it never looks like empty orbits:
+                        1-5 trips  → single ring at 310px, evenly spaced, ~84px planets
+                        6+ trips   → two rings (280px + 360px), 3 per ring at 120° apart, offset 60°
+                      Planets are positioned with rotate→translate→reverse-rotate so each sits on
+                      the ring without being rotated itself. */}
+                  {trending.slice(0, 6).map((trip, i) => {
+                    const total = Math.min(trending.length, 6)
+                    const isSingleRing = total < 6
+                    // Single-ring layout: evenly spaced around one ring
+                    // Two-ring layout: first 3 on inner ring at 30°/150°/270°, next 3 on outer at 90°/210°/330°
+                    const ring = isSingleRing ? 1 : (i < 3 ? 1 : 2)
+                    const angle = isSingleRing
+                      ? (360 / total) * i - 90  // start at top
+                      : ring === 1 ? 30 + i * 120 : 90 + (i - 3) * 120
+                    const radius = isSingleRing ? 310 : ring === 1 ? 280 : 360
+                    const size = isSingleRing ? 84 : ring === 1 ? 90 : 68
+                    const color = vibeColor(trip as TripSummary, i)
+                    const isHovered = hoveredOrb === trip.id
+                    return (
+                      <button
+                        key={trip.id}
+                        onClick={() => trip.share_slug && router.push(`/share/${trip.share_slug}`)}
+                        onMouseEnter={() => setHoveredOrb(trip.id)}
+                        onMouseLeave={() => setHoveredOrb(null)}
+                        className="absolute top-1/2 left-1/2 group/planet pointer-events-auto"
+                        style={{
+                          // Position on the orbital ring. Transform stays static — CSS animations
+                          // that also set `transform` would override this. The breathing motion is
+                          // handled by a separate animation on the inner circle div below.
+                          transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${radius}px) rotate(${-angle}deg)`,
+                        }}
+                      >
+                        {/* Colored glow halo — intensifies on hover */}
+                        <div
+                          className="absolute rounded-full blur-xl transition-all duration-500 pointer-events-none"
+                          style={{
+                            width: size + 40, height: size + 40,
+                            top: -20, left: -20,
+                            background: `radial-gradient(circle, ${color}55, transparent 70%)`,
+                            opacity: isHovered ? 0.9 : 0.35,
+                          }}
+                        />
+                        {/* Planet circle */}
+                        <div
+                          className="relative rounded-full overflow-hidden transition-all duration-400"
+                          style={{
+                            width: size, height: size,
+                            border: `1.5px solid ${isHovered ? color : `${color}50`}`,
+                            transform: isHovered ? 'scale(1.12)' : 'scale(1)',
+                            boxShadow: isHovered ? `0 0 36px ${color}70` : `0 0 16px ${color}30`,
+                          }}
+                        >
+                          <Image src={getImg(trip.destination)} alt={trip.destination} fill className="object-cover" sizes={`${size}px`} unoptimized />
+                          <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.45)' }} />
+                        </div>
+                        {/* Tooltip — appears below the planet on hover */}
+                        <div
+                          className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none transition-all duration-300"
+                          style={{
+                            top: size + 14,
+                            opacity: isHovered ? 1 : 0,
+                            transform: `translate(-50%, ${isHovered ? '0' : '-4px'})`,
+                          }}
+                        >
+                          <div className="rounded-lg border border-white/[0.08] bg-black/70 backdrop-blur-md px-2.5 py-1.5">
+                            <div className="text-[10px] text-white/90 font-medium">{trip.destination}</div>
+                            <div className="font-mono text-[7px] tracking-[1.5px] uppercase text-[#c8a44e]/80 mt-0.5">Preview →</div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+
+                  {/* The portal — the launcher. Click to start a fresh trip. */}
+                  <button
+                    onClick={() => {
+                      setCircleClicked(true)
+                      setTimeout(() => router.push('/vibes'), 400)
+                    }}
+                    className={`group relative transition-transform duration-500 ${circleClicked ? 'scale-[1.08]' : ''}`}
                   >
-                    <span className="font-serif italic text-[100px] text-[#08080c] leading-none translate-y-[-6px]">D</span>
-                  </div>
+                    {/* Click ripple */}
+                    {circleClicked && (
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#c8a44e]/60 pointer-events-none"
+                        style={{ width: 0, height: 0, animation: 'coreWave 0.6s ease-out forwards' }}
+                      />
+                    )}
+
+                    {/* Orbital rings tight to the portal (decorative) */}
+                    <div className="absolute inset-0 -m-[20px] rounded-full border border-[#c8a44e]/[0.12] compass-ring" style={{ animationDuration: '30s' }} />
+                    <div className="absolute inset-0 -m-[40px] rounded-full border border-[#c8a44e]/[0.08] compass-ring-reverse" />
+
+                    {/* The portal core */}
+                    <div
+                      className={`relative w-[300px] h-[300px] max-lg:w-[260px] max-lg:h-[260px] max-md:w-[220px] max-md:h-[220px] rounded-full overflow-hidden border-2 transition-all duration-700 flex items-center justify-center ${circleClicked ? 'border-[#c8a44e]/80' : 'border-[#c8a44e]/35 group-hover:border-[#c8a44e]/65'}`}
+                      style={{
+                        background: 'radial-gradient(circle at 30% 30%, #1a1608 0%, #0a0906 60%, #050509 100%)',
+                        animation: 'corePulse 4s ease-in-out infinite',
+                        boxShadow: '0 0 100px rgba(200,164,78,0.2), inset 0 0 120px rgba(200,164,78,0.1)',
+                      }}
+                    >
+                      {/* Inner glow that intensifies on hover */}
+                      <div
+                        className="absolute inset-0 rounded-full transition-opacity duration-500 opacity-70 group-hover:opacity-100"
+                        style={{ background: 'radial-gradient(circle at 50% 50%, rgba(200,164,78,0.3), transparent 65%)' }}
+                      />
+                      <div className="relative flex flex-col items-center gap-3 px-6">
+                        <span className="font-serif italic text-[clamp(56px,6vw,80px)] text-[#c8a44e] leading-none translate-y-[-4px] transition-transform duration-500 group-hover:scale-110">D</span>
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className="font-serif text-[clamp(13px,1.3vw,17px)] italic text-white/90 text-center leading-tight">
+                            Begin your first drift
+                          </div>
+                          <div className="flex items-center gap-2 font-mono text-[8px] tracking-[2.5px] uppercase text-[#c8a44e]/80 transition-colors duration-300 group-hover:text-[#c8a44e]">
+                            <span>Tap to start</span>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform duration-300 group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -447,32 +570,44 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Telemetry + keyboard hint */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-3 font-mono text-[8px] tracking-[1px] text-white/25 uppercase">
-                  <span>{myTrips.length} trips</span>
-                  <span className="text-white/10">◆</span>
-                  <span>{new Set(myTrips.map(t => t.destination)).size} dest</span>
-                  <span className="text-white/10">◆</span>
-                  <div className="flex items-center gap-1">
-                    <span className="h-1 w-1 rounded-full bg-[#4ecdc4] live-dot" />
-                    <span>Active</span>
+              {/* Telemetry + keyboard hint — for returning users. FTU gets a value-prop line instead. */}
+              {activeTrip ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3 font-mono text-[8px] tracking-[1px] text-white/25 uppercase">
+                    <span>{myTrips.length} trips</span>
+                    <span className="text-white/10">◆</span>
+                    <span>{new Set(myTrips.map(t => t.destination)).size} dest</span>
+                    <span className="text-white/10">◆</span>
+                    <div className="flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-[#4ecdc4] live-dot" />
+                      <span>Active</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 font-mono text-[7px] tracking-[0.5px] text-white/15">
+                    <span className="rounded border border-white/[0.06] px-1 py-0.5">N</span>
+                    <span>new trip</span>
+                    <span className="text-white/8">·</span>
+                    <span className="rounded border border-white/[0.06] px-1 py-0.5">1-6</span>
+                    <span>open recent</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 font-mono text-[7px] tracking-[0.5px] text-white/15">
-                  <span className="rounded border border-white/[0.06] px-1 py-0.5">N</span>
-                  <span>new trip</span>
-                  <span className="text-white/8">·</span>
-                  <span className="rounded border border-white/[0.06] px-1 py-0.5">1-6</span>
-                  <span>open recent</span>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <p className="font-serif italic text-[12px] text-white/55 leading-relaxed">
+                    Pick a few vibes. We build a 5-day itinerary in 30 seconds — hotels, restaurants, timings, all grounded.
+                  </p>
+                  <div className="flex items-center gap-2 font-mono text-[7px] tracking-[1.5px] uppercase text-white/20">
+                    <span className="rounded border border-white/[0.06] px-1 py-0.5">N</span>
+                    <span>shortcut to start · or tap an orbit to preview</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ─── Trending — distant galaxies ─── */}
-        {trending.length > 0 && (
+        {/* ─── Trending — only render for returning users. FTU gets the orbital showroom instead. ─── */}
+        {activeTrip && trending.length > 0 && (
           <div className="px-12 max-lg:px-6 pb-12 max-w-[1400px] mx-auto w-full" style={{ animation: 'fadeUp 1s ease 0.75s both' }}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -516,21 +651,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ─── Empty state ─── */}
-        {myTrips.length === 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6" style={{ animation: 'fadeUp 1s ease 0.5s both' }}>
-            <p className="text-[12px] text-white/35 max-w-[320px] mb-8 leading-relaxed">
-              Your universe is empty. Compose your first trip — pick vibes, pick a destination, Drift builds the rest in 30 seconds.
-            </p>
-            <button
-              onClick={() => router.push('/vibes')}
-              className="group inline-flex items-center gap-2 rounded-full bg-[#c8a44e] px-8 py-3.5 text-[10px] font-bold tracking-[2px] uppercase text-[#08080c] hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(200,164,78,0.3)] transition-all active:scale-95"
-            >
-              Compose my first trip
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-            </button>
-          </div>
-        )}
+        {/* The orbital showroom above IS the empty state — no redundant bottom CTA block. */}
       </div>
     </div>
   )
