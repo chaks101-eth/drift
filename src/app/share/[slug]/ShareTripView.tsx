@@ -332,10 +332,20 @@ export default function ShareTripView({ trip, items, tripId }: { trip: Trip; ite
             {copiedLink ? 'Link Copied!' : 'Copy Link'}
           </button>
 
-          {joinState !== 'member' && joinState !== 'owner' && (
-            <a href="/m"
-              className="px-6 py-2.5 border border-[rgba(255,255,255,0.1)] text-sm rounded-full hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all">
-              Plan Your Own Trip
+          {joinState !== 'member' && joinState !== 'owner' && tripId && (
+            <a
+              href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+                ? `/m/plan/vibes?remix=${tripId}`
+                : `/vibes?remix=${tripId}`}
+              className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#c8a44e]/40 bg-[#c8a44e]/[0.06] text-[#c8a44e] text-sm font-medium rounded-full hover:bg-[#c8a44e]/[0.12] hover:border-[#c8a44e]/60 transition-all active:scale-95"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              Remix this trip
             </a>
           )}
         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import NavBar from '@/app/NavBar'
 import DesktopAuthProvider from '@/components/desktop/AuthProvider'
 import { useTripStore } from '@/stores/trip-store'
@@ -45,9 +45,13 @@ export default function VibesPage() {
 
 function VibesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { setVibes, setOrigin, setDates, setBudget, setTravelers, setDestination, onboarding } = useTripStore()
   const isAnonymous = useTripStore((s) => s.isAnonymous)
   const userEmail = useTripStore((s) => s.userEmail)
+  const remixSource = useTripStore((s) => s.remixSource)
+  const remixFromTrip = useTripStore((s) => s.remixFromTrip)
+  const clearRemixSource = useTripStore((s) => s.clearRemixSource)
   const preselectedDest = onboarding.destination
   const [showAuthGate, setShowAuthGate] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
@@ -164,6 +168,36 @@ function VibesContent() {
     }
   }, [isAnonymous, userEmail]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── Remix handler — /vibes?remix=<trip_id> ─────────────────
+  // Fetches the source trip via /api/trips/[id] (service role), prefills the store,
+  // and syncs local controls. Idempotent: won't re-fetch if we've already remixed this id.
+  const remixParam = searchParams?.get('remix')
+  useEffect(() => {
+    if (!remixParam || remixSource?.id === remixParam) return
+    let cancelled = false
+    fetch(`/api/trips/${remixParam}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (cancelled || !data?.trip) return
+        const t = data.trip
+        remixFromTrip({
+          id: t.id,
+          destination: t.destination,
+          country: t.country,
+          vibes: t.vibes,
+          travelers: t.travelers,
+          budget: t.budget,
+        })
+        // Sync local state so the UI reflects the remix immediately
+        const vibes = (t.vibes || []).slice(0, 5)
+        setSelected(vibes)
+        if (t.travelers && t.travelers > 0) setTravelersLocal(t.travelers)
+        if (t.budget === 'budget' || t.budget === 'mid' || t.budget === 'luxury') setBudgetLocal(t.budget)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [remixParam, remixSource?.id, remixFromTrip])
+
   // ─── URL extraction ─────────────────────────────────────────
   async function handleUrlExtract() {
     if (!urlValue.trim()) return
@@ -273,6 +307,26 @@ function VibesContent() {
 
         {/* Step + headline */}
         <div className="mb-12 max-w-[640px]">
+          {/* Remix pill — appears when /vibes?remix=<id> prefilled the form from a public trip */}
+          {remixSource && (
+            <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-drift-gold/30 bg-drift-gold/[0.06] pl-3 pr-2 py-1.5 text-[10px] text-drift-gold">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              <span>Remixing <span className="font-medium">{remixSource.destination}</span>{remixSource.country ? `, ${remixSource.country}` : ''}</span>
+              <button
+                onClick={() => { clearRemixSource(); router.replace('/vibes') }}
+                className="ml-1 h-5 w-5 flex items-center justify-center rounded-full hover:bg-drift-gold/10 transition-colors"
+                aria-label="Clear remix source"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
+
           <div className="mb-4 flex items-center gap-3">
             <div className="h-px w-6 bg-drift-gold/60" />
             <span className="text-[9px] font-semibold tracking-[3px] uppercase text-drift-gold/80">
@@ -286,7 +340,9 @@ function VibesContent() {
             }
           </h1>
           <p className="text-[14px] text-drift-text2 leading-relaxed">
-            Pick up to five. Drift composes the trip around your energy — not boring filters.
+            {remixSource
+              ? `We've prefilled the vibes, travelers, and budget from ${remixSource.destination}. Tweak anything — or just pick dates and go.`
+              : 'Pick up to five. Drift composes the trip around your energy — not boring filters.'}
           </p>
 
           {/* Paste a link toggle */}

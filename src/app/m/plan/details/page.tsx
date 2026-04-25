@@ -230,13 +230,7 @@ export default function DetailsPage() {
 
   const sliderPct = ((amount - 500) / (10000 - 500)) * 100
 
-  if (token === null) {
-    return (
-      <div className="flex h-full items-center justify-center bg-drift-bg">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-drift-border2 border-t-drift-gold" />
-      </div>
-    )
-  }
+  // Session isn't needed for pre-commitment details (origin/dates/budget). Deferred to /m/plan/destinations.
 
   return (
     <div className="flex h-full flex-col animate-[fadeUp_0.45s_var(--ease-smooth)]">

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
 import GoldButton from '@/components/mobile/GoldButton'
 import { useTripStore } from '@/stores/trip-store'
@@ -36,7 +36,11 @@ const moods: Mood[] = [
 
 export default function VibesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { setVibes, token, onboarding } = useTripStore()
+  const remixSource = useTripStore((s) => s.remixSource)
+  const remixFromTrip = useTripStore((s) => s.remixFromTrip)
+  const clearRemixSource = useTripStore((s) => s.clearRemixSource)
 
   // Restore previously picked vibes if returning to this page
   const savedVibes = onboarding.pickedVibes
@@ -52,6 +56,39 @@ export default function VibesPage() {
   const dragRef = useRef({ on: false, x0: 0, y0: 0, dx: 0 })
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const swipeTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+  // ─── Remix handler — /m/plan/vibes?remix=<trip_id> ─────────────────
+  // Fetches source trip via service-role API, prefills the store, and syncs local picks.
+  const remixParam = searchParams?.get('remix')
+  useEffect(() => {
+    if (!remixParam || remixSource?.id === remixParam) return
+    let cancelled = false
+    fetch(`/api/trips/${remixParam}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (cancelled || !data?.trip) return
+        const t = data.trip
+        remixFromTrip({
+          id: t.id,
+          destination: t.destination,
+          country: t.country,
+          vibes: t.vibes,
+          travelers: t.travelers,
+          budget: t.budget,
+        })
+        // Sync local picks and jump past already-picked cards
+        const vibes = (t.vibes || []).slice(0, MAX_VIBES)
+        setPicked(vibes)
+        if (vibes.length >= MAX_VIBES) {
+          setCardsExhausted(true)
+        } else {
+          const nextUnpicked = moods.findIndex(m => !vibes.includes(m.id))
+          setCurrentIdx(nextUnpicked >= 0 ? nextUnpicked : 0)
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [remixParam, remixSource?.id, remixFromTrip])
 
   // Cleanup swipe timer on unmount
   useEffect(() => {
@@ -151,14 +188,8 @@ export default function VibesPage() {
     }
   }
 
-  if (token === null) {
-    return (
-      <div className="flex h-full items-center justify-center bg-drift-bg">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-drift-border2 border-t-drift-gold" />
-      </div>
-    )
-  }
-
+  // Anon session isn't needed to pick vibes — deferred to /m/plan/destinations (first write moment).
+  // Previously this blocked rendering until the layout auto-created an anon session; Phase 2 removed that.
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">
       {/* Header */}
@@ -171,10 +202,36 @@ export default function VibesPage() {
             {counterText}
           </span>
         </div>
+        {/* Remix pill — appears when /m/plan/vibes?remix=<id> prefilled the form from a public trip */}
+        {remixSource && (
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-drift-gold/30 bg-drift-gold/[0.06] pl-2.5 pr-1.5 py-1 text-[9px] text-drift-gold">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>Remixing <span className="font-medium">{remixSource.destination}</span></span>
+            <button
+              onClick={() => { clearRemixSource(); router.replace('/m/plan/vibes') }}
+              className="ml-0.5 h-4 w-4 flex items-center justify-center rounded-full active:bg-drift-gold/10"
+              aria-label="Clear remix source"
+            >
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+        )}
         <h1 className="mb-1 font-serif text-3xl font-light">
-          What&apos;s your travel <em className="font-normal italic text-drift-gold">vibe?</em>
+          {remixSource
+            ? <>Tweak your <em className="font-normal italic text-drift-gold">vibe?</em></>
+            : <>What&apos;s your travel <em className="font-normal italic text-drift-gold">vibe?</em></>
+          }
         </h1>
-        <p className="text-xs text-drift-text3">Swipe right to pick, left to skip — or tap the card</p>
+        <p className="text-xs text-drift-text3">
+          {remixSource
+            ? `We've prefilled from ${remixSource.destination}. Swipe to tweak or tap Continue to move on.`
+            : 'Swipe right to pick, left to skip — or tap the card'}
+        </p>
         {/* Progress dots */}
         <div className="mt-2 flex gap-2">
           {Array.from({ length: MAX_VIBES }).map((_, i) => (

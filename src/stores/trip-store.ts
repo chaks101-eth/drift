@@ -105,6 +105,20 @@ interface OnboardingState {
   destination: Destination | null
 }
 
+/**
+ * Minimal shape of a source trip for the Remix flow. Kept narrow on purpose
+ * so callers (ShareTripView, /vibes?remix=, /m/plan/vibes?remix=) can pass
+ * a subset of Trip without importing the full server type.
+ */
+export interface RemixSource {
+  id: string
+  destination: string
+  country: string | null
+  vibes: string[] | null
+  travelers: number | null
+  budget: string | null // 'budget' | 'mid' | 'luxury'
+}
+
 // ─── Store ──────────────────────────────────────────────────
 
 interface TripStore {
@@ -131,6 +145,11 @@ interface TripStore {
   setOccasion: (occasion: string) => void
   setDestination: (dest: Destination | null) => void
   resetOnboarding: () => void
+  remixFromTrip: (source: RemixSource) => void
+
+  // Remix — the trip we're currently forking from, if any. Surfaced in UI as a pill.
+  remixSource: RemixSource | null
+  clearRemixSource: () => void
 
   // Active trip
   currentTrip: Trip | null
@@ -216,7 +235,37 @@ export const useTripStore = create<TripStore>()(
     set((s) => ({ onboarding: { ...s.onboarding, occasion } })),
   setDestination: (dest) =>
     set((s) => ({ onboarding: { ...s.onboarding, destination: dest } })),
-  resetOnboarding: () => set({ onboarding: { ...defaultOnboarding } }),
+  resetOnboarding: () => set({ onboarding: { ...defaultOnboarding }, remixSource: null }),
+
+  // Remix — fork a public trip's vibes/destination/travelers/budget into the onboarding state.
+  // Dates are intentionally NOT copied — the remixer picks their own dates.
+  // Origin is intentionally NOT copied — the remixer departs from their own city.
+  remixSource: null,
+  remixFromTrip: (source) => {
+    const level = (source.budget === 'budget' || source.budget === 'mid' || source.budget === 'luxury')
+      ? source.budget
+      : 'mid'
+    // Budget amount is a reasonable default per level — the user can adjust.
+    const amount = level === 'budget' ? 1500 : level === 'luxury' ? 7000 : 3000
+    set((s) => ({
+      remixSource: source,
+      onboarding: {
+        ...s.onboarding,
+        pickedVibes: (source.vibes || []).slice(0, 5),
+        travelers: source.travelers && source.travelers > 0 ? source.travelers : s.onboarding.travelers,
+        budgetLevel: level,
+        budgetAmount: amount,
+        destination: {
+          city: source.destination,
+          country: source.country || '',
+          tagline: '',
+          match: 100,
+          vibes: source.vibes || [],
+        },
+      },
+    }))
+  },
+  clearRemixSource: () => set({ remixSource: null }),
 
   // Active trip
   currentTrip: null,
@@ -273,6 +322,7 @@ export const useTripStore = create<TripStore>()(
       partialize: (state) => ({
         onboarding: state.onboarding,
         currency: state.currency,
+        remixSource: state.remixSource,
         // Don't persist: token, userId, currentTrip, currentItems, chatHistory
         // Those come from Supabase auth listener and DB
       }),

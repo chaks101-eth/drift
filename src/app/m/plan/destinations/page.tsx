@@ -304,14 +304,8 @@ export default function DestinationsPage() {
   const domesticDests = destinations.filter(d => d.isDomestic)
   const internationalDests = destinations.filter(d => !d.isDomestic)
 
-  if (token === null) {
-    return (
-      <div className="flex h-full items-center justify-center bg-drift-bg">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-drift-border2 border-t-drift-gold" />
-      </div>
-    )
-  }
-
+  // ensureAnonSession() on mount kicks off session creation. Page still renders during that
+  // round-trip; the destinations fetch has its own `!token` guard and retries when token arrives.
   return (
     <div className="flex h-full flex-col overflow-hidden animate-[fadeUp_0.45s_var(--ease-smooth)]">
       {/* Header */}
