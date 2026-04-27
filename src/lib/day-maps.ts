@@ -47,6 +47,49 @@ export function buildDayMapUrl(
 }
 
 /**
+ * Generate a single overview map for the entire trip — all stops with small
+ * dot markers (unlabeled, since trips can have 20+ stops and the Maps Static
+ * label set caps at 1-9/A-Z), connected in order with a gold polyline path.
+ *
+ * Larger dimensions than the per-day map. Used at the top of /share/[slug] to
+ * give viewers an instant sense of the journey's shape.
+ */
+export function buildOverviewMapUrl(
+  items: Array<{ lat: number; lng: number }>,
+  width = 1200,
+  height = 360,
+): string | null {
+  if (!API_KEY || items.length === 0) return null
+
+  // Small unlabeled gold dots at each stop. `size:tiny` is small but still visible at this width.
+  const markers = `markers=color:0xc8a44e|size:small|${items.map(i => `${i.lat},${i.lng}`).join('|')}`
+
+  // Polyline connecting stops in order (the journey shape).
+  const path = items.length >= 2
+    ? `path=color:0xc8a44eaa|weight:3|geodesic:true|${items.map(i => `${i.lat},${i.lng}`).join('|')}`
+    : ''
+
+  const styles = [
+    'style=feature:all|element:geometry|color:0x1a1a2e',
+    'style=feature:all|element:labels.text.fill|color:0xe0dfd8',
+    'style=feature:all|element:labels.text.stroke|color:0x1a1a2e|weight:3',
+    'style=feature:water|element:geometry|color:0x0e0e14',
+    'style=feature:road|element:geometry|color:0x2a2a3e',
+    'style=feature:road|element:geometry.stroke|color:0x1a1a2e',
+    'style=feature:poi|element:geometry|color:0x22223a',
+    'style=feature:poi.park|element:geometry|color:0x1a2e1a',
+    'style=feature:transit|element:geometry|color:0x2a2a3e',
+    'style=feature:administrative|element:labels|visibility:simplified',
+  ].join('&')
+
+  const bounds = items.length === 1
+    ? `center=${items[0].lat},${items[0].lng}&zoom=12`
+    : ''
+
+  return `https://maps.googleapis.com/maps/api/staticmap?size=${width}x${height}&scale=2&maptype=roadmap&${bounds}&${markers}&${path}&${styles}&key=${API_KEY}`
+}
+
+/**
  * Generate map URLs for each day of an itinerary.
  * Groups items by day (using "day" separator items) and creates a map per day.
  * Returns a map of day number → map URL.

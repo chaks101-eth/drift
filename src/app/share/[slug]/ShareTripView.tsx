@@ -2,6 +2,7 @@
 import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
 import { supabase, ensureAnonSession } from '@/lib/supabase'
+import { getDestinationImage } from '@/lib/images'
 
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
@@ -81,7 +82,23 @@ const FALLBACK_IMAGES: Record<string, string> = {
   activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400',
 }
 
-export default function ShareTripView({ trip, items, tripId }: { trip: Trip; items: Item[]; tripId?: string }) {
+type ShareTripViewProps = {
+  trip: Trip
+  items: Item[]
+  tripId?: string
+  heartCount?: number
+  creatorName?: string | null
+  creatorAvatar?: string | null
+  overviewMapUrl?: string | null
+}
+
+export default function ShareTripView({
+  trip, items, tripId,
+  heartCount = 0,
+  creatorName = null,
+  creatorAvatar = null,
+  overviewMapUrl = null,
+}: ShareTripViewProps) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const { reactions, toggle: toggleReaction } = useShareReactions(tripId)
@@ -202,260 +219,353 @@ export default function ShareTripView({ trip, items, tripId }: { trip: Trip; ite
 
   return (
     <div className="min-h-screen bg-[#08080c] text-[#f0efe8]">
-      {/* Background glow */}
-      <div className="fixed inset-0 pointer-events-none z-0"
-        style={{ background: 'radial-gradient(ellipse at 50% 20%, rgba(200,164,78,0.06) 0%, transparent 50%)' }}
-      />
+      {/* ═══ Cinematic hero — full-bleed destination image, content overlaid at bottom ═══ */}
+      <div className="relative h-[78vh] min-h-[560px] max-h-[820px] w-full overflow-hidden">
+        {/* Backdrop image */}
+        <Image
+          src={getDestinationImage(trip.destination)}
+          alt={trip.destination}
+          fill
+          priority
+          className="object-cover scale-[1.02]"
+          sizes="100vw"
+          unoptimized
+        />
+        {/* Multi-stop gradient: dark at top for nav legibility, then transparent middle, then dark bottom for content */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#08080c]/85 via-[#08080c]/15 to-[#08080c]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#08080c] via-transparent to-transparent" />
+        {/* Subtle gold radial */}
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(200,164,78,0.08), transparent 65%)' }} />
 
-      {/* Hero */}
-      <div className="relative z-[1] px-8 pt-16 pb-10 text-center border-b border-[rgba(255,255,255,0.06)] max-md:px-5 max-md:pt-12 max-md:pb-8">
-        <div className="flex items-center justify-center gap-2 mb-4 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.1s]">
-          <div className="h-7 w-7 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#8B7845] flex items-center justify-center text-[9px] font-extrabold text-[#08080c]">D</div>
-          <span className="text-[11px] tracking-[3px] uppercase text-[#7a7a85]">Drift Trip</span>
+        {/* Top-left brand mark (small, doesn't compete with the destination) */}
+        <div className="absolute top-6 left-8 max-md:top-4 max-md:left-5 flex items-center gap-2 z-10">
+          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#8B7845] flex items-center justify-center font-serif italic text-[12px] text-[#08080c]">D</div>
+          <span className="text-[10px] tracking-[2.5px] uppercase text-white/60">Drift</span>
         </div>
 
-        <h1 className="font-serif text-[clamp(32px,6vw,52px)] font-light mb-1 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.2s]">
-          {trip.destination}{trip.country && trip.country.toLowerCase() !== trip.destination?.toLowerCase() ? <span className="text-[#c8a44e] italic font-serif">, {trip.country}</span> : ''}
-        </h1>
-
-        <p className="text-[#7a7a85] text-[13px] mb-5 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.3s]">
-          {fmtDate(trip.start_date)} — {fmtDate(trip.end_date)} · {trip.travelers} traveler{trip.travelers > 1 ? 's' : ''} · {trip.budget}
-        </p>
-
-        <div className="flex justify-center gap-2 mb-5 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.35s]">
-          {trip.vibes?.map(v => (
-            <span key={v} className="px-3 py-1 bg-[rgba(200,164,78,0.08)] border border-[rgba(200,164,78,0.15)] rounded-full text-[10px] font-medium text-[#c8a44e] uppercase tracking-wider">{v}</span>
-          ))}
+        {/* Top-right utility — heart count + copy link, icon-only */}
+        <div className="absolute top-6 right-8 max-md:top-4 max-md:right-5 flex items-center gap-2 z-10">
+          {heartCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-3 py-1.5">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#c8a44e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              <span className="text-[10px] tabular-nums text-white/80">{heartCount}</span>
+            </div>
+          )}
+          <button
+            onClick={copyLink}
+            aria-label={copiedLink ? 'Link copied' : 'Copy link'}
+            className="h-9 w-9 rounded-full border border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-[#c8a44e] hover:border-[#c8a44e]/40 transition-all active:scale-95"
+          >
+            {copiedLink ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            )}
+          </button>
         </div>
 
-        {/* Stats */}
-        <div className="flex justify-center gap-8 mb-6 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.4s] max-md:gap-5">
-          <div className="text-center">
-            <div className="text-2xl font-light text-[#f0efe8]">{days.length}</div>
-            <div className="text-[8px] uppercase tracking-wider text-[#4a4a55] font-semibold">Days</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-light text-[#c8a44e]">{items.filter(i => i.category === 'activity').length + items.filter(i => i.category === 'food').length}</div>
-            <div className="text-[8px] uppercase tracking-wider text-[#4a4a55] font-semibold">Stops</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-light text-[#e8cc6e]">${totalCost.toLocaleString()}</div>
-            <div className="text-[8px] uppercase tracking-wider text-[#4a4a55] font-semibold">Total</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-light text-[#7a7a85]">${perPerson.toLocaleString()}</div>
-            <div className="text-[8px] uppercase tracking-wider text-[#4a4a55] font-semibold">/Person</div>
-          </div>
-        </div>
-
-        {/* Trip Brief */}
-        {tripBrief && (
-          <div className="max-w-[500px] mx-auto mb-5 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.5s]">
-            <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-2xl px-5 py-4 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-5 w-5 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#8B7845] flex items-center justify-center text-[7px] font-bold text-[#08080c]">D</div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#4a4a55]">Drift&apos;s strategy</span>
-              </div>
-              <p className="text-[12px] leading-relaxed text-[#7a7a85]">{tripBrief}</p>
-              {weatherSummary && (
-                <div className="mt-3 flex items-start gap-2 bg-[rgba(255,255,255,0.03)] rounded-lg px-3 py-2">
-                  <span className="text-sm mt-px">{weatherSummary.toLowerCase().includes('rain') ? '🌧' : '☀️'}</span>
-                  <p className="text-[10px] leading-snug text-[#7a7a85]">{weatherSummary}</p>
+        {/* Bottom: title + meta + CTAs */}
+        <div className="absolute inset-x-0 bottom-0 z-10 px-12 pb-14 max-md:px-5 max-md:pb-8 max-w-[1100px] mx-auto">
+          {/* Eyebrow: creator on its own row (so it doesn't collide with vibes on mobile) */}
+          {(creatorName || (trip.vibes && trip.vibes.length > 0)) && (
+            <div className="flex flex-col gap-2 mb-3 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.15s]">
+              {creatorName && (
+                <div className="flex items-center gap-2">
+                  {creatorAvatar ? (
+                    <Image src={creatorAvatar} alt={creatorName} width={22} height={22} className="rounded-full" unoptimized />
+                  ) : (
+                    <div className="h-[22px] w-[22px] rounded-full bg-[#c8a44e]/20 border border-[#c8a44e]/30 flex items-center justify-center text-[9px] font-bold text-[#c8a44e] uppercase">
+                      {creatorName.charAt(0)}
+                    </div>
+                  )}
+                  <span className="text-[11px] text-white/70">composed by <span className="text-[#c8a44e]">{creatorName}</span></span>
+                </div>
+              )}
+              {trip.vibes && trip.vibes.length > 0 && (
+                <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+                  {trip.vibes.slice(0, 4).map((v, i, arr) => (
+                    <span key={v} className="flex items-center gap-2">
+                      <span className="text-[9px] uppercase tracking-[1.5px] text-white/55">{v}</span>
+                      {i < arr.length - 1 && <span className="text-white/15 text-[8px]">·</span>}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
+          )}
+
+          {/* Title */}
+          <h1 className="font-serif text-[clamp(48px,8vw,96px)] font-light leading-[0.95] tracking-[-0.02em] mb-4 opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.25s] max-w-[800px]">
+            {trip.destination}
+            {trip.country && trip.country.toLowerCase() !== trip.destination?.toLowerCase() && (
+              <span className="block italic font-serif text-[#c8a44e] text-[clamp(28px,5vw,56px)] mt-1">{trip.country}</span>
+            )}
+          </h1>
+
+          {/* Inline meta row — replaces the 4-stat box clutter */}
+          <div className="flex items-center gap-x-4 gap-y-1 mb-7 flex-wrap text-white/65 text-[12px] opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.35s]">
+            <span className="font-mono tabular-nums">{days.length} {days.length === 1 ? 'day' : 'days'}</span>
+            <span className="text-white/15">·</span>
+            <span className="font-mono tabular-nums">{items.filter(i => i.category === 'activity' || i.category === 'food').length} stops</span>
+            <span className="text-white/15">·</span>
+            <span className="font-mono tabular-nums">${totalCost.toLocaleString()} total</span>
+            <span className="text-white/15">·</span>
+            <span className="font-mono tabular-nums text-white/45">${perPerson.toLocaleString()} pp</span>
+            {trip.start_date && (<>
+              <span className="text-white/15">·</span>
+              <span>{fmtDate(trip.start_date)} — {fmtDate(trip.end_date)}</span>
+            </>)}
           </div>
-        )}
 
-        <div className="flex justify-center gap-3 flex-wrap opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.6s]">
-          {/* Join CTA — shown to authed users who aren't already in the group */}
-          {joinState === 'can-join' && (
-            <button
-              onClick={handleJoin}
-              disabled={joining}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(200,164,78,0.3)] transition-all active:scale-95 disabled:opacity-60"
-            >
-              {joining ? (
-                <>
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
-                  Joining…
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                    <circle cx="8.5" cy="7" r="4" />
-                    <line x1="20" y1="8" x2="20" y2="14" />
-                    <line x1="23" y1="11" x2="17" y2="11" />
-                  </svg>
-                  Join this trip
-                </>
-              )}
-            </button>
-          )}
+          {/* CTAs — Remix is the hero, owner/member contextual variants stay subordinate */}
+          <div className="flex items-center gap-3 flex-wrap opacity-0 animate-[fadeUp_0.8s_ease_forwards_0.45s]">
+            {/* Primary: Remix — shown unless the viewer is the owner or already a member */}
+            {joinState !== 'member' && joinState !== 'owner' && tripId && (
+              <a
+                href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+                  ? `/m/plan/vibes?remix=${tripId}`
+                  : `/vibes?remix=${tripId}`}
+                className="group inline-flex items-center gap-2.5 px-7 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#08080c] text-[12px] font-bold tracking-[2px] uppercase rounded-full hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(200,164,78,0.35)] transition-all active:scale-95"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
+                  <path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
+                  <path d="M3 21v-5h5" />
+                </svg>
+                Remix this trip
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </a>
+            )}
 
-          {/* Guest CTA — sign in, then land back here to join */}
-          {joinState === 'guest' && (
-            <button
-              onClick={handleSignInToJoin}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(200,164,78,0.3)] transition-all active:scale-95"
-            >
-              Sign in to join
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-            </button>
-          )}
+            {/* Owner: open their board */}
+            {joinState === 'owner' && (
+              <a
+                href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? `/m/board/${tripId}` : `/trip/${tripId}`}
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#08080c] text-[12px] font-bold tracking-[2px] uppercase rounded-full hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                Manage trip
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </a>
+            )}
 
-          {/* Already a member — deep link into the trip */}
-          {joinState === 'member' && (
-            <a
-              href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? `/m/board/${tripId}` : `/trip/${tripId}`}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 transition-all active:scale-95"
-            >
-              Open trip
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-            </a>
-          )}
+            {/* Member: open their copy of the board */}
+            {joinState === 'member' && (
+              <a
+                href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? `/m/board/${tripId}` : `/trip/${tripId}`}
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#08080c] text-[12px] font-bold tracking-[2px] uppercase rounded-full hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                Open trip
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </a>
+            )}
 
-          {/* Owner — can manage from their own board */}
-          {joinState === 'owner' && (
-            <a
-              href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? `/m/board/${tripId}` : `/trip/${tripId}`}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 transition-all active:scale-95"
-            >
-              Manage trip
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-            </a>
-          )}
-
-          <button onClick={copyLink}
-            className="px-6 py-2.5 border border-[rgba(255,255,255,0.1)] text-sm rounded-full hover:border-[#c8a44e] hover:text-[#c8a44e] transition-all active:scale-95">
-            {copiedLink ? 'Link Copied!' : 'Copy Link'}
-          </button>
-
-          {joinState !== 'member' && joinState !== 'owner' && tripId && (
-            <a
-              href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
-                ? `/m/plan/vibes?remix=${tripId}`
-                : `/vibes?remix=${tripId}`}
-              className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#c8a44e]/40 bg-[#c8a44e]/[0.06] text-[#c8a44e] text-sm font-medium rounded-full hover:bg-[#c8a44e]/[0.12] hover:border-[#c8a44e]/60 transition-all active:scale-95"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
-                <path d="M3 21v-5h5" />
-              </svg>
-              Remix this trip
-            </a>
-          )}
+            {/* Secondary: Join (only meaningful for an authed non-owner who hasn't joined yet — kept subordinate) */}
+            {joinState === 'can-join' && (
+              <button
+                onClick={handleJoin}
+                disabled={joining}
+                className="inline-flex items-center gap-2 px-5 py-3 border border-white/15 bg-white/[0.04] backdrop-blur-md text-white/80 text-[11px] font-medium tracking-[1.5px] uppercase rounded-full hover:border-white/30 hover:bg-white/[0.08] transition-all active:scale-95 disabled:opacity-60"
+              >
+                {joining ? 'Joining…' : 'Join group'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Itinerary */}
-      <div className="relative z-[1] max-w-[680px] mx-auto px-8 py-10 max-md:px-5 max-md:py-6">
+      {/* ═══ Drift's strategy — centered pull-quote section, breathes between hero and itinerary ═══ */}
+      {tripBrief && (
+        <div className="relative px-8 max-md:px-5 py-14 max-md:py-10 max-w-[760px] mx-auto opacity-0 animate-[fadeUp_0.9s_ease_forwards_0.55s]">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-px w-6 bg-[#c8a44e]/40" />
+            <span className="font-mono text-[8px] tracking-[2.5px] uppercase text-[#c8a44e]/70">Drift&apos;s strategy</span>
+          </div>
+          <p className="font-serif text-[clamp(18px,2vw,24px)] font-light leading-[1.55] tracking-[-0.005em] text-white/85">{tripBrief}</p>
+          {weatherSummary && (
+            <div className="mt-6 flex items-center gap-2.5 text-[11px] text-white/45">
+              <span className="text-base">{weatherSummary.toLowerCase().includes('rain') ? '🌧' : '☀️'}</span>
+              <span className="leading-snug">{weatherSummary}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ Overview map — single image showing the journey shape (Static Maps + polyline) ═══ */}
+      {overviewMapUrl && (
+        <div className="relative z-[1] max-w-[1100px] mx-auto px-10 max-md:px-5 pb-12 max-md:pb-8 opacity-0 animate-[fadeUp_0.9s_ease_forwards_0.65s]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-px w-6 bg-[#c8a44e]/40" />
+              <span className="font-mono text-[8px] tracking-[2.5px] uppercase text-[#c8a44e]/70">The journey</span>
+            </div>
+            <span className="font-mono text-[9px] tabular-nums text-white/35">
+              {items.filter(i => i.category !== 'day' && i.category !== 'flight' && i.category !== 'transfer').length} stops · {days.length} {days.length === 1 ? 'day' : 'days'}
+            </span>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={overviewMapUrl} alt={`Map of ${trip.destination} trip`} className="w-full h-[280px] max-md:h-[200px] object-cover" loading="lazy" />
+            {/* Subtle gradient at the bottom for visual cohesion with the dark theme */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#08080c] to-transparent pointer-events-none" />
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Itinerary — magazine-style day spreads ═══ */}
+      <div className="relative z-[1] max-w-[860px] mx-auto px-10 max-md:px-5 pb-20">
         {days.map((day, di) => (
-          <div key={di} className="mb-10">
-            {/* Day header */}
-            <div className="flex items-center gap-3 mb-4">
-              <span className="w-9 h-9 rounded-full bg-[rgba(200,164,78,0.12)] border border-[rgba(200,164,78,0.15)] flex items-center justify-center text-sm font-semibold text-[#c8a44e]">{di + 1}</span>
-              <div className="flex-1">
-                <h2 className="font-serif text-lg text-[#f0efe8]">{day.label}</h2>
+          <section key={di} id={`day-${di + 1}`} className="mb-20 max-md:mb-14">
+            {/* Day header — bigger number, serif label, weather pill */}
+            <div className="flex items-end gap-5 mb-7 max-md:gap-4 max-md:mb-5">
+              <div className="shrink-0">
+                <div className="font-mono text-[8px] tracking-[2.5px] uppercase text-[#c8a44e]/60 mb-1">Day {di + 1}</div>
+                <div className="h-px w-12 bg-[#c8a44e]/30" />
               </div>
+              <h2 className="flex-1 font-serif text-[clamp(22px,2.6vw,32px)] font-light leading-[1.1] tracking-[-0.01em] text-white/90">{day.label}</h2>
               {day.weather && (
-                <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${(day.weather.isRainy) ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}>
-                  <span className="text-xs">{(day.weather.isRainy) ? '🌧' : (day.weather.isSunny) ? '☀️' : '⛅'}</span>
-                  <span className={`text-[10px] font-semibold ${(day.weather.isRainy) ? 'text-blue-400' : 'text-amber-400'}`}>{day.weather.tempMax as number}°</span>
+                <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 shrink-0 ${(day.weather.isRainy) ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-amber-500/10 border border-amber-500/20'}`}>
+                  <span className="text-sm">{(day.weather.isRainy) ? '🌧' : (day.weather.isSunny) ? '☀️' : '⛅'}</span>
+                  <span className={`text-[11px] tabular-nums font-medium ${(day.weather.isRainy) ? 'text-blue-300' : 'text-amber-300'}`}>{day.weather.tempMax as number}°</span>
                 </div>
               )}
             </div>
 
-            {/* Day map */}
-            {day.mapUrl && (
-              <div className="mb-4 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.06)]">
-                <img src={day.mapUrl} alt={`Map for Day ${di + 1}`} className="h-[140px] w-full object-cover" loading="lazy" />
-              </div>
-            )}
-
-            {/* Day insight */}
+            {/* Day insight — pull-quote treatment, no box */}
             {day.insight && (
-              <div className="mb-4 flex gap-2.5 rounded-xl bg-[rgba(200,164,78,0.04)] border border-[rgba(200,164,78,0.08)] px-4 py-3">
-                <div className="h-5 w-5 shrink-0 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#8B7845] flex items-center justify-center text-[7px] font-bold text-[#08080c] mt-px">D</div>
-                <p className="text-[11px] leading-relaxed text-[#7a7a85]">{day.insight}</p>
+              <blockquote className="mb-7 max-md:mb-5 pl-5 border-l-2 border-[#c8a44e]/40 max-w-[640px]">
+                <p className="font-serif italic text-[clamp(15px,1.5vw,18px)] leading-[1.6] text-white/70">
+                  &ldquo;{day.insight}&rdquo;
+                </p>
+              </blockquote>
+            )}
+
+            {/* Day map — wider + taller for context */}
+            {day.mapUrl && (
+              <div className="mb-7 max-md:mb-5 overflow-hidden rounded-2xl border border-white/[0.06] shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+                <img src={day.mapUrl} alt={`Map for Day ${di + 1}`} className="h-[200px] w-full object-cover max-md:h-[160px]" loading="lazy" />
               </div>
             )}
 
-            {/* Items */}
-            <div className="space-y-3 ml-4 border-l border-[rgba(255,255,255,0.06)] pl-5 max-md:ml-2 max-md:pl-4">
-              {day.items.filter(i => i.category !== 'transfer').map(item => {
+            {/* Items — alternating image side, larger images, magazine spreads */}
+            <div className="space-y-5 max-md:space-y-4">
+              {day.items.filter(i => i.category !== 'transfer').map((item, idx) => {
                 const meta = item.metadata as Record<string, unknown> | null
                 const reason = meta?.reason as string | undefined
                 const rating = meta?.rating as number | undefined
                 const catColor = categoryColors[item.category] || '#7a7a85'
                 const imgSrc = failedImages.has(item.id) ? FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.activity : item.image_url
+                const imageRight = idx % 2 === 1
 
                 return (
-                  <div key={item.id} className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden flex hover:border-[rgba(255,255,255,0.1)] transition-all">
+                  <article
+                    key={item.id}
+                    className="group relative grid grid-cols-[200px_1fr] gap-5 rounded-2xl bg-white/[0.015] border border-white/[0.05] overflow-hidden hover:border-white/[0.12] hover:bg-white/[0.025] transition-all max-md:grid-cols-[110px_1fr] max-md:gap-3"
+                    style={imageRight ? { gridTemplateColumns: '1fr 200px' } : undefined}
+                  >
+                    {/* Image — bigger, square aspect */}
                     {imgSrc && (
-                      <div className="relative w-[100px] min-h-[80px] flex-shrink-0 max-md:w-[72px]">
+                      <div
+                        className="relative aspect-square max-md:aspect-[4/5] overflow-hidden"
+                        style={imageRight ? { gridColumn: 2, gridRow: 1 } : undefined}
+                      >
                         <Image
                           src={imgSrc}
                           alt={item.name}
                           fill
-                          className="object-cover"
-                          sizes="100px"
+                          className="object-cover transition-transform duration-[1500ms] group-hover:scale-105"
+                          sizes="200px"
                           unoptimized={!imgSrc.includes('unsplash.com')}
                           onError={() => onImageError(item.id)}
                         />
+                        {rating && (
+                          <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 px-2 py-0.5">
+                            <span className="text-[9px] text-amber-400">★</span>
+                            <span className="text-[9px] tabular-nums text-white/90">{rating}</span>
+                          </div>
+                        )}
                       </div>
                     )}
-                    <div className="p-3.5 flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="px-1.5 py-0.5 rounded text-[7px] font-semibold uppercase tracking-wider flex-shrink-0" style={{ background: `${catColor}15`, color: catColor }}>
+
+                    {/* Content */}
+                    <div
+                      className="flex flex-col justify-between p-5 max-md:p-3.5"
+                      style={imageRight ? { gridColumn: 1, gridRow: 1 } : undefined}
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-mono text-[8px] tracking-[2px] uppercase font-semibold" style={{ color: catColor }}>
                             {item.category}
                           </span>
-                          <span className="font-serif text-[14px] truncate">{item.name}</span>
+                          {item.time && (
+                            <>
+                              <span className="text-white/15">·</span>
+                              <span className="font-mono text-[9px] text-white/45 tabular-nums">{item.time}</span>
+                            </>
+                          )}
                         </div>
-                        {item.price && <span className="text-[13px] font-light flex-shrink-0" style={{ color: catColor }}>{item.price}</span>}
+                        <h3 className="font-serif text-[clamp(17px,1.7vw,22px)] font-light leading-[1.2] text-white/95 mb-2">{item.name}</h3>
+                        {item.detail && <p className="text-[12px] leading-[1.55] text-white/55 line-clamp-2 mb-2.5">{item.detail}</p>}
+                        {reason && (
+                          <p className="text-[11px] italic text-[#c8a44e]/85 leading-[1.5] line-clamp-2 mb-2.5">— {reason}</p>
+                        )}
                       </div>
-                      {item.detail && <div className="text-[11px] text-[#7a7a85] mb-1.5 line-clamp-1">{item.detail}</div>}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {item.time && <span className="text-[9px] text-[#4a4a55] bg-[rgba(255,255,255,0.03)] px-1.5 py-0.5 rounded">{item.time}</span>}
-                        {rating && <span className="text-[9px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">{rating}★</span>}
-                        {reason && <span className="text-[9px] text-[#c8a44e] bg-[rgba(200,164,78,0.06)] px-1.5 py-0.5 rounded line-clamp-1">{reason}</span>}
-                        {/* Heart reaction */}
+                      <div className="flex items-center justify-between gap-2 mt-2">
+                        {item.price ? (
+                          <span className="text-[14px] font-light" style={{ color: catColor }}>{item.price}</span>
+                        ) : <span />}
                         <button
                           onClick={() => toggleReaction(item.id)}
-                          className={`flex items-center gap-1 text-[9px] ml-auto transition-colors ${
-                            reactions[item.id]?.reacted ? 'text-[#c8a44e]' : 'text-[#4a4a55] hover:text-[#c8a44e]'
+                          className={`flex items-center gap-1 text-[11px] transition-colors ${
+                            reactions[item.id]?.reacted ? 'text-[#c8a44e]' : 'text-white/35 hover:text-[#c8a44e]'
                           }`}
+                          aria-label={reactions[item.id]?.reacted ? 'Unlike' : 'Like'}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill={reactions[item.id]?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill={reactions[item.id]?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                           </svg>
-                          {reactions[item.id]?.count > 0 && <span>{reactions[item.id].count}</span>}
+                          {reactions[item.id]?.count > 0 && <span className="tabular-nums">{reactions[item.id].count}</span>}
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </article>
                 )
               })}
             </div>
-          </div>
+          </section>
         ))}
       </div>
 
-      {/* Footer CTA */}
-      <div className="relative z-[1] text-center py-16 border-t border-[rgba(255,255,255,0.06)]">
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#c8a44e] to-[#8B7845] flex items-center justify-center text-sm font-extrabold text-[#08080c] mx-auto mb-4">D</div>
-        <p className="font-serif text-2xl text-[#f0efe8] mb-2">Want a trip like this?</p>
-        <p className="text-[#7a7a85] text-sm mb-6">Tell Drift your vibes and we&apos;ll build it in seconds.</p>
-        <a href="/m"
-          className="inline-block px-8 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#0a0a0f] text-sm font-semibold rounded-full hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[rgba(200,164,78,0.3)] transition-all active:scale-95">
-          Plan My Trip
-        </a>
-        <p className="mt-4 text-[10px] text-[#4a4a55]">Real photos · Real prices · Weather-aware · AI-powered</p>
-      </div>
+      {/* ═══ Footer — closing remix CTA, only shown to non-owners ═══ */}
+      {joinState !== 'owner' && joinState !== 'member' && tripId && (
+        <div className="relative z-[1] text-center py-20 max-md:py-14 border-t border-white/[0.04] px-6">
+          <p className="font-mono text-[9px] tracking-[3px] uppercase text-[#c8a44e]/60 mb-3">Inspired?</p>
+          <p className="font-serif text-[clamp(24px,3vw,38px)] font-light italic leading-tight text-white/85 mb-2">
+            Make this trip <span className="text-[#c8a44e]">yours</span>.
+          </p>
+          <p className="text-[12px] text-white/45 mb-8 max-w-[440px] mx-auto leading-relaxed">
+            Remix the vibes, swap the destination, change the dates. Drift composes your version in 30 seconds.
+          </p>
+          <a
+            href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+              ? `/m/plan/vibes?remix=${tripId}`
+              : `/vibes?remix=${tripId}`}
+            className="group inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#08080c] text-[11px] font-bold tracking-[2px] uppercase rounded-full hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(200,164,78,0.35)] transition-all active:scale-95"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            Remix this trip
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+          </a>
+        </div>
+      )}
     </div>
   )
 }
