@@ -176,7 +176,7 @@ export default function ShareTripView({
   }
 
   // Parse days
-  const days: { label: string; items: Item[]; insight?: string; mapUrl?: string; weather?: Record<string, unknown> }[] = []
+  const days: { label: string; items: Item[]; insight?: string; weather?: Record<string, unknown> }[] = []
   let currentDay: typeof days[0] | null = null
   let tripBrief = ''
   let weatherSummary = ''
@@ -190,7 +190,6 @@ export default function ShareTripView({
         label: item.name,
         items: [],
         insight: meta.day_insight as string | undefined,
-        mapUrl: meta.dayMapUrl as string | undefined,
         weather: meta.weather as Record<string, unknown> | undefined,
       }
       days.push(currentDay)
@@ -415,119 +414,118 @@ export default function ShareTripView({
         </div>
       )}
 
-      {/* ═══ Itinerary — magazine-style day spreads ═══ */}
-      <div className="relative z-[1] max-w-[860px] mx-auto px-10 max-md:px-5 pb-20">
+      {/* ═══ Itinerary — board-style cards (matches the actual app's card UI) ═══ */}
+      <div className="relative z-[1] max-w-[1100px] mx-auto px-10 max-md:px-5 pb-20">
         {days.map((day, di) => (
-          <section key={di} id={`day-${di + 1}`} className="mb-20 max-md:mb-14">
-            {/* Day header — bigger number, serif label, weather pill */}
-            <div className="flex items-end gap-5 mb-7 max-md:gap-4 max-md:mb-5">
-              <div className="shrink-0">
-                <div className="font-mono text-[8px] tracking-[2.5px] uppercase text-[#c8a44e]/60 mb-1">Day {di + 1}</div>
-                <div className="h-px w-12 bg-[#c8a44e]/30" />
-              </div>
-              <h2 className="flex-1 font-serif text-[clamp(22px,2.6vw,32px)] font-light leading-[1.1] tracking-[-0.01em] text-white/90">{day.label}</h2>
+          <section key={di} id={`day-${di + 1}`} className="mb-12 max-md:mb-8">
+            {/* Day header — single tight row matching the board's lane label */}
+            <div className="flex items-center gap-3 mb-5 max-md:mb-4">
+              <span className="font-mono text-[9px] tracking-[2.5px] uppercase text-[#c8a44e]/70">Day {di + 1}</span>
+              <div className="h-px flex-1 bg-white/[0.06]" />
+              <span className="text-[12px] text-white/65 truncate max-w-[60%]">{day.label}</span>
               {day.weather && (
-                <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 shrink-0 ${(day.weather.isRainy) ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-amber-500/10 border border-amber-500/20'}`}>
-                  <span className="text-sm">{(day.weather.isRainy) ? '🌧' : (day.weather.isSunny) ? '☀️' : '⛅'}</span>
-                  <span className={`text-[11px] tabular-nums font-medium ${(day.weather.isRainy) ? 'text-blue-300' : 'text-amber-300'}`}>{day.weather.tempMax as number}°</span>
-                </div>
+                <span className={`flex items-center gap-1 rounded-md px-2 py-0.5 shrink-0 ${(day.weather.isRainy) ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}>
+                  <span className="text-[10px]">{(day.weather.isRainy) ? '🌧' : (day.weather.isSunny) ? '☀️' : '⛅'}</span>
+                  <span className={`text-[10px] tabular-nums font-medium ${(day.weather.isRainy) ? 'text-blue-300' : 'text-amber-300'}`}>{day.weather.tempMax as number}°</span>
+                </span>
               )}
             </div>
 
-            {/* Day insight — pull-quote treatment, no box */}
+            {/* Day insight — single subtle line, no box. Per-day maps deliberately dropped:
+                the overview map at the top of the itinerary already shows the journey, and
+                repeating per-day maps adds clutter without proportional value. */}
             {day.insight && (
-              <blockquote className="mb-7 max-md:mb-5 pl-5 border-l-2 border-[#c8a44e]/40 max-w-[640px]">
-                <p className="font-serif italic text-[clamp(15px,1.5vw,18px)] leading-[1.6] text-white/70">
-                  &ldquo;{day.insight}&rdquo;
-                </p>
-              </blockquote>
+              <p className="mb-5 max-md:mb-4 text-[12px] italic text-white/45 leading-[1.55] max-w-[720px]">
+                {day.insight}
+              </p>
             )}
 
-            {/* Day map — wider + taller for context */}
-            {day.mapUrl && (
-              <div className="mb-7 max-md:mb-5 overflow-hidden rounded-2xl border border-white/[0.06] shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
-                <img src={day.mapUrl} alt={`Map for Day ${di + 1}`} className="h-[200px] w-full object-cover max-md:h-[160px]" loading="lazy" />
-              </div>
-            )}
-
-            {/* Items — alternating image side, larger images, magazine spreads */}
-            <div className="space-y-5 max-md:space-y-4">
-              {day.items.filter(i => i.category !== 'transfer').map((item, idx) => {
+            {/* Items — desktop: grid of 240px vertical cards; mobile: vertical stack of horizontal compact cards */}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 max-md:flex max-md:flex-col max-md:gap-3">
+              {day.items.filter(i => i.category !== 'transfer').map((item) => {
                 const meta = item.metadata as Record<string, unknown> | null
                 const reason = meta?.reason as string | undefined
                 const rating = meta?.rating as number | undefined
+                const reviewCount = meta?.reviewCount as number | undefined
                 const catColor = categoryColors[item.category] || '#7a7a85'
                 const imgSrc = failedImages.has(item.id) ? FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.activity : item.image_url
-                const imageRight = idx % 2 === 1
+                const reacted = !!reactions[item.id]?.reacted
+                const reactCount = reactions[item.id]?.count || 0
 
                 return (
                   <article
                     key={item.id}
-                    className="group relative grid grid-cols-[200px_1fr] gap-5 rounded-2xl bg-white/[0.015] border border-white/[0.05] overflow-hidden hover:border-white/[0.12] hover:bg-white/[0.025] transition-all max-md:grid-cols-[110px_1fr] max-md:gap-3"
-                    style={imageRight ? { gridTemplateColumns: '1fr 200px' } : undefined}
+                    className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0c0c12] hover:border-white/[0.15] hover:-translate-y-0.5 hover:shadow-[0_16px_48px_rgba(0,0,0,0.5)] transition-all
+                      max-md:flex max-md:flex-row max-md:hover:-translate-y-0"
                   >
-                    {/* Image — bigger, square aspect */}
+                    {/* Image: top on desktop (140px), left on mobile (104px wide) */}
                     {imgSrc && (
-                      <div
-                        className="relative aspect-square max-md:aspect-[4/5] overflow-hidden"
-                        style={imageRight ? { gridColumn: 2, gridRow: 1 } : undefined}
-                      >
+                      <div className="relative h-[140px] w-full overflow-hidden max-md:h-[104px] max-md:w-[104px] max-md:shrink-0">
                         <Image
                           src={imgSrc}
                           alt={item.name}
                           fill
-                          className="object-cover transition-transform duration-[1500ms] group-hover:scale-105"
-                          sizes="200px"
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          sizes="240px"
                           unoptimized={!imgSrc.includes('unsplash.com')}
                           onError={() => onImageError(item.id)}
                         />
-                        {rating && (
-                          <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 px-2 py-0.5">
+                        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.7)] via-transparent to-transparent max-md:bg-gradient-to-r max-md:from-transparent max-md:to-[rgba(8,8,12,0.4)]" />
+                        {rating && rating > 0 && (
+                          <div className="absolute top-2 left-2 flex items-center gap-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 px-1.5 py-0.5">
                             <span className="text-[9px] text-amber-400">★</span>
-                            <span className="text-[9px] tabular-nums text-white/90">{rating}</span>
+                            <span className="text-[9px] tabular-nums text-white/90">{rating.toFixed(1)}</span>
                           </div>
                         )}
                       </div>
                     )}
 
                     {/* Content */}
-                    <div
-                      className="flex flex-col justify-between p-5 max-md:p-3.5"
-                      style={imageRight ? { gridColumn: 1, gridRow: 1 } : undefined}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-mono text-[8px] tracking-[2px] uppercase font-semibold" style={{ color: catColor }}>
-                            {item.category}
-                          </span>
-                          {item.time && (
-                            <>
-                              <span className="text-white/15">·</span>
-                              <span className="font-mono text-[9px] text-white/45 tabular-nums">{item.time}</span>
-                            </>
-                          )}
-                        </div>
-                        <h3 className="font-serif text-[clamp(17px,1.7vw,22px)] font-light leading-[1.2] text-white/95 mb-2">{item.name}</h3>
-                        {item.detail && <p className="text-[12px] leading-[1.55] text-white/55 line-clamp-2 mb-2.5">{item.detail}</p>}
-                        {reason && (
-                          <p className="text-[11px] italic text-[#c8a44e]/85 leading-[1.5] line-clamp-2 mb-2.5">— {reason}</p>
+                    <div className="p-3.5 flex flex-col gap-1.5 max-md:flex-1 max-md:min-w-0">
+                      {/* Category + time */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-[8px] tracking-[1.5px] uppercase font-semibold" style={{ color: catColor }}>
+                          {item.category}
+                        </span>
+                        {item.time && (
+                          <>
+                            <span className="text-white/15">·</span>
+                            <span className="font-mono text-[9px] text-white/40 tabular-nums">{item.time}</span>
+                          </>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-2 mt-2">
-                        {item.price ? (
-                          <span className="text-[14px] font-light" style={{ color: catColor }}>{item.price}</span>
-                        ) : <span />}
+
+                      {/* Name */}
+                      <h3 className="text-[13px] font-medium leading-snug text-white/90 line-clamp-2 max-md:text-[13px]">{item.name}</h3>
+
+                      {/* Detail or reason — single line, choose reason if present (it's the AI insight) */}
+                      {(reason || item.detail) && (
+                        <p className="text-[11px] leading-[1.45] text-white/45 line-clamp-1">
+                          {reason || item.detail}
+                        </p>
+                      )}
+
+                      {/* Footer: price + heart */}
+                      <div className="mt-auto pt-2 flex items-center justify-between gap-2 border-t border-white/[0.04]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.price && (
+                            <span className="text-[12px] font-medium tabular-nums truncate" style={{ color: catColor }}>{item.price}</span>
+                          )}
+                          {reviewCount && reviewCount > 0 && !item.price && (
+                            <span className="text-[9px] text-white/30 tabular-nums">{reviewCount.toLocaleString()} reviews</span>
+                          )}
+                        </div>
                         <button
                           onClick={() => toggleReaction(item.id)}
-                          className={`flex items-center gap-1 text-[11px] transition-colors ${
-                            reactions[item.id]?.reacted ? 'text-[#c8a44e]' : 'text-white/35 hover:text-[#c8a44e]'
+                          className={`flex items-center gap-1 text-[10px] transition-colors shrink-0 ${
+                            reacted ? 'text-[#c8a44e]' : 'text-white/30 hover:text-[#c8a44e]'
                           }`}
-                          aria-label={reactions[item.id]?.reacted ? 'Unlike' : 'Like'}
+                          aria-label={reacted ? 'Unlike' : 'Like'}
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill={reactions[item.id]?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill={reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                           </svg>
-                          {reactions[item.id]?.count > 0 && <span className="tabular-nums">{reactions[item.id].count}</span>}
+                          {reactCount > 0 && <span className="tabular-nums">{reactCount}</span>}
                         </button>
                       </div>
                     </div>
@@ -539,33 +537,7 @@ export default function ShareTripView({
         ))}
       </div>
 
-      {/* ═══ Footer — closing remix CTA, only shown to non-owners ═══ */}
-      {joinState !== 'owner' && joinState !== 'member' && tripId && (
-        <div className="relative z-[1] text-center py-20 max-md:py-14 border-t border-white/[0.04] px-6">
-          <p className="font-mono text-[9px] tracking-[3px] uppercase text-[#c8a44e]/60 mb-3">Inspired?</p>
-          <p className="font-serif text-[clamp(24px,3vw,38px)] font-light italic leading-tight text-white/85 mb-2">
-            Make this trip <span className="text-[#c8a44e]">yours</span>.
-          </p>
-          <p className="text-[12px] text-white/45 mb-8 max-w-[440px] mx-auto leading-relaxed">
-            Remix the vibes, swap the destination, change the dates. Drift composes your version in 30 seconds.
-          </p>
-          <a
-            href={(typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
-              ? `/m/plan/vibes?remix=${tripId}`
-              : `/vibes?remix=${tripId}`}
-            className="group inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-br from-[#c8a44e] to-[#a88a3e] text-[#08080c] text-[11px] font-bold tracking-[2px] uppercase rounded-full hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(200,164,78,0.35)] transition-all active:scale-95"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64L3 16" />
-              <path d="M3 21v-5h5" />
-            </svg>
-            Remix this trip
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-          </a>
-        </div>
-      )}
+      {/* No bottom Remix CTA — the hero already has it. Avoiding the redundant duplicate keeps the page tight. */}
     </div>
   )
 }
