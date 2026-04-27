@@ -341,20 +341,28 @@ export default function HomePage() {
                   ))}
 
                   {/* The orbiting planets — public trips from trending.
-                      Layout adapts to however many trips we have so it never looks like empty orbits:
-                        1-5 trips  → single ring at 310px, evenly spaced, ~84px planets
-                        6+ trips   → two rings (280px + 360px), 3 per ring at 120° apart, offset 60°
-                      Planets are positioned with rotate→translate→reverse-rotate so each sits on
-                      the ring without being rotated itself. */}
+                      CSS rotate angles: 0° = right (East), 90° = down, 180° = left, 270° = up.
+                      The page has a "Where will you drift next?" headline ABOVE the portal, so we
+                      avoid placing planets directly overhead — they'd render on top of the title.
+
+                      Layout adapts to count:
+                        1-5 trips → single ring at 310px, distributed in a 240° arc (30°→270°),
+                                    leaving the upper region (270°→30° going clockwise via top) clear.
+                        6+ trips  → two rings, with planet angles chosen to keep gaps near 270° (up). */}
                   {trending.slice(0, 6).map((trip, i) => {
                     const total = Math.min(trending.length, 6)
                     const isSingleRing = total < 6
-                    // Single-ring layout: evenly spaced around one ring
-                    // Two-ring layout: first 3 on inner ring at 30°/150°/270°, next 3 on outer at 90°/210°/330°
                     const ring = isSingleRing ? 1 : (i < 3 ? 1 : 2)
-                    const angle = isSingleRing
-                      ? (360 / total) * i - 90  // start at top
-                      : ring === 1 ? 30 + i * 120 : 90 + (i - 3) * 120
+                    let angle: number
+                    if (isSingleRing) {
+                      // Distribute across a 240° arc from 30° (lower-right) to 270° (left/lower-left).
+                      // Top of arc skipped to avoid overlapping the headline.
+                      angle = total === 1 ? 90 : 30 + (240 / (total - 1)) * i
+                    } else {
+                      // 6 trips: ring 1 at 60°/180°/300° (right-down, left, upper-right offset from top),
+                      // ring 2 at 0°/120°/240° (right, lower-left, upper-left). No planet directly above.
+                      angle = ring === 1 ? 60 + (i % 3) * 120 : 0 + ((i - 3) % 3) * 120
+                    }
                     const radius = isSingleRing ? 310 : ring === 1 ? 280 : 360
                     const size = isSingleRing ? 84 : ring === 1 ? 90 : 68
                     const color = vibeColor(trip as TripSummary, i)
