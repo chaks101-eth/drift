@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
@@ -34,7 +34,17 @@ const moods: Mood[] = [
   { id: 'hidden', name: 'Hidden Gems', desc: 'Off-the-beaten-path spots', tags: ['Adventure', 'Culture', 'Nature'], img: 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=1200&h=1800&fit=crop&auto=format&q=90' },
 ]
 
+// Suspense wrapper required by Next.js 15 because VibesContent calls useSearchParams().
+// Without it, `next build` fails with "useSearchParams() should be wrapped in a suspense boundary".
 export default function VibesPage() {
+  return (
+    <Suspense fallback={null}>
+      <VibesContent />
+    </Suspense>
+  )
+}
+
+function VibesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setVibes, token, onboarding } = useTripStore()

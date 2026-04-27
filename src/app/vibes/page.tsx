@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import NavBar from '@/app/NavBar'
@@ -35,10 +35,14 @@ const BUDGETS = [
   { id: 'luxury', label: 'Luxury', amount: 7000, hint: '5★ resorts · premium' },
 ] as const
 
+// Suspense wrapper required by Next.js 15 because VibesContent calls useSearchParams().
+// Without it, `next build` fails with "useSearchParams() should be wrapped in a suspense boundary".
 export default function VibesPage() {
   return (
     <DesktopAuthProvider>
-      <VibesContent />
+      <Suspense fallback={null}>
+        <VibesContent />
+      </Suspense>
     </DesktopAuthProvider>
   )
 }
