@@ -84,7 +84,7 @@ export async function throttleLlm(): Promise<void> {
   lastLlmCall = Date.now()
 }
 
-/** Retry with exponential backoff on 429 rate limits */
+/** Retry with exponential backoff on 429 rate limits + transient 5xx errors */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
@@ -95,10 +95,16 @@ export async function withRetry<T>(
       return await fn()
     } catch (e: unknown) {
       const status = (e as { status?: number })?.status
-      const isRateLimit = status === 429 || (e instanceof Error && e.message.includes('429'))
-      if (!isRateLimit || attempt >= maxRetries) throw e
+      const msg = e instanceof Error ? e.message : ''
+      const isRateLimit = status === 429 || msg.includes('429')
+      // Retry on transient server errors — Gemini occasionally returns 502/503/504
+      const isTransient5xx = (status !== undefined && status >= 500 && status < 600) ||
+        /^5\d{2}\s+status/.test(msg)
+      const shouldRetry = isRateLimit || isTransient5xx
+      if (!shouldRetry || attempt >= maxRetries) throw e
       const delay = delays[attempt] || 25000
-      console.log(`[AI] Rate limited (429), retrying in ${delay / 1000}s (attempt ${attempt + 1}/${maxRetries})`)
+      const reason = isRateLimit ? 'Rate limited (429)' : `Transient ${status || '5xx'}`
+      console.log(`[AI] ${reason}, retrying in ${delay / 1000}s (attempt ${attempt + 1}/${maxRetries})`)
       await new Promise(r => setTimeout(r, delay))
     }
   }
