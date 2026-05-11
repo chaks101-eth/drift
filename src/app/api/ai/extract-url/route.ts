@@ -274,9 +274,33 @@ async function uploadToGeminiFileAPI(videoBuffer: Buffer): Promise<string | null
       body: new Uint8Array(videoBuffer) as unknown as BodyInit,
     })
     const data = await res.json()
-    const uri = data.file?.uri
-    if (uri) console.log(`[ExtractURL] Gemini File API: uploaded, URI: ${uri}`)
-    return uri || null
+    const uri = data.file?.uri as string | undefined
+    const name = data.file?.name as string | undefined
+    let state = data.file?.state as string | undefined
+    if (!uri || !name) {
+      console.warn(`[ExtractURL] Gemini upload returned no uri/name`)
+      return null
+    }
+    console.log(`[ExtractURL] Gemini File API: uploaded ${name}, initial state: ${state}`)
+
+    // Files start in PROCESSING; Gemini rejects fileData refs until ACTIVE.
+    // Poll for up to 30s (typical reels go ACTIVE in 2-5s).
+    for (let i = 0; state === 'PROCESSING' && i < 30; i++) {
+      await new Promise(r => setTimeout(r, 1000))
+      const statusRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/${name}?key=${apiKey}`)
+      if (!statusRes.ok) {
+        console.warn(`[ExtractURL] Gemini file status poll failed: HTTP ${statusRes.status}`)
+        return null
+      }
+      const statusData = await statusRes.json()
+      state = statusData.state
+    }
+
+    if (state !== 'ACTIVE') {
+      console.warn(`[ExtractURL] Gemini file never became ACTIVE (final state: ${state})`)
+      return null
+    }
+    return uri
   } catch (e) {
     console.warn(`[ExtractURL] Gemini upload failed: ${e}`)
     return null
@@ -286,9 +310,6 @@ async function uploadToGeminiFileAPI(videoBuffer: Buffer): Promise<string | null
 async function analyzeVideoWithGemini(fileUri: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return ''
-
-  // Wait briefly for video processing
-  await new Promise(r => setTimeout(r, 3000))
 
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
