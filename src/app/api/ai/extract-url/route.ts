@@ -305,86 +305,59 @@ async function analyzeVideoWithGemini(fileUri: string): Promise<string> {
 }
 
 // ─── Instagram Extraction ───────────────────────────────────────
+// Instagram killed unauthenticated `/embed/captioned/` markup mid-2026 —
+// the page now returns a login wall with no Caption/EmbeddedMediaImage divs.
+// Only working path: Cobalt → Gemini video analysis. If that breaks, return
+// empty text and let the outer route hit its grounded-search URL fallback.
 
 async function extractInstagramContent(url: string): Promise<{ text: string; thumbnailBase64: string | null }> {
-  // PRIMARY: Download video via Cobalt → Gemini video analysis
-  const videoBuffer = await downloadVideoViaCobalt(url)
-  if (videoBuffer) {
-    const fileUri = await uploadToGeminiFileAPI(videoBuffer)
-    if (fileUri) {
-      console.log(`[ExtractURL] Analyzing Instagram reel via Gemini video understanding...`)
-      const analysis = await analyzeVideoWithGemini(fileUri)
-      if (analysis.length > 100) {
-        // Also try to get caption for extra context
-        let caption = ''
-        try {
-          const shortcode = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[2]
-          if (shortcode) {
-            const embedRes = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
-              headers: { 'User-Agent': BROWSER_UA },
-              signal: AbortSignal.timeout(5000),
-            })
-            if (embedRes.ok) {
-              const html = await embedRes.text()
-              const captionMatch = html.match(/class="Caption"[^>]*>([\s\S]*?)<div class="CaptionComments"/i)
-              if (captionMatch) {
-                caption = captionMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
-              }
-            }
-          }
-        } catch { /* best effort */ }
+  const steps: string[] = []
 
-        return {
-          text: `Source: Instagram Reel (analyzed frame by frame)\nURL: ${url}${caption ? `\nCaption: ${caption}` : ''}\n\nVideo content analysis:\n${analysis}`,
-          thumbnailBase64: null,
+  const videoBuffer = await downloadVideoViaCobalt(url)
+  if (!videoBuffer) {
+    steps.push('cobalt_or_cdn_download_failed')
+    console.warn(`[ExtractURL] IG primary path failed: ${steps.join(' → ')}`)
+    return { text: '', thumbnailBase64: null }
+  }
+
+  const fileUri = await uploadToGeminiFileAPI(videoBuffer)
+  if (!fileUri) {
+    steps.push('gemini_files_upload_failed')
+    console.warn(`[ExtractURL] IG primary path failed: ${steps.join(' → ')}`)
+    return { text: '', thumbnailBase64: null }
+  }
+
+  console.log(`[ExtractURL] Analyzing Instagram reel via Gemini video understanding...`)
+  const analysis = await analyzeVideoWithGemini(fileUri)
+  if (analysis.length <= 100) {
+    steps.push(`gemini_analysis_too_short_${analysis.length}_chars`)
+    console.warn(`[ExtractURL] IG primary path failed: ${steps.join(' → ')}`)
+    return { text: '', thumbnailBase64: null }
+  }
+
+  // Optional: try to enrich with caption text (best effort — IG often blocks)
+  let caption = ''
+  try {
+    const shortcode = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[2]
+    if (shortcode) {
+      const embedRes = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
+        headers: { 'User-Agent': BROWSER_UA },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (embedRes.ok) {
+        const html = await embedRes.text()
+        const captionMatch = html.match(/class="Caption"[^>]*>([\s\S]*?)<div class="CaptionComments"/i)
+        if (captionMatch) {
+          caption = captionMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
         }
       }
     }
+  } catch { /* best effort */ }
+
+  return {
+    text: `Source: Instagram Reel (analyzed frame by frame)\nURL: ${url}${caption ? `\nCaption: ${caption}` : ''}\n\nVideo content analysis:\n${analysis}`,
+    thumbnailBase64: null,
   }
-
-  // FALLBACK: Embed HTML parsing + thumbnail (old approach)
-  console.log(`[ExtractURL] Video analysis unavailable, falling back to embed parsing`)
-  let caption = ''
-  let author = ''
-  let thumbnailUrl = ''
-
-  const shortcode = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[2]
-  if (!shortcode) throw new Error('Invalid Instagram URL')
-
-  try {
-    const res = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
-      headers: { 'User-Agent': BROWSER_UA },
-      signal: AbortSignal.timeout(10000),
-    })
-    if (res.ok) {
-      const html = await res.text()
-      const captionMatch = html.match(/class="Caption"[^>]*>([\s\S]*?)<div class="CaptionComments"/i)
-      if (captionMatch) {
-        caption = captionMatch[1].replace(/<a[^>]*class="CaptionUsername"[^>]*>[^<]*<\/a>/gi, '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
-      }
-      const authorMatch = html.match(/class="CaptionUsername"[^>]*>([^<]+)</)
-      if (authorMatch) author = authorMatch[1].trim()
-      const imgMatch = html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/)
-      if (imgMatch) thumbnailUrl = imgMatch[1].replace(/&amp;/g, '&')
-    }
-  } catch { /* skip */ }
-
-  let thumbnailBase64: string | null = null
-  if (thumbnailUrl) {
-    try {
-      const imgRes = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(8000) })
-      if (imgRes.ok) thumbnailBase64 = Buffer.from(await imgRes.arrayBuffer()).toString('base64')
-    } catch { /* skip */ }
-  }
-
-  const parts: string[] = []
-  if (author) parts.push(`Author: @${author}`)
-  if (caption) parts.push(`Caption: ${caption}`)
-  parts.push(`Source: Instagram Reel`)
-  if (!caption && !thumbnailBase64) throw new Error('Could not extract content from this Instagram reel.')
-  if (!caption && thumbnailBase64) parts.push('Note: No caption text. Analyze the image to identify the travel destination.')
-
-  return { text: parts.join('\n'), thumbnailBase64 }
 }
 
 // ─── YouTube Extraction ─────────────────────────────────────────
