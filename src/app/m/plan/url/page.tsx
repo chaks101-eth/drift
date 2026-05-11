@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/mobile/BackButton'
 import { useTripStore } from '@/stores/trip-store'
 import { supabase, ensureAnonSession } from '@/lib/supabase'
@@ -36,7 +36,17 @@ const extractSteps = [
 ]
 
 export default function UrlPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-drift-bg" />}>
+      <UrlPageInner />
+    </Suspense>
+  )
+}
+
+function UrlPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const autoStartedRef = useRef(false)
   const {
     token,
     setOrigin,
@@ -78,6 +88,21 @@ export default function UrlPage() {
     return () => clearTimeout(t)
   }, [authResolved])
 
+  // Paste-and-go from home hero — if a ?url= param is present and looks like a
+  // URL, populate state and kick off extraction immediately so the user lands
+  // here mid-progress rather than on an empty paste screen.
+  useEffect(() => {
+    if (!authResolved || autoStartedRef.current) return
+    const incoming = searchParams.get('url')
+    if (!incoming) return
+    try { new URL(incoming) } catch { return }
+    autoStartedRef.current = true
+    setUrl(incoming)
+    // Defer one tick so setUrl flushes before handleExtract reads it
+    setTimeout(() => handleExtractWith(incoming), 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authResolved])
+
   // Extraction step animation
   useEffect(() => {
     if (step !== 'extracting') return
@@ -96,8 +121,10 @@ export default function UrlPage() {
     }
   }
 
-  const handleExtract = async () => {
-    if (!isValidUrl(url)) {
+  const handleExtract = async () => handleExtractWith(url)
+
+  async function handleExtractWith(targetUrl: string) {
+    if (!isValidUrl(targetUrl)) {
       setError('Enter a valid URL')
       return
     }
@@ -113,7 +140,7 @@ export default function UrlPage() {
       const res = await fetch('/api/ai/extract-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeToken}` },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: targetUrl }),
       })
       const data = await res.json()
 

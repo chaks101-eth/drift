@@ -243,6 +243,65 @@ function vibeColor(trip: TripSummary, i: number) {
   return (v && VIBE_COLORS[v]) || ORBIT_COLORS[i % ORBIT_COLORS.length]
 }
 
+// ─── Paste hero — reel-to-trip is the primary action across all states ───
+function PasteHero({ animateDelay = '0.6s' }: { animateDelay?: string }) {
+  const router = useRouter()
+  const [url, setUrl] = useState('')
+  const [error, setError] = useState('')
+
+  const submit = () => {
+    let candidate = url.trim()
+    if (!candidate) { setError('Paste a reel or link first'); return }
+    if (!/^https?:\/\//i.test(candidate)) candidate = 'https://' + candidate
+    try { new URL(candidate) } catch { setError('That doesn\'t look like a valid link'); return }
+    router.push(`/m/plan/url?url=${encodeURIComponent(candidate)}`)
+  }
+
+  return (
+    <div style={{ animation: `fadeUp 1s ease ${animateDelay} both` }}>
+      <div className="relative rounded-2xl border border-drift-gold/35 bg-gradient-to-br from-drift-gold/[0.08] to-drift-gold/[0.02] p-1.5 shadow-[0_8px_32px_rgba(200,164,78,0.08)]">
+        <div className="flex items-stretch gap-1.5">
+          <div className="flex flex-1 items-center gap-2 rounded-xl bg-black/40 px-3.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-drift-gold/70">
+              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+            </svg>
+            <input
+              type="url"
+              inputMode="url"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setError('') }}
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
+              placeholder="Paste a reel, video, or blog link"
+              className="w-full bg-transparent py-3 text-[13px] text-drift-text placeholder:text-white/30 focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={submit}
+            className="shrink-0 rounded-xl bg-drift-gold px-4 text-[10px] font-bold tracking-[1.5px] uppercase text-drift-bg active:scale-[0.97] transition-transform"
+          >
+            Build
+          </button>
+        </div>
+      </div>
+      {error && <p className="mt-2 px-2 text-[10px] text-red-400/80">{error}</p>}
+      <div className="mt-3 flex items-center gap-2 px-1 text-[9px] text-white/40">
+        <span className="font-mono tracking-[1px] uppercase">Works with</span>
+        <span className="text-white/55">Instagram</span>
+        <span className="text-white/15">·</span>
+        <span className="text-white/55">YouTube</span>
+        <span className="text-white/15">·</span>
+        <span className="text-white/55">TikTok</span>
+        <span className="text-white/15">·</span>
+        <span className="text-white/55">Blogs</span>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────
 export default function MobileHomePage() {
   const router = useRouter()
@@ -577,40 +636,18 @@ export default function MobileHomePage() {
             </div>
           )}
 
-          {/* ─── Compose + Build actions ─── */}
-          <div className="mb-7 grid grid-cols-2 gap-3" style={{ animation: 'fadeUp 1s ease 0.6s both' }}>
-            <button
-              onClick={handleStart}
-              disabled={starting}
-              className="group relative flex items-center gap-3 rounded-xl border border-drift-gold/25 bg-drift-gold/[0.06] p-3.5 active:scale-[0.97] transition-transform"
-            >
-              <div className="h-10 w-10 shrink-0 rounded-lg bg-drift-gold/10 border border-drift-gold/20 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#c8a44e" strokeWidth="1.3">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <div className="text-[12px] font-semibold text-drift-text leading-tight">Compose</div>
-                <div className="text-[9px] text-white/40 tracking-[0.5px] uppercase mt-0.5">From vibes</div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => router.push('/m/plan/url')}
-              className="group relative flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 active:scale-[0.97] transition-transform"
-            >
-              <div className="h-10 w-10 shrink-0 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.3" className="text-white/60">
-                  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <div className="text-[12px] font-semibold text-drift-text leading-tight">Build</div>
-                <div className="text-[9px] text-white/40 tracking-[0.5px] uppercase mt-0.5">From a reel</div>
-              </div>
-            </button>
+          {/* ─── Build from a reel (primary) ─── */}
+          <div className="mb-3">
+            <PasteHero animateDelay="0.6s" />
           </div>
+          <button
+            onClick={handleStart}
+            disabled={starting}
+            className="mb-7 flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-2.5 text-[10px] font-medium tracking-[1.5px] uppercase text-white/55 active:scale-[0.97] transition-transform"
+            style={{ animation: 'fadeUp 1s ease 0.75s both' }}
+          >
+            Or compose from vibes
+          </button>
 
           {/* ─── Trending ─── */}
           {trending.length > 0 && (
@@ -707,12 +744,18 @@ export default function MobileHomePage() {
               {(() => { const h = new Date().getHours(); return h < 5 ? 'Late night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Late night' })()}{firstName ? `, ${firstName}` : ''}
             </div>
             <h1 className="font-serif text-[32px] font-light leading-[1.05] tracking-[-0.02em]">
-              Where will you <em className="italic text-drift-gold">drift</em> first?
+              Drop a reel.<br />
+              We&apos;ll <em className="italic text-drift-gold">build the trip</em>.
             </h1>
           </div>
 
-          {/* Launcher portal — clickable, glowing, centered */}
-          <div className="flex justify-center mb-8 opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.3s_forwards]">
+          {/* Primary action — paste a reel/link */}
+          <div className="mb-6 opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.25s_forwards]">
+            <PasteHero animateDelay="0s" />
+          </div>
+
+          {/* Secondary — compose from vibes (keeps the orbital portal as a visual anchor) */}
+          <div className="flex justify-center mb-8 opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.4s_forwards]">
             <button
               onClick={handleStart}
               disabled={starting}
@@ -739,9 +782,9 @@ export default function MobileHomePage() {
                 <div className="absolute inset-0 rounded-full opacity-70 group-active:opacity-100 transition-opacity" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(200,164,78,0.3), transparent 65%)' }} />
                 <div className="relative flex flex-col items-center gap-2 px-5">
                   <span className="font-serif italic text-[54px] text-drift-gold leading-none translate-y-[-2px]">D</span>
-                  <div className="font-serif text-[13px] italic text-white/90 text-center">Begin your first drift</div>
+                  <div className="font-serif text-[13px] italic text-white/90 text-center">Or compose from vibes</div>
                   <div className="flex items-center gap-1.5 font-mono text-[7px] tracking-[2px] uppercase text-drift-gold/80">
-                    <span>{starting ? 'Starting…' : 'Tap to start'}</span>
+                    <span>{starting ? 'Starting…' : 'Tap to begin'}</span>
                     {!starting && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>}
                   </div>
                 </div>
@@ -793,17 +836,10 @@ export default function MobileHomePage() {
             </div>
           )}
 
-          {/* Secondary: Build from reel — small link, not a competing primary CTA */}
-          <button
-            onClick={() => router.push('/m/plan/url')}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 text-[10px] font-semibold tracking-[1.5px] uppercase text-white/55 active:scale-[0.97] transition-transform opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.7s_forwards]"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-            Or build from a reel link
-          </button>
+          {/* Primary: paste a reel — beats the vibes portal as the entry path */}
+          <div className="opacity-0 animate-[fadeUp_0.8s_var(--ease-smooth)_0.7s_forwards]">
+            <PasteHero animateDelay="0s" />
+          </div>
         </div>
       </div>
     )
@@ -859,48 +895,29 @@ export default function MobileHomePage() {
 
             {/* Headline */}
             <h1 className="mb-3.5 font-serif text-[38px] font-light leading-[1.02] tracking-[-0.02em]">
-              <span className="inline opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.5s_forwards]">Your next </span>
-              <span className="inline opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.7s_forwards]">trip is </span>
-              <span className="inline opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.9s_forwards]">already</span>
+              <span className="inline opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.5s_forwards]">Paste a reel.</span>
               <br />
-              <em className="inline font-normal italic text-drift-gold opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.1s_forwards]">in orbit.</em>
+              <span className="inline opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.7s_forwards]">Get a </span>
+              <em className="inline font-normal italic text-drift-gold opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_0.9s_forwards]">bookable trip.</em>
             </h1>
 
             {/* Subtitle */}
-            <p className="mb-7 max-w-[300px] text-[13px] leading-[1.65] text-drift-text2 opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.3s_forwards]">
-              Pick a vibe. Paste a reel. Drift composes a trip you&apos;d actually book.
+            <p className="mb-7 max-w-[300px] text-[13px] leading-[1.65] text-drift-text2 opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.1s_forwards]">
+              Drop any Instagram, YouTube, TikTok or blog link. Drift reads it, extracts every place, and assembles a real itinerary.
             </p>
 
-            {/* Primary CTA */}
+            {/* Primary — paste a reel */}
+            <div className="opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.3s_forwards] mb-3">
+              <PasteHero animateDelay="0s" />
+            </div>
+
+            {/* Secondary — compose from vibes */}
             <button
               onClick={handleStart}
               disabled={starting}
-              className={"relative mb-2.5 flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-[14px] px-6 py-[17px] text-[12px] font-bold uppercase tracking-[2px] opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.5s_forwards] transition-transform duration-200 " + (starting ? "bg-drift-gold/50 text-drift-text3" : "bg-drift-gold text-drift-bg shadow-[0_16px_48px_rgba(200,164,78,0.18)] active:scale-[0.97]")}
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-white/[0.08] bg-white/[0.02] px-4 py-[15px] text-[11px] font-semibold tracking-[1.5px] uppercase text-drift-text2 opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.5s_forwards] transition-all duration-200 active:scale-[0.97] disabled:opacity-50"
             >
-              {starting && <span className="h-5 w-5 animate-spin rounded-full border-2 border-current/25 border-t-current" />}
-              {!starting && (
-                <span className="flex items-center gap-2.5">
-                  Compose a trip
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </span>
-              )}
-              {!starting && (
-                <span className="absolute left-[-100%] top-0 h-full w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shine_5s_ease-in-out_3s_infinite]" />
-              )}
-            </button>
-
-            {/* Secondary CTA — build from reel */}
-            <button
-              onClick={() => router.push('/m/plan/url')}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-white/[0.08] bg-white/[0.02] px-4 py-[15px] text-[11px] font-semibold tracking-[1.5px] uppercase text-drift-text2 opacity-0 animate-[fadeUp_0.6s_var(--ease-smooth)_1.7s_forwards] transition-all duration-200 active:scale-[0.97]"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
-              Build from a reel or link
+              {starting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" /> : 'Or compose from vibes'}
             </button>
 
             {/* Scroll hint */}

@@ -542,30 +542,15 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Compose + Build */}
+              {/* Build (primary) + Compose */}
               <div>
                 <div className="flex items-center gap-6">
-                  <button
-                    onClick={() => router.push('/vibes')}
-                    className="group flex flex-col items-center gap-2.5"
-                  >
-                    <div className="h-[60px] w-[60px] rounded-2xl border border-[#c8a44e]/25 bg-[#c8a44e]/[0.06] flex items-center justify-center transition-all duration-300 group-hover:border-[#c8a44e]/50 group-hover:bg-[#c8a44e]/[0.12] group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(200,164,78,0.15)] active:scale-95">
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#c8a44e" strokeWidth="1.3">
-                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                      </svg>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[11px] font-medium text-white/80 group-hover:text-[#c8a44e] transition-colors">Compose</div>
-                      <div className="text-[8px] text-white/30 tracking-[1px] uppercase mt-0.5">From vibes</div>
-                    </div>
-                  </button>
-
                   <button
                     onClick={() => router.push('/build')}
                     className="group flex flex-col items-center gap-2.5"
                   >
-                    <div className="h-[60px] w-[60px] rounded-2xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-center transition-all duration-300 group-hover:border-[#c8a44e]/30 group-hover:bg-[#c8a44e]/[0.06] group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(200,164,78,0.1)] active:scale-95">
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.3" className="text-white/50 group-hover:text-[#c8a44e] transition-colors">
+                    <div className="h-[60px] w-[60px] rounded-2xl border border-[#c8a44e]/25 bg-[#c8a44e]/[0.06] flex items-center justify-center transition-all duration-300 group-hover:border-[#c8a44e]/50 group-hover:bg-[#c8a44e]/[0.12] group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(200,164,78,0.15)] active:scale-95">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#c8a44e" strokeWidth="1.3">
                         <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
                         <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
                       </svg>
@@ -573,6 +558,21 @@ export default function HomePage() {
                     <div className="text-center">
                       <div className="text-[11px] font-medium text-white/80 group-hover:text-[#c8a44e] transition-colors">Build</div>
                       <div className="text-[8px] text-white/30 tracking-[1px] uppercase mt-0.5">From a reel</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => router.push('/vibes')}
+                    className="group flex flex-col items-center gap-2.5"
+                  >
+                    <div className="h-[60px] w-[60px] rounded-2xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-center transition-all duration-300 group-hover:border-[#c8a44e]/30 group-hover:bg-[#c8a44e]/[0.06] group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(200,164,78,0.1)] active:scale-95">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.3" className="text-white/50 group-hover:text-[#c8a44e] transition-colors">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[11px] font-medium text-white/80 group-hover:text-[#c8a44e] transition-colors">Compose</div>
+                      <div className="text-[8px] text-white/30 tracking-[1px] uppercase mt-0.5">From vibes</div>
                     </div>
                   </button>
                 </div>

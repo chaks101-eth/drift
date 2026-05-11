@@ -573,13 +573,13 @@ export default function Landing() {
 
             {/* Headline */}
             <h1 className="font-serif text-[clamp(36px,4.2vw,60px)] font-light leading-[0.98] tracking-[-0.02em] mb-5 opacity-0 animate-[fadeUp_1s_ease_forwards_0.6s]">
-              Your next trip is<br />
-              already <em className="italic text-[#c8a44e]">in orbit</em>.
+              Paste a reel,<br />
+              get a <em className="italic text-[#c8a44e]">trip</em>.
             </h1>
 
             {/* Subtitle */}
             <p className="text-[14px] font-light text-white/60 max-w-[440px] leading-[1.7] mb-8 opacity-0 animate-[fadeUp_1s_ease_forwards_0.8s]">
-              Pick a destination, describe a vibe, or paste a travel reel. Drift composes the rest.
+              Drop any travel reel, YouTube, or blog. Drift reads it, extracts every place, and builds you a bookable trip in seconds.
             </p>
 
             {/* Selected / default panel */}
@@ -618,24 +618,27 @@ export default function Landing() {
                   </button>
                 </div>
               ) : (
-                /* Default: two entry paths */
+                /* Default: two entry paths — reel-to-trip is primary */
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => router.push('/vibes')}
+                    onClick={() => router.push('/build')}
                     className="group flex items-center justify-between rounded-full bg-[#c8a44e] px-7 py-3.5 transition-all hover:shadow-[0_12px_36px_rgba(200,164,78,0.3)] hover:-translate-y-0.5"
                   >
-                    <span className="text-[10px] font-bold tracking-[2px] uppercase text-[#08080c]">Compose a trip</span>
+                    <span className="flex items-center gap-2.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2" className="shrink-0">
+                        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                      </svg>
+                      <span className="text-[10px] font-bold tracking-[2px] uppercase text-[#08080c]">Build from a reel</span>
+                    </span>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2.5" className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
                   <button
-                    onClick={() => router.push('/build')}
-                    className="group flex items-center gap-3 rounded-full border border-white/[0.08] bg-white/[0.02] px-7 py-3.5 transition-all hover:border-[#c8a44e]/30 hover:bg-white/[0.04]"
+                    onClick={() => router.push('/vibes')}
+                    className="group flex items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.02] px-7 py-3.5 transition-all hover:border-[#c8a44e]/30 hover:bg-white/[0.04]"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/50 group-hover:text-[#c8a44e] transition-colors">
-                      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-                      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-                    </svg>
-                    <span className="text-[10px] font-medium tracking-[1.5px] uppercase text-white/60 group-hover:text-[#c8a44e] transition-colors">Build from a link</span>
+                    <span className="text-[10px] font-medium tracking-[1.5px] uppercase text-white/60 group-hover:text-[#c8a44e] transition-colors">Compose from vibes instead</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40 group-hover:text-[#c8a44e] transition-all group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
                 </div>
               )}
