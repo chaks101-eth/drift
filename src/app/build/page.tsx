@@ -216,9 +216,18 @@ export default function BuildFromLinkPage() {
         }),
       })
 
-      const data = await res.json()
+      let data: { trip?: { id: string }; error?: string } = {}
+      try {
+        data = await res.json()
+      } catch (jsonErr) {
+        console.error('[build] response was not JSON', { status: res.status, jsonErr })
+        setError(`Generation failed (HTTP ${res.status}). Try again.`)
+        setStep('review')
+        setGenerating(false)
+        return
+      }
       if (!res.ok || data.error || !data.trip) {
-        setError(data.error || 'Generation failed')
+        setError(data.error || `Generation failed (HTTP ${res.status})`)
         setStep('review')
         setGenerating(false)
         return
@@ -229,8 +238,10 @@ export default function BuildFromLinkPage() {
       if (items.data) setCurrentItems(items.data)
 
       router.push(`/trip/${data.trip.id}`)
-    } catch {
-      setError('Generation failed. Check your connection.')
+    } catch (err) {
+      console.error('[build] generate fetch failed', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(`Generation failed: ${msg}`)
       setStep('review')
       setGenerating(false)
     }
