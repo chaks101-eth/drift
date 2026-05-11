@@ -230,10 +230,10 @@ function VibesContent() {
         match: 100,
         vibes: extractedVibes,
       })
-      // Pre-fill dates if suggested
+      // Pre-fill dates — end is checkout day, so a N-day trip needs N days of delta
       if (data.extracted.suggestedDays) {
         const start = new Date(Date.now() + 14 * 86400000)
-        const end = new Date(start.getTime() + (data.extracted.suggestedDays - 1) * 86400000)
+        const end = new Date(start.getTime() + data.extracted.suggestedDays * 86400000)
         setStartDate(start.toISOString().slice(0, 10))
         setEndDate(end.toISOString().slice(0, 10))
       }

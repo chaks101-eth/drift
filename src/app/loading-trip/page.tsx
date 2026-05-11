@@ -100,15 +100,36 @@ function LoadingContent() {
 
   const dest = onboarding.destination
 
+  // Zustand rehydrates async from sessionStorage on first render. If dest is
+  // missing here it's either a missed-step navigation or a brief rehydrate gap.
+  // Hold a minimal spinner instead of flashing "Your destination" + firing
+  // Unsplash queries for the placeholder string.
+  useEffect(() => {
+    if (dest) return
+    const t = setTimeout(() => { if (!onboarding.destination) router.replace('/destinations') }, 1500)
+    return () => clearTimeout(t)
+  }, [dest, onboarding.destination, router])
+
+  if (!dest) {
+    return (
+      <div className="min-h-screen bg-[#08080c] text-[#f0efe8]">
+        <NavBar />
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#c8a44e] border-t-transparent" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#08080c] text-[#f0efe8]">
       <NavBar />
       <TripLoader
-        city={dest?.city || 'Your destination'}
-        country={dest?.country}
+        city={dest.city}
+        country={dest.country}
         vibes={onboarding.pickedVibes}
         budget={onboarding.budgetLevel}
-        imageUrl={dest?.image_url || undefined}
+        imageUrl={dest.image_url || undefined}
         error={error}
         generationDone={generationDone}
         activeStep={activeStep}

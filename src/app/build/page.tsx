@@ -31,11 +31,16 @@ interface ExtractedData {
 
 type Step = 'paste' | 'extracting' | 'review' | 'generating'
 
+// Steps roughly mirror the real pipeline timing — dense reels take ~70s,
+// so steps advance every ~10s and the last one holds until the response lands.
 const EXTRACT_STEPS = [
-  'Reading the content…',
-  'Identifying destinations…',
-  'Extracting places & activities…',
-  'Building your preview…',
+  'Downloading the video…',
+  'Uploading to AI…',
+  'Watching frame by frame…',
+  'Identifying places & landmarks…',
+  'Reading signs, menus, overlays…',
+  'Cross-checking real-world data…',
+  'Building your travel preview…',
 ]
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -99,11 +104,11 @@ export default function BuildFromLinkPage() {
     if (step === 'paste') setTimeout(() => inputRef.current?.focus(), 300)
   }, [step])
 
-  // Extraction step animation
+  // Extraction step animation — paced so the last step holds until extract resolves
   useEffect(() => {
     if (step !== 'extracting') return
     setExtractStepIdx(0)
-    const t = setInterval(() => setExtractStepIdx(prev => Math.min(prev + 1, EXTRACT_STEPS.length - 1)), 2200)
+    const t = setInterval(() => setExtractStepIdx(prev => Math.min(prev + 1, EXTRACT_STEPS.length - 1)), 9000)
     return () => clearInterval(t)
   }, [step])
 
@@ -153,10 +158,10 @@ export default function BuildFromLinkPage() {
       const ext = data.extracted as ExtractedData
       setExtracted(ext)
 
-      // Pre-fill dates
+      // Pre-fill dates — end is checkout day, so a N-day trip needs N days of delta
       if (ext.suggestedDays) {
         const start = new Date(Date.now() + 14 * 86400000)
-        const end = new Date(start.getTime() + (ext.suggestedDays - 1) * 86400000)
+        const end = new Date(start.getTime() + ext.suggestedDays * 86400000)
         setInputStartDate(start.toISOString().slice(0, 10))
         setInputEndDate(end.toISOString().slice(0, 10))
       }
