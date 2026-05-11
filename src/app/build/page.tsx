@@ -216,7 +216,8 @@ export default function BuildFromLinkPage() {
         }),
       })
 
-      let data: { trip?: { id: string }; error?: string } = {}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any = {}
       try {
         data = await res.json()
       } catch (jsonErr) {
