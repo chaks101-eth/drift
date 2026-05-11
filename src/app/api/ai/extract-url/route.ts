@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     await throttleLlm()
     const response = await withRetry(() => llm.chat.completions.create({
       model,
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
         { role: 'system', content: URL_EXTRACTION_SYSTEM_PROMPT },
         { role: 'user', content: userContent },
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
         await throttleLlm()
         const retry = await withRetry(() => llm.chat.completions.create({
           model,
-          max_tokens: 4096,
+          max_tokens: 8192,
           messages: [
             { role: 'system', content: URL_EXTRACTION_SYSTEM_PROMPT },
             { role: 'user', content: [{ type: 'text', text: `Return ONLY a JSON object. No markdown, no explanation. First character must be {, last must be }.\n\nContent to extract from:\n${contentText.slice(0, 4000)}` }] },
