@@ -7,6 +7,8 @@ import { groundedDestinationSearch } from '@/lib/grounded-search'
 import { getDestinationPhoto } from '@/lib/google-places-photos'
 import type OpenAI from 'openai'
 
+export const maxDuration = 120
+
 // POST /api/ai/extract-url — extract travel data from a URL
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
