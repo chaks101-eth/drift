@@ -311,18 +311,34 @@ async function analyzeVideoWithGemini(fileUri: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return ''
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [
-        { text: 'Watch this travel video frame by frame. For each scene, identify the specific place, landmark, hotel, restaurant, market, beach, temple, or activity shown. Include text visible on signs, menus, and overlays. List every specific place name with its category (hotel/food/activity/sightseeing/nature/nightlife/shopping/cultural). Be exhaustive — this is for building a travel itinerary.' },
-        { fileData: { mimeType: 'video/mp4', fileUri } },
-      ] }],
-    }),
+  const body = JSON.stringify({
+    contents: [{ parts: [
+      { text: 'Watch this travel video frame by frame. For each scene, identify the specific place, landmark, hotel, restaurant, market, beach, temple, or activity shown. Include text visible on signs, menus, and overlays. List every specific place name with its category (hotel/food/activity/sightseeing/nature/nightlife/shopping/cultural). Be exhaustive — this is for building a travel itinerary.' },
+      { fileData: { mimeType: 'video/mp4', fileUri } },
+    ] }],
   })
-  const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+  // Gemini occasionally returns 429/503 — retry with backoff
+  const delays = [1000, 2000, 4000]
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+    if (res.ok) {
+      const data = await res.json()
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    }
+    const transient = res.status === 429 || (res.status >= 500 && res.status < 600)
+    if (!transient || attempt === 3) {
+      console.warn(`[ExtractURL] Video analysis non-retryable HTTP ${res.status}`)
+      return ''
+    }
+    console.log(`[ExtractURL] Video analysis got ${res.status}, retrying in ${delays[attempt] / 1000}s (attempt ${attempt + 1}/3)`)
+    await new Promise(r => setTimeout(r, delays[attempt]))
+  }
+  return ''
 }
 
 // ─── Instagram Extraction ───────────────────────────────────────

@@ -66,12 +66,12 @@ export function classifyError(err: unknown, stage: string, context: Record<strin
     lower.includes('gemini') ||
     lower.includes('generativelanguage') ||
     lower.includes('llm') ||
-    // Gemini often returns raw HTTP status codes without useful messages
-    lower.match(/^5\d{2}\s+status/) ||
-    lower.includes('503 status') ||
-    lower.includes('502 status') ||
-    lower.includes('500 status') ||
-    lower.includes('internal server error')
+    // Gemini often returns raw HTTP status codes without useful messages —
+    // OpenAI SDK throws "<status> status code (no body)" for both 4xx and 5xx
+    lower.match(/^[45]\d{2}\s+status/) ||
+    lower.includes('internal server error') ||
+    lower.includes('permission_denied') ||
+    lower.includes('failed_precondition')
   ) {
     code = 'gemini_api_error'
   }

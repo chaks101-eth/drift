@@ -539,7 +539,7 @@ export async function POST(req: NextRequest) {
           error: getUserMessage(genError.code),
           code: genError.code,
           stage: 'db_trip_insert',
-          debug: tripError.message,
+          debug: process.env.NODE_ENV !== 'production' ? tripError.message : undefined,
         }, { status: 500 })
       }
       console.log(`[Generate] Trip created: ${trip.id}`)
@@ -645,7 +645,7 @@ export async function POST(req: NextRequest) {
           error: getUserMessage(genError.code),
           code: genError.code,
           stage: 'db_items_insert',
-          debug: itemsError.message,
+          debug: process.env.NODE_ENV !== 'production' ? itemsError.message : undefined,
         }, { status: 500 })
       }
 
@@ -719,7 +719,7 @@ export async function POST(req: NextRequest) {
       error: getUserMessage(genError.code),
       code: genError.code,
       stage: genError.stage,
-      debug: genError.message,
+      debug: process.env.NODE_ENV !== 'production' ? genError.message : undefined,
     }, { status: 500 })
   }
 }
