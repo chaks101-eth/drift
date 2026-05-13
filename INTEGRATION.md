@@ -2,20 +2,52 @@
 
 Read this before merging PR #1. The merge itself is clean at the file level — but five behavioral / operational changes will bite you if missed.
 
-## ⚠️ Point at the production Supabase, not your dev one
+## ⚠️ MUST READ: Run the pipeline against the Drift PROD Supabase
 
-The catalog this pipeline fills is the one users see on the live app. For that to work, your `.env.local` (and the production deployment env vars) must point at the **same Supabase project as the deployed Drift app**, not your personal dev project.
+**The catalog the live app reads from lives in *one* Supabase project — the production Drift project.** Anything the pipeline writes to a different project is invisible to real users.
 
-Required env vars — get the values from Maulik (or copy from the Vercel project's Production env on the live deployment):
+> **Do not** run the pipeline against your local/dev Supabase for "real" catalog work. Your dev project is fine for *testing the code path*, but every place you actually want filled (Phuket, Bali, Goa, etc.) needs to be written to the prod project, or it never reaches users.
+
+### What you need from Maulik (out-of-band — DM or 1Password, **not** in this repo)
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=<prod Supabase project URL>
-SUPABASE_SERVICE_ROLE_KEY=<prod service role key — DO NOT COMMIT>
+NEXT_PUBLIC_SUPABASE_URL=<prod Drift Supabase URL>
+SUPABASE_SERVICE_ROLE_KEY=<prod service role key — server-only, bypasses RLS>
+SUPABASE_DB_URL=<prod Postgres connection string, for running migrations via psql>
 ```
 
-If you point the pipeline at your dev Supabase, you'll happily fill a catalog nobody else can see. The pipeline itself doesn't care which Supabase it writes to — it just uses whatever the env vars say.
+Same values are visible in the Vercel project (`drift` production deployment) → Settings → Environment Variables → Production. If you have access there, copy from there.
 
-**Service role key is a secret.** Never commit it, never paste it in chat history, get it via 1Password / a DM / Vercel dashboard.
+### Set them in your `.env.local`
+
+Replace whatever's currently in your `.env.local` for these three keys with the prod values. Keep everything else (Amadeus, Gemini, Groq, SerpAPI keys, etc.) the same — those are independent.
+
+### Verify before running anything
+
+```bash
+# Should print the PROD project URL, not your dev one
+grep NEXT_PUBLIC_SUPABASE_URL .env.local
+
+# Sanity-check that the pipeline can see catalog tables on prod
+# (run from repo root, requires SUPABASE_SERVICE_ROLE_KEY in env)
+node -e "
+  require('dotenv').config({ path: '.env.local' });
+  const { createClient } = require('@supabase/supabase-js');
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  db.from('catalog_destinations').select('slug').limit(5).then(({data, error}) => {
+    if (error) return console.error('FAIL:', error);
+    console.log('OK — destinations sample:', data.map(d => d.slug));
+  });
+"
+```
+
+If that prints actual Drift destination slugs (`bali`, `phuket`, etc.), you're pointed at prod. If it errors or returns nothing, you're either still on your dev DB or the keys are wrong — fix that **before** running the migration.
+
+### Security reminders
+
+- **Service role key bypasses RLS.** Anyone with it can read/write any row in the DB. Never commit it, never paste it in PR comments / Slack channels / chat history. Treat it like a production database password (because it effectively is one).
+- **The Supabase URL alone is less sensitive** but still shouldn't be hardcoded in a public repo — that's why it's not in this file.
+- **Rotate the service role key** if it's ever accidentally exposed (Supabase Dashboard → Project Settings → API → Reset service_role secret).
 
 ## TL;DR runbook (in this order)
 
