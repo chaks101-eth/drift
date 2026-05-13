@@ -34,8 +34,8 @@ type CatalogItem = {
 
 type PipelineRun = {
   id: string; destination_id: string; status: string
-  steps_completed?: string[]; stats?: Record<string, number>
-  error?: string; created_at: string; completed_at?: string
+  steps_completed?: string[]; stats?: Record<string, unknown>
+  error?: string; started_at: string; completed_at?: string
   catalog_destinations?: { city: string; country: string }
 }
 
@@ -1187,7 +1187,7 @@ function PipelineRunRow({ run }: { run: PipelineRun }) {
   const allSteps = ['hotels', 'activities', 'restaurants', 'template', 'enrich']
   const completed = run.steps_completed || []
   const duration = run.completed_at
-    ? Math.round((new Date(run.completed_at).getTime() - new Date(run.created_at).getTime()) / 1000)
+    ? Math.round((new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) / 1000)
     : null
 
   return (
@@ -1199,7 +1199,7 @@ function PipelineRunRow({ run }: { run: PipelineRun }) {
             {run.catalog_destinations?.city || 'Unknown'}{run.catalog_destinations?.country && run.catalog_destinations.country.toLowerCase() !== run.catalog_destinations.city?.toLowerCase() ? `, ${run.catalog_destinations.country}` : ''}
           </div>
           <div className="text-[10px] text-[#4a4a55]">
-            {new Date(run.created_at).toLocaleString()}
+            {new Date(run.started_at).toLocaleString()}
             {duration !== null && ` — ${duration}s`}
           </div>
         </div>
@@ -1271,9 +1271,9 @@ function PipelineRunRow({ run }: { run: PipelineRun }) {
           {/* Stats summary */}
           {run.stats && Object.keys(run.stats).length > 0 && (
             <div className="mt-3 flex gap-4">
-              {Object.entries(run.stats).map(([k, v]) => (
+              {Object.entries(run.stats).filter(([, v]) => typeof v !== 'object').map(([k, v]) => (
                 <div key={k} className="text-center">
-                  <div className="text-lg font-light text-[#f0efe8]">{v}</div>
+                  <div className="text-lg font-light text-[#f0efe8]">{String(v)}</div>
                   <div className="text-[9px] text-[#4a4a55] uppercase">{k}</div>
                 </div>
               ))}
