@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
           if (results.length > 0) return results
         } catch (e) { console.warn(`[Flights] Amadeus failed ${from}→${to}: ${e}`) }
         // Fallback: grounded search
-        return searchFlightsGrounded({ origin: body.origin || from, destination: body.destination || to, departureDate: date, adults: travelers })
+        return searchFlightsGrounded({ origin: from, destination: to, departureDate: date, adults: travelers })
       }
 
       const flightPromises = [
