@@ -13,19 +13,17 @@
     "agents": "tsx agent-server/server.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
+    "@anthropic-ai/sdk": "^0.90.0",
     "@remotion/cli": "^4.0.440",
     "@remotion/renderer": "^4.0.440",
     "@sentry/nextjs": "^10.45.0",
-    "@supabase/supabase-js": "^2.98.0",
-    "@types/leaflet": "^1.9.21",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
     "dotenv": "^17.3.1",
-    "leaflet": "^1.9.4",
-    "next": "16.1.6",
+    "next": "^16.2.4",
     "openai": "^6.27.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-leaflet": "^5.0.0",
     "remotion": "^4.0.440",
     "youtube-transcript": "^1.3.0",
     "zustand": "^5.0.12"
