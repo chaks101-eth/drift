@@ -49,11 +49,20 @@ export async function getPlaceData(
 
     const c = findData.candidates[0]
 
-    // Build photo URL
+    // Build photo URL — resolve redirect to direct CDN URL
     let photoUrl: string | null = null
     if (c.photos?.length) {
       const photoRef = c.photos[0].photo_reference
-      photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxPhotoWidth}&photo_reference=${photoRef}&key=${API_KEY}`
+      const apiPhotoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxPhotoWidth}&photo_reference=${photoRef}&key=${API_KEY}`
+      try {
+        const photoRes = await fetch(apiPhotoUrl, { redirect: 'manual' })
+        const location = photoRes.headers.get('location')
+        photoUrl = (location && location.includes('googleusercontent.com'))
+          ? location
+          : apiPhotoUrl
+      } catch {
+        photoUrl = apiPhotoUrl
+      }
     }
 
     // Build Google Maps URL
@@ -102,8 +111,8 @@ export async function batchGetPlaceData(
   console.log(`[Places] Enriching ${enrichItems.length} items in ${city}...`)
   const startTime = Date.now()
 
-  // Parallel batches of 10 (fewer round-trips for faster enrichment)
-  const BATCH_SIZE = 10
+  // Parallel batches of 5
+  const BATCH_SIZE = 5
   for (let i = 0; i < enrichItems.length; i += BATCH_SIZE) {
     const batch = enrichItems.slice(i, i + BATCH_SIZE)
     const batchResults = await Promise.all(
@@ -202,7 +211,16 @@ export async function getDestinationPhoto(
     if (data.status !== 'OK' || !data.candidates?.[0]?.photos?.length) return null
 
     const photoRef = data.candidates[0].photos[0].photo_reference
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${API_KEY}`
+    const apiPhotoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${API_KEY}`
+    try {
+      const photoRes = await fetch(apiPhotoUrl, { redirect: 'manual' })
+      const location = photoRes.headers.get('location')
+      return (location && location.includes('googleusercontent.com'))
+        ? location
+        : apiPhotoUrl
+    } catch {
+      return apiPhotoUrl
+    }
   } catch {
     return null
   }
