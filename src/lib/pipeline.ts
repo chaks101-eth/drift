@@ -118,8 +118,8 @@ async function upsertCatalogItems(
     const batches = chunk(withPlaceId, 10)
     console.log(`[Pipeline] ${tableName}: upserting ${withPlaceId.length} items in ${batches.length} batches`)
     for (const batch of batches) {
-      const { error } = await withRetry(
-        () => db.from(tableName).upsert(batch, {
+      const { error } = await withRetry<{ error: { message: string } | null }>(
+        async () => await db.from(tableName).upsert(batch, {
           onConflict: 'destination_id,place_id',
         }),
         `DB:upsert-${tableName}`,
@@ -134,8 +134,8 @@ async function upsertCatalogItems(
     const batches = chunk(withoutPlaceId, 10)
     console.log(`[Pipeline] ${tableName}: inserting ${withoutPlaceId.length} items (no place_id) in ${batches.length} batches`)
     for (const batch of batches) {
-      const { error } = await withRetry(
-        () => db.from(tableName).insert(batch),
+      const { error } = await withRetry<{ error: { message: string } | null }>(
+        async () => await db.from(tableName).insert(batch),
         `DB:insert-${tableName}-no-placeid`,
       )
       if (error) console.warn(`[Pipeline] ${tableName} insert batch failed: ${error.message}`)
@@ -1007,12 +1007,12 @@ Start each day with a "day" separator (category: "day", name: "Day 1 — Theme")
   }
 
   await withRetry(
-    () => db.from('catalog_templates').delete().eq('destination_id', ctx.destinationId),
+    async () => await db.from('catalog_templates').delete().eq('destination_id', ctx.destinationId),
     'DB:delete-templates',
   )
 
-  const { error } = await withRetry(
-    () => db.from('catalog_templates').insert({
+  const { error } = await withRetry<{ error: { message: string } | null }>(
+    async () => await db.from('catalog_templates').insert({
       destination_id: ctx.destinationId,
       name: `${ctx.config.city} — ${ctx.config.vibes.slice(0, 2).join(' & ')}`,
       vibes: ctx.config.vibes,
@@ -1059,8 +1059,8 @@ Use realistic daily budget numbers in USD for this destination.`),
     throw new Error(`Enrich LLM JSON parse failed: ${parseErr}`)
   }
 
-  const { error } = await withRetry(
-    () => db
+  const { error } = await withRetry<{ error: { message: string } | null }>(
+    async () => await db
       .from('catalog_destinations')
       .update({
         description: enriched.description,

@@ -1245,7 +1245,7 @@ function PipelineRunRow({ run }: { run: PipelineRun }) {
                       {step.charAt(0).toUpperCase() + step.slice(1)}
                     </span>
                     {count !== undefined && (
-                      <span className="ml-2 text-[10px] text-[#7a7a85]">{count} items</span>
+                      <span className="ml-2 text-[10px] text-[#7a7a85]">{String(count)} items</span>
                     )}
                   </div>
                   <span className={`text-[9px] px-1.5 py-0.5 rounded ${
