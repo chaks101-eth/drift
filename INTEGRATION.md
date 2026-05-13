@@ -2,9 +2,29 @@
 
 Read this before merging PR #1. The merge itself is clean at the file level — but five behavioral / operational changes will bite you if missed.
 
+## ⚠️ Point at the production Supabase, not your dev one
+
+The catalog this pipeline fills is the one users see on the live app. For that to work, your `.env.local` (and the production deployment env vars) must point at the **same Supabase project as the deployed Drift app**, not your personal dev project.
+
+Required env vars — get the values from Maulik (or copy from the Vercel project's Production env on the live deployment):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=<prod Supabase project URL>
+SUPABASE_SERVICE_ROLE_KEY=<prod service role key — DO NOT COMMIT>
+```
+
+If you point the pipeline at your dev Supabase, you'll happily fill a catalog nobody else can see. The pipeline itself doesn't care which Supabase it writes to — it just uses whatever the env vars say.
+
+**Service role key is a secret.** Never commit it, never paste it in chat history, get it via 1Password / a DM / Vercel dashboard.
+
 ## TL;DR runbook (in this order)
 
 ```bash
+# 0. Confirm your .env.local points at the PROD Drift Supabase (see top of this file).
+#    psql connection string for the same project:
+#    SUPABASE_DB_URL="postgresql://postgres.<project-ref>:<db-password>@aws-0-<region>.pooler.supabase.com:6543/postgres"
+#    (Get the exact string from Supabase Dashboard → Project Settings → Database → Connection string)
+
 # 1. Merge the PR
 git checkout main && git pull origin main
 
@@ -12,10 +32,9 @@ git checkout main && git pull origin main
 rm package-lock.json && npm install
 
 # 3. Pre-flight: check for duplicates that would break the new unique index
-#    (see "Migration safety" section below)
+#    (see "Migration safety" section below) — run these against the PROD DB
 
-# 4. Run the migration on staging FIRST, then prod
-#    From repo root, against your Supabase DB:
+# 4. Run the migration against the PROD Drift Supabase
 psql "$SUPABASE_DB_URL" -f supabase/migrations/004_catalog_freshness.sql
 
 # 5. Backfill place_id on existing rows so the new unique index actually helps
