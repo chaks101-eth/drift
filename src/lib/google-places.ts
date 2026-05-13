@@ -55,12 +55,18 @@ export async function searchPlaces(query: string, maxResults = 10): Promise<Goog
   const data = await res.json()
   const places = data.places || []
 
-  return places.map((p: Record<string, unknown>) => {
+  return Promise.all(places.map(async (p: Record<string, unknown>) => {
     const displayName = p.displayName as { text: string } | undefined
     const editorial = p.editorialSummary as { text: string } | undefined
     const location = p.location as { latitude: number; longitude: number } | undefined
     const photos = (p.photos as Array<{ name: string }>) || []
     const primaryType = p.primaryTypeDisplayName as { text: string } | undefined
+
+    // Resolve photo URLs server-side to direct CDN URLs
+    const resolvedUrls = await Promise.all(
+      photos.slice(0, 3).map(ph => resolvePhotoUrl(ph.name))
+    )
+    const photoUrls = resolvedUrls.filter(u => u.length > 0)
 
     return {
       name: displayName?.text || '',
@@ -71,14 +77,14 @@ export async function searchPlaces(query: string, maxResults = 10): Promise<Goog
       address: (p.formattedAddress as string) || '',
       description: editorial?.text || '',
       photos: photos.slice(0, 3).map(ph => ph.name),
-      photoUrls: photos.slice(0, 3).map(ph => getPhotoUrl(ph.name)),
+      photoUrls,
       type: primaryType?.text || (p.primaryType as string) || '',
       website: (p.websiteUri as string) || undefined,
       mapsUrl: (p.googleMapsUri as string) || undefined,
       lat: location?.latitude || 0,
       lng: location?.longitude || 0,
     }
-  })
+  }))
 }
 
 // ─── Search restaurants specifically ─────────────────────────
@@ -143,8 +149,30 @@ export async function searchAttractions(city: string, country: string): Promise<
 }
 
 // ─── Photo URL helper ────────────────────────────────────────
-// Resolves photo resource name to a URL
+// Resolves photo resource name to a direct CDN URL (googleusercontent.com)
+// by following the Google Places redirect server-side.
+// Falls back to the API URL if redirect resolution fails.
 
+async function resolvePhotoUrl(photoName: string, maxWidth = 600): Promise<string> {
+  if (!API_KEY || !photoName) return ''
+  const apiUrl = `${BASE_URL}/${photoName}/media?maxWidthPx=${maxWidth}&key=${API_KEY}`
+  try {
+    // Fetch with redirect: 'manual' to capture the 302 Location header
+    const res = await fetch(apiUrl, { redirect: 'manual' })
+    const location = res.headers.get('location')
+    if (location && location.includes('googleusercontent.com')) {
+      return location
+    }
+    // Some responses return 200 with the image directly — use the API URL
+    if (res.ok) return apiUrl
+    return ''
+  } catch {
+    // Network error — return API URL as fallback
+    return apiUrl
+  }
+}
+
+// Synchronous version for backward compat (returns unresolved API URL)
 function getPhotoUrl(photoName: string, maxWidth = 600): string {
   if (!API_KEY || !photoName) return ''
   return `${BASE_URL}/${photoName}/media?maxWidthPx=${maxWidth}&key=${API_KEY}`

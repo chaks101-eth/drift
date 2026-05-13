@@ -66,39 +66,47 @@ const CITY_IATA: Record<string, string> = {
   'delhi': 'DEL', 'new delhi': 'DEL', 'mumbai': 'BOM', 'bangalore': 'BLR',
   'bengaluru': 'BLR', 'chennai': 'MAA', 'kolkata': 'CCU', 'hyderabad': 'HYD',
   'goa': 'GOI', 'jaipur': 'JAI', 'ahmedabad': 'AMD', 'pune': 'PNQ',
-  'kochi': 'COK', 'cochin': 'COK', 'lucknow': 'LKO', 'varanasi': 'VNS',
-  'benaras': 'VNS', 'amritsar': 'ATQ', 'indore': 'IDR', 'nagpur': 'NAG',
-  'chandigarh': 'IXC', 'thiruvananthapuram': 'TRV', 'trivandrum': 'TRV',
-  'coimbatore': 'CJB', 'patna': 'PAT', 'bhopal': 'BHO', 'ranchi': 'IXR',
-  'bhubaneswar': 'BBI', 'mangalore': 'IXE', 'visakhapatnam': 'VTZ',
-  'vizag': 'VTZ', 'madurai': 'IXM', 'surat': 'STV',
+  'kochi': 'COK', 'cochin': 'COK', 'kerala': 'COK', 'lucknow': 'LKO',
+  'varanasi': 'VNS', 'benaras': 'VNS', 'amritsar': 'ATQ', 'indore': 'IDR',
+  'nagpur': 'NAG', 'chandigarh': 'IXC', 'thiruvananthapuram': 'TRV',
+  'trivandrum': 'TRV', 'coimbatore': 'CJB', 'patna': 'PAT', 'bhopal': 'BHO',
+  'ranchi': 'IXR', 'bhubaneswar': 'BBI', 'mangalore': 'IXE',
+  'visakhapatnam': 'VTZ', 'vizag': 'VTZ', 'madurai': 'IXM', 'surat': 'STV',
   // India — tourist destinations (nearest airport)
   'udaipur': 'UDR', 'jodhpur': 'JDH', 'agra': 'AGR',
-  'srinagar': 'SXR', 'leh': 'IXL', 'ladakh': 'IXL',
+  'srinagar': 'SXR', 'leh': 'IXL', 'ladakh': 'IXL', 'leh ladakh': 'IXL',
   'rishikesh': 'DED', 'dehradun': 'DED', 'haridwar': 'DED',
   'shimla': 'SLV', 'manali': 'KUU', 'kullu': 'KUU',
   'darjeeling': 'IXB', 'siliguri': 'IXB', 'bagdogra': 'IXB',
   'gangtok': 'IXB', 'port blair': 'IXZ', 'andaman': 'IXZ',
+  'andaman islands': 'IXZ',
   'munnar': 'COK', 'ooty': 'CJB', 'coorg': 'IXE',
   'kodaikanal': 'IXM', 'mysore': 'MYQ', 'mysuru': 'MYQ',
   'guwahati': 'GAU', 'shillong': 'SHL', 'imphal': 'IMF',
   'dibrugarh': 'DIB', 'raipur': 'RPR', 'jammu': 'IXJ',
   // Southeast Asia
-  'bali': 'DPS', 'denpasar': 'DPS', 'bangkok': 'BKK', 'tokyo': 'NRT',
-  'singapore': 'SIN', 'hanoi': 'HAN', 'seoul': 'ICN', 'dubai': 'DXB',
-  'abu dhabi': 'AUH', 'doha': 'DOH', 'muscat': 'MCT',
-  'maldives': 'MLE', 'male': 'MLE', 'colombo': 'CMB', 'sri lanka': 'CMB',
-  'hong kong': 'HKG', 'phuket': 'HKT', 'kuala lumpur': 'KUL',
-  'ho chi minh': 'SGN', 'saigon': 'SGN', 'kathmandu': 'KTM',
+  'bali': 'DPS', 'denpasar': 'DPS', 'bangkok': 'BKK', 'phuket': 'HKT',
+  'pattaya': 'UTP', 'singapore': 'SIN', 'hanoi': 'HAN',
+  'ho chi minh': 'SGN', 'ho chi minh city': 'SGN', 'saigon': 'SGN',
+  'vietnam': 'SGN', 'kuala lumpur': 'KUL', 'kathmandu': 'KTM',
   'chiang mai': 'CNX', 'siem reap': 'REP', 'phnom penh': 'PNH',
   'jakarta': 'CGK', 'manila': 'MNL', 'cebu': 'CEB',
   'taipei': 'TPE', 'shanghai': 'PVG', 'beijing': 'PEK',
   'guangzhou': 'CAN', 'shenzhen': 'SZX',
+  // East Asia
+  'tokyo': 'NRT', 'kyoto': 'KIX', 'osaka': 'KIX', 'fukuoka': 'FUK',
+  'seoul': 'ICN', 'hong kong': 'HKG',
+  // Middle East
+  'dubai': 'DXB', 'abu dhabi': 'AUH', 'doha': 'DOH', 'muscat': 'MCT',
+  // South Asia
+  'maldives': 'MLE', 'male': 'MLE',
+  'colombo': 'CMB', 'sri lanka': 'CMB',
   // Europe
   'london': 'LHR', 'paris': 'CDG', 'rome': 'FCO', 'barcelona': 'BCN',
   'amsterdam': 'AMS', 'berlin': 'BER', 'madrid': 'MAD', 'lisbon': 'LIS',
   'athens': 'ATH', 'istanbul': 'IST', 'prague': 'PRG', 'vienna': 'VIE',
-  'zurich': 'ZRH', 'santorini': 'JTR', 'mykonos': 'JMK',
+  'zurich': 'ZRH', 'switzerland': 'ZRH', 'interlaken': 'ZRH',
+  'santorini': 'JTR', 'mykonos': 'JMK',
   'florence': 'FLR', 'milan': 'MXP', 'venice': 'VCE', 'naples': 'NAP',
   'munich': 'MUC', 'frankfurt': 'FRA', 'dublin': 'DUB', 'edinburgh': 'EDI',
   'budapest': 'BUD', 'warsaw': 'WAW', 'copenhagen': 'CPH',
@@ -114,8 +122,6 @@ const CITY_IATA: Record<string, string> = {
   'mexico city': 'MEX', 'cancun': 'CUN', 'toronto': 'YYZ',
   'vancouver': 'YVR', 'montreal': 'YUL', 'lima': 'LIM',
   'bogota': 'BOG', 'medellin': 'MDE', 'havana': 'HAV',
-  // East Asia
-  'kyoto': 'KIX', 'osaka': 'KIX', 'fukuoka': 'FUK',
   // Africa & Middle East
   'marrakech': 'RAK', 'zanzibar': 'ZNZ', 'mauritius': 'MRU',
   'cape town': 'CPT', 'nairobi': 'NBO', 'cairo': 'CAI',
@@ -467,185 +473,6 @@ export function flightToItineraryItem(flight: FlightOffer, position: number) {
       bookingUrl: flight.bookingUrl,
       skyscannerUrl: flight.bookingUrl,
       alts: [] as Array<{ name: string; detail: string; price: string; trust?: Array<{ type: string; text: string }> }>,
-    },
-  }
-}
-
-// ─── Grounded Transport Search (Trains/Buses for Domestic) ─────
-//
-// Honest design: we don't have real IRCTC/RedBus API access, so we don't
-// pretend to. Instead of hallucinating train numbers and prices, we ask
-// Gemini for what it can know reliably — ROUTE FEASIBILITY and TYPICAL
-// DURATION RANGE. We then build a search URL to the real provider so the
-// user sees actual live data on IRCTC/RedBus, not our guess.
-//
-// What we ASK Gemini for (reliable):
-//   - Is there a train route? A bus route?
-//   - What's the approximate duration by that mode?
-//   - What's the class of service (e.g. "Superfast Express", "AC Sleeper Bus")?
-//
-// What we DON'T ask for (unreliable, varies by day):
-//   - Specific train numbers (often hallucinated)
-//   - Specific service names on a given date
-//   - Prices (change daily)
-//   - Seat availability
-//
-// What we return to the user:
-//   - A route hint card: "By train · ~5h · Superfast Express · Search on IRCTC"
-//   - Clicking takes them to IRCTC/RedBus search pre-filled with origin+dest
-
-export interface TransportOption {
-  mode: 'train' | 'bus'
-  serviceClass: string // "Superfast Express", "AC Sleeper Bus" — no specific names
-  departureStation: string
-  arrivalStation: string
-  duration: string // "~5h", "4-5h" — range allowed
-  bookingUrl: string // search URL, pre-filled with route
-}
-
-// Build pre-filled search URLs to real providers
-function buildTrainSearchUrl(origin: string, destination: string): string {
-  // IRCTC doesn't have a good deep-link, but we can pre-fill the from/to on search
-  // Fall back to the main search page — user types origin/dest (already visible from the card)
-  const params = new URLSearchParams({ q: `${origin} to ${destination} train` })
-  // Use a train-booking meta-search that accepts pre-filled queries and works reliably
-  return `https://www.google.com/search?${params.toString()}`
-}
-
-function buildBusSearchUrl(origin: string, destination: string): string {
-  // RedBus supports /bus-tickets/origin-to-destination slugified route
-  const slug = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  return `https://www.redbus.in/bus-tickets/${slug(origin)}-to-${slug(destination)}`
-}
-
-function buildIrctcSearchUrl(origin: string, destination: string): string {
-  // IRCTC's train-search page accepts from/to as URL params
-  const slug = (s: string) => s.toUpperCase().trim().replace(/[^A-Z0-9 ]+/g, '').replace(/\s+/g, '+')
-  return `https://www.irctc.co.in/nget/train-search?from=${slug(origin)}&to=${slug(destination)}`
-}
-
-export async function searchGroundedTransport(params: {
-  origin: string
-  destination: string
-  departureDate: string
-  adults?: number
-}): Promise<TransportOption[]> {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return []
-
-  const { origin, destination } = params
-
-  try {
-    console.log(`[Transport] Checking route feasibility: ${origin} → ${destination}`)
-    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `For a traveler going from ${origin} to ${destination} in India, what domestic transport options commonly exist?
-
-Return ONLY facts you're confident about — no specific train numbers or prices. If a mode isn't reasonably available between these cities, omit it.
-
-Respond with a JSON array of up to 2 items (one train, one bus if both exist):
-[{"mode":"train","serviceClass":"Superfast Express","duration":"~5h","departureStation":"New Delhi","arrivalStation":"Jaipur Junction"},{"mode":"bus","serviceClass":"AC Sleeper","duration":"~6h","departureStation":"Delhi ISBT","arrivalStation":"Jaipur Bus Stand"}]
-
-Rules:
-- serviceClass is the general TYPE (e.g. "Vande Bharat", "Rajdhani", "Superfast", "Volvo AC Sleeper") — NOT a specific train number or service name
-- duration is a rough estimate with ~ prefix or range (e.g. "~4h", "4-5h")
-- Use actual station names (e.g. "New Delhi Railway Station", "Mumbai Central")
-- Skip modes that would take >12h or don't make sense (e.g. overnight buses for short routes, trains for routes without rail connection)
-- JSON only, no markdown.` }] }],
-      }),
-      signal: AbortSignal.timeout(15000),
-    })
-
-    if (!res.ok) {
-      console.warn(`[Transport] Gemini returned ${res.status}`)
-      return []
-    }
-
-    const data = await res.json()
-    const rawText = data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || ''
-    const text = rawText.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim()
-
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) {
-      console.warn(`[Transport] No JSON found: ${text.slice(0, 200)}`)
-      return []
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, any>>
-    console.log(`[Transport] Parsed ${parsed.length} route options`)
-
-    return parsed
-      .slice(0, 2)
-      .map(t => {
-        const mode = String(t.mode || '').toLowerCase()
-        const isBus = mode.includes('bus')
-        const serviceClass = String(t.serviceClass || t.class || '').trim()
-        const duration = String(t.duration || '').trim()
-        const departureStation = String(t.departureStation || origin).trim()
-        const arrivalStation = String(t.arrivalStation || destination).trim()
-
-        // Skip if the essentials are missing — don't show an empty card
-        if (!serviceClass || !duration) return null
-
-        return {
-          mode: (isBus ? 'bus' : 'train') as 'train' | 'bus',
-          serviceClass,
-          departureStation,
-          arrivalStation,
-          duration,
-          bookingUrl: isBus
-            ? buildBusSearchUrl(origin, destination)
-            : buildIrctcSearchUrl(origin, destination),
-        } as TransportOption
-      })
-      .filter((t): t is TransportOption => t !== null)
-  } catch (e) {
-    console.warn(`[Transport] Grounded search failed: ${e}`)
-    return []
-  }
-}
-
-// Keep for backward compatibility — search URL fallback
-export { buildTrainSearchUrl }
-
-export function transportToItineraryItem(transport: TransportOption, position: number) {
-  const modeLabel = transport.mode === 'train' ? 'Train' : 'Bus'
-  const whyFactors: string[] = [
-    `Route available by ${transport.mode}`,
-    `${transport.duration} typical travel time`,
-    transport.serviceClass,
-  ]
-
-  return {
-    category: 'flight' as const,
-    image_url: '',
-    name: `${transport.departureStation} → ${transport.arrivalStation}`,
-    // Detail is the user-facing label — no fake train numbers, just class + duration
-    detail: `${transport.serviceClass} · ${transport.duration}`,
-    description: `${modeLabel} route from ${transport.departureStation} to ${transport.arrivalStation}. Typically ${transport.duration} by ${transport.serviceClass}. Live times and prices on the booking site.`,
-    // No price — we don't have real prices. Empty string parses to 0 which hides it in UI.
-    price: '',
-    time: '',
-    position,
-    metadata: {
-      transport_mode: transport.mode,
-      reason: `Common ${modeLabel.toLowerCase()} route for this journey`,
-      whyFactors,
-      info: [
-        { l: 'Mode', v: modeLabel },
-        { l: 'Class', v: transport.serviceClass },
-        { l: 'Duration', v: transport.duration },
-        { l: 'Note', v: 'Live times & fares on booking site' },
-      ],
-      features: [transport.serviceClass].filter(Boolean),
-      bookingUrl: transport.bookingUrl,
-      // Signal to UI that this is a route hint, not a specific service
-      isRouteHint: true,
-      alts: [] as Array<{ name: string; detail: string; price: string }>,
     },
   }
 }

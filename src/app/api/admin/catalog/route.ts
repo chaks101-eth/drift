@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
   const table = tableMap[type]
   if (!table) return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
 
-  let query = db.from(table).select('*').order('created_at', { ascending: false })
+  const orderCol = table === 'pipeline_runs' ? 'started_at' : 'created_at'
+  let query = db.from(table).select('*').order(orderCol, { ascending: false })
   if (destinationId && type !== 'destinations') {
     query = query.eq('destination_id', destinationId)
   }

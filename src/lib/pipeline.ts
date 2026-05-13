@@ -1,8 +1,8 @@
 // ─── Travel Data Pipeline ─────────────────────────────────────
 // Config-driven catalog builder. Multi-source real data + LLM enrichment.
-// Hotels: Amadeus API + SerpAPI (Google Maps) → LLM enriches → Booking.com deep links
-// Activities: Amadeus Tours API → LLM enriches → booking links preserved
-// Restaurants: SerpAPI (Google Maps real data) → LLM enriches descriptions/vibes
+// Discovery: Google Places (bulk) + SerpAPI (details/reviews)
+// Enrichment: LLM enriches ALL discovered places in batches
+// Storage: Upsert by place_id for freshness tracking
 // Templates: LLM builds from real catalog data
 
 import Anthropic from '@anthropic-ai/sdk'
@@ -11,21 +11,24 @@ import { createClient } from '@supabase/supabase-js'
 import { getDestinationImage, upsizeGoogleImage } from './images'
 import { getPlaceFallbackPhotos } from './unsplash'
 import {
-  searchRestaurants as serpSearchRestaurants,
-  searchHotels as serpSearchHotels,
-  searchAttractions as serpSearchAttractions,
-  enrichPlacesWithDetails,
-  enrichPlacesWithReviews,
   type PlaceResult,
   type PlaceDetails,
   type PlaceReviewSummary,
 } from './serpapi'
+import {
+  discoverPlaces,
+  withRetry,
+  type CategoryType,
+  type DiscoveryResult,
+} from './discovery'
+import { QuotaTracker } from './quota-tracker'
 
 // LLM Provider: Claude (primary) → Gemini (fallback) → Groq (last resort)
 let _anthropicClient: Anthropic | null = null
 let _openaiClient: OpenAI | null = null
 let _llmProvider = 'unknown'
 let _llmModel = 'unknown'
+let _providerSwitchCount = 0
 
 function initLlm() {
   if (_llmProvider !== 'unknown') return
@@ -36,7 +39,7 @@ function initLlm() {
     _anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   } else if (process.env.GEMINI_API_KEY) {
     _llmProvider = 'Gemini'
-    _llmModel = 'gemini-2.5-flash'
+    _llmModel = 'gemini-3-flash-preview'
     _openaiClient = new OpenAI({
       apiKey: process.env.GEMINI_API_KEY,
       baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
@@ -78,87 +81,336 @@ interface PipelineContext {
   destinationId: string
   runId: string
   steps: string[]
+  quota: QuotaTracker
+  runStartTime: string
 }
 
-// ─── Data source: SerpAPI only (Amadeus removed) ────────────
+// ─── Upsert Helpers ─────────────────────────────────────────
+
+export function splitByPlaceId<T extends { place_id?: string | null }>(
+  rows: T[]
+): { withPlaceId: T[]; withoutPlaceId: T[] } {
+  const withPlaceId = rows.filter(r => r.place_id != null)
+  const withoutPlaceId = rows.filter(r => r.place_id == null)
+  return { withPlaceId, withoutPlaceId }
+}
+
+async function upsertCatalogItems(
+  tableName: string,
+  rows: Record<string, unknown>[],
+  ctx: PipelineContext,
+) {
+  const db = getAdminClient()
+  const { withPlaceId: rawWithPlaceId, withoutPlaceId } = splitByPlaceId(rows as Array<Record<string, unknown> & { place_id?: string | null }>)
+
+  // Deduplicate by place_id (keep last occurrence) to avoid "cannot affect row a second time"
+  const placeIdMap = new Map<string, Record<string, unknown>>()
+  for (const row of rawWithPlaceId) {
+    placeIdMap.set(row.place_id as string, row)
+  }
+  const withPlaceId = Array.from(placeIdMap.values())
+  if (rawWithPlaceId.length !== withPlaceId.length) {
+    console.log(`[Pipeline] ${tableName}: deduped ${rawWithPlaceId.length} → ${withPlaceId.length} by place_id`)
+  }
+
+  // Upsert items with place_id in chunks of 10 (avoid payload too large)
+  if (withPlaceId.length > 0) {
+    const batches = chunk(withPlaceId, 10)
+    console.log(`[Pipeline] ${tableName}: upserting ${withPlaceId.length} items in ${batches.length} batches`)
+    for (const batch of batches) {
+      const { error } = await withRetry(
+        () => db.from(tableName).upsert(batch, {
+          onConflict: 'destination_id,place_id',
+        }),
+        `DB:upsert-${tableName}`,
+      )
+      if (error) throw new Error(`${tableName} upsert failed: ${error.message}`)
+    }
+    console.log(`[Pipeline] ${tableName}: ${withPlaceId.length} upserted`)
+  }
+
+  // Insert items without place_id in chunks of 10
+  if (withoutPlaceId.length > 0) {
+    const batches = chunk(withoutPlaceId, 10)
+    console.log(`[Pipeline] ${tableName}: inserting ${withoutPlaceId.length} items (no place_id) in ${batches.length} batches`)
+    for (const batch of batches) {
+      const { error } = await withRetry(
+        () => db.from(tableName).insert(batch),
+        `DB:insert-${tableName}-no-placeid`,
+      )
+      if (error) console.warn(`[Pipeline] ${tableName} insert batch failed: ${error.message}`)
+    }
+    console.log(`[Pipeline] ${tableName}: ${withoutPlaceId.length} inserted (no place_id)`)
+  }
+
+  // Soft-delete stale items: mark items not updated in this run as inactive
+  const { error: softDelError } = await db
+    .from(tableName)
+    .update({ status: 'inactive' })
+    .eq('destination_id', ctx.destinationId)
+    .lt('updated_at', ctx.runStartTime)
+    .neq('status', 'inactive')
+
+  if (softDelError) {
+    console.warn(`[Pipeline] ${tableName} soft-delete failed: ${softDelError.message}`)
+  } else {
+    console.log(`[Pipeline] ${tableName}: stale items marked inactive (updated_at < ${ctx.runStartTime})`)
+  }
+
+  return withPlaceId.length + withoutPlaceId.length
+}
+
+// ─── Discovery: Query Generation + Batch Enrichment ─────────
+
+async function generateDiscoveryQueries(
+  city: string,
+  country: string,
+  vibes: string[],
+  category: CategoryType,
+): Promise<string[]> {
+  const categoryDescriptions: Record<CategoryType, string> = {
+    hotels: 'hotels, resorts, hostels, boutique stays, and accommodations',
+    activities: 'attractions, tours, experiences, sightseeing, adventure, cultural activities, and things to do',
+    restaurants: 'restaurants, street food, cafes, fine dining, local cuisine, and food experiences',
+  }
+
+  const raw = await withRetry(
+    () => llmGenerate(`
+You are generating Google Maps search queries to build a comprehensive travel catalog for ${city}, ${country}.
+Category: ${categoryDescriptions[category]}
+Destination vibes: ${vibes.join(', ')}
+
+Generate 12 diverse search queries that will find REAL ${category} across:
+- Price tiers (budget, mid-range, luxury)
+- Different neighborhoods/areas of the city
+- Different subcategories
+- Traveler types (solo, couples, families, backpackers)
+- Local/cultural specialties unique to this destination
+
+Rules:
+- Each query should target a DIFFERENT segment (don't repeat similar queries)
+- Use local terms where appropriate (e.g. "ryokan" for Japan, "riad" for Morocco, "dhaba" for India)
+- Include the city name in each query
+- Queries should work well on Google Maps
+
+Return JSON array of strings: ["query 1", "query 2", ...]`),
+    'LLM:discovery-queries',
+  )
+
+  try {
+    const queries = JSON.parse(repairJsonArray(raw))
+    if (Array.isArray(queries) && queries.length > 0) {
+      console.log(`[Pipeline] Generated ${queries.length} discovery queries for ${category}`)
+      return queries.slice(0, 15) // Cap at 15
+    }
+  } catch {
+    console.warn(`[Pipeline] Failed to parse discovery queries, using defaults`)
+  }
+
+  // Fallback queries if LLM fails
+  const fallbacks: Record<CategoryType, string[]> = {
+    hotels: [
+      `best hotels in ${city} ${country}`,
+      `budget hostels ${city} ${country}`,
+      `luxury resorts ${city} ${country}`,
+      `boutique hotels ${city}`,
+      `family hotels ${city}`,
+    ],
+    activities: [
+      `top attractions in ${city} ${country}`,
+      `things to do in ${city} ${country}`,
+      `adventure activities ${city} ${country}`,
+      `cultural experiences ${city}`,
+      `day trips from ${city}`,
+    ],
+    restaurants: [
+      `best restaurants in ${city} ${country}`,
+      `popular street food in ${city} ${country}`,
+      `fine dining ${city} ${country}`,
+      `local cuisine ${city}`,
+      `cafes ${city}`,
+    ],
+  }
+  return fallbacks[category]
+}
+
+// Chunk an array into batches of `size`
+function chunk<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = []
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size))
+  }
+  return result
+}
+
+// Batch-enrich places through LLM in chunks
+async function batchEnrich(
+  places: PlaceResult[],
+  detailsMap: Map<string, PlaceDetails>,
+  reviewsMap: Map<string, PlaceReviewSummary>,
+  promptFn: (context: string) => string,
+  chunkSize: number = 4,
+  quota?: QuotaTracker,
+): Promise<Record<string, unknown>[]> {
+  const allEnriched: Record<string, unknown>[] = []
+  const batches = chunk(places, chunkSize)
+
+  console.log(`[Pipeline] Batch enriching ${places.length} places in ${batches.length} batches of ~${chunkSize}`)
+
+  // Process a single batch, splitting on 413 (request too large)
+  async function processBatch(
+    batch: PlaceResult[],
+    batchLabel: string,
+  ): Promise<Record<string, unknown>[]> {
+    const batchContext = batch.map((p: PlaceResult) => {
+      const details = detailsMap.get(p.dataId)
+      const reviews = reviewsMap.get(p.dataId)
+      return buildPlaceContext(p, details, reviews)
+    }).join('\n\n')
+
+    try {
+      const raw = await withRetry(
+        () => llmGenerate(promptFn(batchContext)),
+        `LLM:${batchLabel}`,
+      )
+      quota?.increment('llm')
+
+      const parsed = JSON.parse(repairJsonArray(raw))
+      if (Array.isArray(parsed)) {
+        console.log(`[Pipeline] ${batchLabel}: ${parsed.length} items enriched`)
+        return parsed
+      }
+      return []
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('413') || msg.includes('too large')) {
+        if (batch.length <= 1) {
+          console.error(`[Pipeline] ${batchLabel}: single item too large for model, skipping`)
+          return []
+        }
+        const mid = Math.ceil(batch.length / 2)
+        console.warn(`[Pipeline] ${batchLabel}: 413 too large (${batch.length} items), splitting into ${mid} + ${batch.length - mid}`)
+        const left = await processBatch(batch.slice(0, mid), `${batchLabel}a`)
+        await new Promise(r => setTimeout(r, 1000))
+        const right = await processBatch(batch.slice(mid), `${batchLabel}b`)
+        return [...left, ...right]
+      }
+      console.error(`[Pipeline] ${batchLabel}: LLM failed, skipping batch — ${msg}`)
+      return []
+    }
+  }
+
+  for (let i = 0; i < batches.length; i++) {
+    const result = await processBatch(batches[i], `batch${i + 1}/${batches.length}`)
+    allEnriched.push(...result)
+
+    // Small delay between LLM batches
+    if (i < batches.length - 1) {
+      await new Promise(r => setTimeout(r, 1000))
+    }
+  }
+
+  console.log(`[Pipeline] Batch enrichment complete: ${allEnriched.length} total items`)
+  return allEnriched
+}
+
+// Validate enriched items have required fields
+function validateItem(item: Record<string, unknown>, category: CategoryType): boolean {
+  if (!item.name || typeof item.name !== 'string') return false
+  switch (category) {
+    case 'hotels': return !!item.price_level && !!item.location
+    case 'activities': return !!item.category && !!item.duration
+    case 'restaurants': return !!item.cuisine && !!item.price_level
+  }
+}
+
+// ─── Data source: Google Places (primary) + SerpAPI (details) ─
 
 // ─── LLM Helper ──────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are a travel data enrichment engine. Return ONLY valid JSON. No markdown, no explanation. Be specific with real place names, realistic prices, and vivid descriptions. Write in a warm, editorial travel magazine voice.`
 
-async function llmGenerate(prompt: string, retries = 2): Promise<string> {
+async function llmGenerate(prompt: string): Promise<string> {
   initLlm()
   const llmStart = Date.now()
   const promptPreview = prompt.slice(0, 100).replace(/\n/g, ' ')
   console.log(`[LLM] Calling ${_llmProvider}/${_llmModel} — prompt: "${promptPreview}..."`)
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      let text: string
+  try {
+    let text: string
 
-      if (_anthropicClient) {
-        // Claude API (native Anthropic SDK)
-        const res = await _anthropicClient.messages.create({
-          model: _llmModel,
-          max_tokens: 16384,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: prompt }],
-        })
-        const block = res.content[0]
-        text = block.type === 'text' ? block.text : '[]'
-        const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
-        console.log(`[LLM] Response in ${elapsed}s — ${text.length} chars, tokens: ${res.usage.input_tokens + res.usage.output_tokens} (in: ${res.usage.input_tokens}, out: ${res.usage.output_tokens})`)
-      } else if (_openaiClient) {
-        // Gemini or Groq via OpenAI-compat
-        const res = await _openaiClient.chat.completions.create({
-          model: _llmModel,
-          max_tokens: 16384,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: prompt },
-          ],
-        })
-        text = res.choices[0].message.content || '[]'
-        const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
-        const usage = res.usage
-        console.log(`[LLM] Response in ${elapsed}s — ${text.length} chars, tokens: ${usage?.total_tokens || '?'} (prompt: ${usage?.prompt_tokens || '?'}, completion: ${usage?.completion_tokens || '?'})`)
-      } else {
-        throw new Error('No LLM configured — set ANTHROPIC_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY')
-      }
-
-      return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    } catch (error) {
+    if (_anthropicClient) {
+      const res = await _anthropicClient.messages.create({
+        model: _llmModel,
+        max_tokens: 16384,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const block = res.content[0]
+      text = block.type === 'text' ? block.text : '[]'
       const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
-      const msg = error instanceof Error ? error.message : String(error)
-      const isRateLimit = msg.includes('429') || msg.includes('rate') || msg.includes('quota') || msg.includes('overloaded')
-      if (isRateLimit && attempt < retries) {
-        const wait = (attempt + 1) * 15
-        console.warn(`[LLM] Rate limited (attempt ${attempt + 1}/${retries + 1}), waiting ${wait}s...`)
-        await new Promise(r => setTimeout(r, wait * 1000))
-        continue
-      }
-      // Fallback: Claude → Gemini → Groq
-      if (isRateLimit && _llmProvider === 'Claude' && process.env.GEMINI_API_KEY) {
-        console.warn(`[LLM] Claude rate limited — falling back to Gemini`)
-        _anthropicClient = null
-        _openaiClient = new OpenAI({ apiKey: process.env.GEMINI_API_KEY, baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
-        _llmProvider = 'Gemini (fallback)'
-        _llmModel = 'gemini-2.5-flash'
-        continue
-      }
-      if (isRateLimit && process.env.GROQ_API_KEY && _llmProvider !== 'Groq') {
-        console.warn(`[LLM] Falling back to Groq`)
-        _anthropicClient = null
-        _openaiClient = new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
-        _llmProvider = 'Groq (fallback)'
-        _llmModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
-        continue
-      }
-      console.error(`[LLM] FAILED after ${elapsed}s: ${msg}`)
+      console.log(`[LLM] Response in ${elapsed}s — ${text.length} chars, tokens: ${res.usage.input_tokens + res.usage.output_tokens}`)
+    } else if (_openaiClient) {
+      const res = await _openaiClient.chat.completions.create({
+        model: _llmModel,
+        max_tokens: 16384,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+      })
+      text = res.choices[0].message.content || '[]'
+      const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+      const usage = res.usage
+      console.log(`[LLM] Response in ${elapsed}s — ${text.length} chars, tokens: ${usage?.total_tokens || '?'}`)
+    } else {
+      throw new Error('No LLM configured — set ANTHROPIC_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY')
+    }
+
+    return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    const isRateLimit = msg.includes('429') || msg.includes('503') || msg.includes('rate') || msg.includes('quota') || msg.includes('overloaded')
+    const isTooLarge = msg.includes('413') || msg.includes('too large')
+
+    // Cap provider switches to prevent infinite bounce between Gemini (503) and Groq (413)
+    if (_providerSwitchCount >= 3) {
+      console.error(`[LLM] Provider switch limit reached (${_providerSwitchCount}) — giving up`)
       throw error
     }
+
+    // On 413 from Groq fallback, switch back to Gemini (Groq's 12K TPM is too small)
+    if (isTooLarge && _llmProvider.includes('Groq') && process.env.GEMINI_API_KEY) {
+      _providerSwitchCount++
+      console.warn(`[LLM] Groq 413 (prompt too large for 12K TPM) — switching back to Gemini (switch ${_providerSwitchCount}/3)`)
+      _openaiClient = new OpenAI({ apiKey: process.env.GEMINI_API_KEY, baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
+      _llmProvider = 'Gemini'
+      _llmModel = 'gemini-3-flash-preview'
+    }
+
+    // Provider fallback on rate limit (Claude -> Gemini -> Groq)
+    // Note: Don't fall back from Gemini to Groq — Groq's 12K TPM is too small for enrichment prompts.
+    // Let withRetry handle Gemini 503s with exponential backoff instead.
+    if (isRateLimit && _llmProvider === 'Claude' && process.env.GEMINI_API_KEY) {
+      _providerSwitchCount++
+      console.warn(`[LLM] Claude rate limited — falling back to Gemini`)
+      _anthropicClient = null
+      _openaiClient = new OpenAI({ apiKey: process.env.GEMINI_API_KEY, baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
+      _llmProvider = 'Gemini (fallback)'
+      _llmModel = 'gemini-3-flash-preview'
+    } else if (isRateLimit && _llmProvider === 'Claude' && process.env.GROQ_API_KEY) {
+      _providerSwitchCount++
+      console.warn(`[LLM] Falling back to Groq`)
+      _anthropicClient = null
+      _openaiClient = new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
+      _llmProvider = 'Groq (fallback)'
+      _llmModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+    }
+
+    const elapsed = ((Date.now() - llmStart) / 1000).toFixed(1)
+    console.error(`[LLM] FAILED after ${elapsed}s: ${msg}`)
+    throw error
   }
-  throw new Error('LLM retries exhausted')
 }
 
 // Repair truncated JSON arrays (when LLM output gets cut off)
@@ -298,39 +550,39 @@ function buildPlaceContext(
   return lines.join('\n')
 }
 
-// ─── Step 2: Fetch Real Hotels + LLM Enrich ──────────────────
+// ─── Step 2: Discover + Enrich Hotels ─────────────────────────
 
 async function stepFetchAndEnrichHotels(ctx: PipelineContext) {
   const db = getAdminClient()
 
-  // Level 1: Search from SerpAPI (Google Maps)
-  const googleHotels = await serpSearchHotels(ctx.config.city, ctx.config.country).catch(() => [] as PlaceResult[])
-  console.log(`[Pipeline] Hotels: ${googleHotels.length} from SerpAPI`)
+  // Generate targeted discovery queries
+  const queries = await generateDiscoveryQueries(ctx.config.city, ctx.config.country, ctx.config.vibes, 'hotels')
 
-  // Level 2+3: Get details and reviews for top SerpAPI results
-  const [detailsMap, reviewsMap] = await Promise.all([
-    enrichPlacesWithDetails(googleHotels, 8),
-    enrichPlacesWithReviews(googleHotels, 6),
-  ])
-  console.log(`[Pipeline] Hotel details: ${detailsMap.size}, reviews: ${reviewsMap.size}`)
+  // Multi-source discovery: Google Places (bulk) + SerpAPI (details/reviews)
+  if (ctx.quota.shouldStop('serpapi')) {
+    console.warn(`[Pipeline] SerpAPI quota approaching limit, skipping hotel discovery`)
+  }
+  const discovery = await discoverPlaces(ctx.config.city, ctx.config.country, 'hotels', queries)
+  const { places, detailsMap, reviewsMap, stats } = discovery
+  ctx.quota.increment('google_places', stats.googlePlacesResults)
+  ctx.quota.increment('serpapi', stats.serpApiResults)
+  console.log(`[Pipeline] Hotels discovery: ${JSON.stringify(stats)}`)
 
-  // Build rich context for LLM with all 3 levels of data
-  const richHotelData = googleHotels.slice(0, 12).map((h: PlaceResult) => {
-    const details = detailsMap.get(h.dataId)
-    const reviews = reviewsMap.get(h.dataId)
-    return buildPlaceContext(h, details, reviews)
-  }).join('\n\n')
+  if (places.length === 0) {
+    console.warn(`[Pipeline] Hotels: no places discovered, skipping`)
+    return 0
+  }
 
-  const raw = await llmGenerate(`
+  // Batch LLM enrichment — process ALL discovered places
+  const enriched = await batchEnrich(places, detailsMap, reviewsMap, (batchContext) => `
 You are enriching REAL hotel data for ${ctx.config.city}, ${ctx.config.country}.
 Destination vibes: ${ctx.config.vibes.join(', ')}
 
-REAL DATA FROM GOOGLE MAPS (with reviews and details):
-${richHotelData || 'No Google Maps data available.'}
+REAL DATA FROM GOOGLE (with reviews and details where available):
+${batchContext}
 
-Using ONLY the real hotels above, produce AI-ready structured data for each.
-DO NOT invent hotels. Only use names from the data above.
-Pick the best 8-10 (mix of budget/mid/luxury).
+Enrich ALL of the hotels above. Do not skip any. Do not invent hotels not listed above.
+If a hotel has limited data, still include it with available fields and reasonable defaults.
 
 Return JSON array:
 [{
@@ -352,37 +604,29 @@ Return JSON array:
   "pairs_with": ["Nearby restaurant or activity that complements a stay here"],
   "amenities": ["Pool", "Spa", "Free WiFi"],
   "accessibility": ["Wheelchair accessible", "Elevator"]
-}]`)
+}]`, 4, ctx.quota)
 
-  let enriched: Record<string, unknown>[]
-  try {
-    enriched = JSON.parse(repairJsonArray(raw))
-    console.log(`[Pipeline] Hotels: LLM returned ${enriched.length} enriched hotels`)
-  } catch (parseErr) {
-    console.error(`[Pipeline] Hotels: Failed to parse LLM JSON response`)
-    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
-    throw new Error(`Hotels LLM JSON parse failed: ${parseErr}`)
-  }
+  // Validate
+  const valid = enriched.filter(h => validateItem(h, 'hotels'))
+  console.log(`[Pipeline] Hotels: ${valid.length}/${enriched.length} passed validation`)
 
-  await db.from('catalog_hotels').delete().eq('destination_id', ctx.destinationId)
-
-  const rows = enriched.map((h: Record<string, unknown>) => {
+  // Build rows and upsert
+  const rows = valid.map((h: Record<string, unknown>) => {
     const hName = (h.name as string).toLowerCase()
-    const gpMatch = googleHotels.find((g: PlaceResult) =>
+    const gpMatch = places.find((g: PlaceResult) =>
       g.name.toLowerCase().includes(hName.split(' ')[0]) ||
       hName.includes(g.name.toLowerCase().split(' ')[0])
     )
-    const details = gpMatch ? detailsMap.get(gpMatch.dataId) : undefined
-    const reviews = gpMatch ? reviewsMap.get(gpMatch.dataId) : undefined
+    const details = gpMatch?.dataId ? detailsMap.get(gpMatch.dataId) : undefined
+    const reviews = gpMatch?.dataId ? reviewsMap.get(gpMatch.dataId) : undefined
 
     const validHotelCats = new Set(['hotel', 'resort', 'hostel', 'villa', 'boutique'])
     const hotelCat = validHotelCats.has(String(h.category || 'hotel').toLowerCase()) ? String(h.category).toLowerCase() : 'hotel'
 
-    const source = gpMatch ? 'serpapi+ai' : 'ai'
-
     return {
       destination_id: ctx.destinationId,
       name: h.name,
+      place_id: gpMatch?.placeId || null,
       description: (h.honest_take as string) || '',
       detail: h.detail,
       category: hotelCat,
@@ -394,11 +638,9 @@ Return JSON array:
       image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
       location: h.location || details?.address || gpMatch?.address || '',
       booking_url: details?.bookingUrl || generateBookingLink(h.name as string, ctx.config.city, ctx.config.country),
-      source,
+      source: gpMatch ? 'google+ai' : 'ai',
       metadata: {
-        // Real data from SerpAPI
         ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
-        // Details from Level 2
         ...(details ? {
           phone: details.phone,
           website: details.website,
@@ -407,12 +649,10 @@ Return JSON array:
           checkInOut: details.checkInOut,
           photos: details.photos,
         } : {}),
-        // Reviews from Level 3
         ...(reviews ? {
           topReviewTopics: reviews.topTopics,
           sampleReviews: reviews.reviews.slice(0, 3).map((r: { rating: number; text: string }) => ({ rating: r.rating, text: r.text.slice(0, 300) })),
         } : {}),
-        // AI-ready structured knowledge
         review_synthesis: h.review_synthesis || {},
         practical_tips: h.practical_tips || [],
         honest_take: h.honest_take || '',
@@ -421,7 +661,6 @@ Return JSON array:
         accessibility: h.accessibility || [],
         lat: gpMatch?.lat || 0,
         lng: gpMatch?.lng || 0,
-        // UI helpers
         info: [
           ...(details?.hours?.length ? [{ l: 'Check-in', v: details.checkInOut?.checkIn || 'N/A' }] : []),
           ...(details?.phone ? [{ l: 'Phone', v: details.phone }] : []),
@@ -434,51 +673,40 @@ Return JSON array:
     }
   })
 
-  console.log(`[Pipeline] Hotels: inserting ${rows.length} rows — sources: ${rows.map(r => r.source).join(', ')}`)
-  const { error } = await db.from('catalog_hotels').insert(rows)
-  if (error) {
-    console.error(`[Pipeline] Hotels insert failed: ${error.message}`)
-    console.error(`[Pipeline] Hotels insert details: ${JSON.stringify(error)}`)
-    throw new Error(`Hotels insert failed: ${error.message}`)
-  }
-  console.log(`[Pipeline] Hotels: ${rows.length} inserted OK`)
+  await upsertCatalogItems('catalog_hotels', rows, ctx)
 
   return rows.length
 }
 
-// ─── Step 3: Fetch Real Activities + Enrich ──────────────────
+// ─── Step 3: Discover + Enrich Activities ─────────────────────
 
 async function stepFetchAndEnrichActivities(ctx: PipelineContext) {
   const db = getAdminClient()
 
-  // Level 1: Search from SerpAPI (Google Maps)
-  const serpAttractions = await serpSearchAttractions(ctx.config.city, ctx.config.country).catch(() => [] as PlaceResult[])
-  console.log(`[Pipeline] Activities: ${serpAttractions.length} from SerpAPI`)
+  const queries = await generateDiscoveryQueries(ctx.config.city, ctx.config.country, ctx.config.vibes, 'activities')
+  if (ctx.quota.shouldStop('serpapi')) {
+    console.warn(`[Pipeline] SerpAPI quota approaching limit, skipping activity discovery`)
+  }
+  const discovery = await discoverPlaces(ctx.config.city, ctx.config.country, 'activities', queries)
+  const { places, detailsMap, reviewsMap, stats } = discovery
+  ctx.quota.increment('google_places', stats.googlePlacesResults)
+  ctx.quota.increment('serpapi', stats.serpApiResults)
+  console.log(`[Pipeline] Activities discovery: ${JSON.stringify(stats)}`)
 
-  // Level 2+3: Get details and reviews for top SerpAPI attractions
-  const [detailsMap, reviewsMap] = await Promise.all([
-    enrichPlacesWithDetails(serpAttractions, 8),
-    enrichPlacesWithReviews(serpAttractions, 6),
-  ])
-  console.log(`[Pipeline] Activity details: ${detailsMap.size}, reviews: ${reviewsMap.size}`)
+  if (places.length === 0) {
+    console.warn(`[Pipeline] Activities: no places discovered, skipping`)
+    return 0
+  }
 
-  // Build rich context
-  const richAttractionData = serpAttractions.slice(0, 12).map((a: PlaceResult) => {
-    const details = detailsMap.get(a.dataId)
-    const reviews = reviewsMap.get(a.dataId)
-    return buildPlaceContext(a, details, reviews)
-  }).join('\n\n')
-
-  const raw = await llmGenerate(`
+  const enriched = await batchEnrich(places, detailsMap, reviewsMap, (batchContext) => `
 You are enriching REAL activity/attraction data for ${ctx.config.city}, ${ctx.config.country}.
 Destination vibes: ${ctx.config.vibes.join(', ')}
 
-REAL DATA FROM GOOGLE MAPS (with reviews and details):
-${richAttractionData || 'No Google Maps data available.'}
+REAL DATA FROM GOOGLE (with reviews and details where available):
+${batchContext}
 
-Using the real data above, produce AI-ready structured data.
-Prefer names from the data. You may add 2-3 well-known must-do experiences if missing.
-Pick 12-15 total (mix of categories).
+Enrich ALL of the activities above. Do not skip any. Do not add activities that aren't in the data above.
+If an activity has limited data, still include it with available fields and reasonable defaults.
 
 Return JSON array:
 [{
@@ -495,24 +723,11 @@ Return JSON array:
     "complaints": ["Common complaints or warnings"],
     "vibe_words": ["How people describe the experience"]
   },
-  "practical_tips": ["Go early to avoid crowds", "Bring water shoes", "Book online for 20% off"],
-  "honest_take": "Is it worth the hype? What surprised people? Who should skip it?",
+  "practical_tips": ["Go early to avoid crowds", "Bring water shoes"],
+  "honest_take": "Is it worth the hype? Who should skip it?",
   "best_for": ["couples", "families", "solo", "backpackers", "photographers"],
-  "pairs_with": ["Nearby place or experience that complements this"],
-  "is_from_api": true
-}]`)
-
-  let enriched: Record<string, unknown>[]
-  try {
-    enriched = JSON.parse(repairJsonArray(raw))
-    console.log(`[Pipeline] Activities: LLM returned ${enriched.length} enriched activities`)
-  } catch (parseErr) {
-    console.error(`[Pipeline] Activities: Failed to parse LLM JSON response`)
-    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
-    throw new Error(`Activities LLM JSON parse failed: ${parseErr}`)
-  }
-
-  await db.from('catalog_activities').delete().eq('destination_id', ctx.destinationId)
+  "pairs_with": ["Nearby place or experience that complements this"]
+}]`, 4, ctx.quota)
 
   const validCategories = new Set(['sightseeing', 'adventure', 'cultural', 'nightlife', 'wellness', 'nature', 'food_tour', 'water_sport', 'shopping', 'event'])
   const mapActivityCategory = (cat: string) => {
@@ -534,23 +749,25 @@ Return JSON array:
     return 'sightseeing'
   }
 
-  const rows = enriched.map((a: Record<string, unknown>) => {
+  const valid = enriched.filter(a => validateItem(a, 'activities'))
+  console.log(`[Pipeline] Activities: ${valid.length}/${enriched.length} passed validation`)
+
+  const rows = valid.map((a: Record<string, unknown>) => {
     const aName = (a.name as string).toLowerCase()
-    const serpMatch = serpAttractions.find((s: PlaceResult) =>
+    const gpMatch = places.find((s: PlaceResult) =>
       s.name.toLowerCase().includes(aName.split(' ')[0]) ||
       aName.includes(s.name.toLowerCase().split(' ')[0])
     )
-    const details = serpMatch ? detailsMap.get(serpMatch.dataId) : undefined
-    const reviews = serpMatch ? reviewsMap.get(serpMatch.dataId) : undefined
+    const details = gpMatch?.dataId ? detailsMap.get(gpMatch.dataId) : undefined
+    const reviews = gpMatch?.dataId ? reviewsMap.get(gpMatch.dataId) : undefined
 
     const mappedCat = mapActivityCategory(String(a.category || 'sightseeing'))
     const safeCat = validCategories.has(mappedCat) ? mappedCat : 'sightseeing'
 
-    const source = serpMatch ? 'serpapi+ai' : 'ai'
-
     return {
       destination_id: ctx.destinationId,
       name: a.name,
+      place_id: gpMatch?.placeId || null,
       description: (a.honest_take as string) || '',
       detail: a.detail,
       category: safeCat,
@@ -558,12 +775,12 @@ Return JSON array:
       duration: a.duration || '',
       vibes: a.vibes || [],
       best_time: a.best_time,
-      image_url: details?.photos?.[0] || serpMatch?.photoUrls?.[0] || null,
-      location: a.location || details?.address || serpMatch?.address || '',
+      image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
+      location: a.location || details?.address || gpMatch?.address || '',
       booking_url: details?.bookingUrl || null,
-      source,
+      source: gpMatch ? 'google+ai' : 'ai',
       metadata: {
-        ...(serpMatch ? { placeId: serpMatch.placeId, dataId: serpMatch.dataId, reviewCount: serpMatch.reviewCount, mapsUrl: serpMatch.mapsUrl } : {}),
+        ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
         ...(details ? {
           phone: details.phone,
           website: details.website,
@@ -580,13 +797,13 @@ Return JSON array:
         honest_take: a.honest_take || '',
         best_for: a.best_for || [],
         pairs_with: a.pairs_with || [],
-        lat: serpMatch?.lat || 0,
-        lng: serpMatch?.lng || 0,
+        lat: gpMatch?.lat || 0,
+        lng: gpMatch?.lng || 0,
         info: [
           { l: 'Duration', v: (a.duration as string) || '' },
           { l: 'Best Time', v: (a.best_time as string) || '' },
           { l: 'Price', v: (a.price as string) || '' },
-          ...(serpMatch ? [{ l: 'Rating', v: `${serpMatch.rating}★ (${serpMatch.reviewCount} reviews)` }] : []),
+          ...(gpMatch ? [{ l: 'Rating', v: `${gpMatch.rating}★ (${gpMatch.reviewCount} reviews)` }] : []),
         ],
         features: (a.vibes as string[]) || [],
         alts: [],
@@ -594,56 +811,40 @@ Return JSON array:
     }
   })
 
-  console.log(`[Pipeline] Activities: inserting ${rows.length} rows — sources: ${rows.map(r => r.source).join(', ')}`)
-  const { error } = await db.from('catalog_activities').insert(rows)
-  if (error) {
-    console.error(`[Pipeline] Activities insert failed: ${error.message}`)
-    console.error(`[Pipeline] Activities insert details: ${JSON.stringify(error)}`)
-    throw new Error(`Activities insert failed: ${error.message}`)
-  }
-  console.log(`[Pipeline] Activities: ${rows.length} inserted OK`)
+  await upsertCatalogItems('catalog_activities', rows, ctx)
 
   return rows.length
 }
 
-// ─── Step 4: SerpAPI Restaurants + LLM Enrich ────────────────
+// ─── Step 4: Discover + Enrich Restaurants ────────────────────
 
 async function stepFetchAndEnrichRestaurants(ctx: PipelineContext) {
   const db = getAdminClient()
 
-  // Level 1: Search restaurants
-  let googleRestaurants: PlaceResult[] = []
-  try {
-    googleRestaurants = await serpSearchRestaurants(ctx.config.city, ctx.config.country)
-    console.log(`[Pipeline] Fetched ${googleRestaurants.length} restaurants from SerpAPI`)
-  } catch (e) {
-    console.log(`[Pipeline] SerpAPI restaurants failed: ${e}`)
+  const queries = await generateDiscoveryQueries(ctx.config.city, ctx.config.country, ctx.config.vibes, 'restaurants')
+  if (ctx.quota.shouldStop('serpapi')) {
+    console.warn(`[Pipeline] SerpAPI quota approaching limit, skipping restaurant discovery`)
+  }
+  const discovery = await discoverPlaces(ctx.config.city, ctx.config.country, 'restaurants', queries)
+  const { places, detailsMap, reviewsMap, stats } = discovery
+  ctx.quota.increment('google_places', stats.googlePlacesResults)
+  ctx.quota.increment('serpapi', stats.serpApiResults)
+  console.log(`[Pipeline] Restaurants discovery: ${JSON.stringify(stats)}`)
+
+  if (places.length === 0) {
+    console.warn(`[Pipeline] Restaurants: no places discovered, skipping`)
+    return 0
   }
 
-  // Level 2+3: Details and reviews for top restaurants
-  const [detailsMap, reviewsMap] = await Promise.all([
-    enrichPlacesWithDetails(googleRestaurants, 8),
-    enrichPlacesWithReviews(googleRestaurants, 6),
-  ])
-  console.log(`[Pipeline] Restaurant details: ${detailsMap.size}, reviews: ${reviewsMap.size}`)
-
-  // Build rich context
-  const richRestaurantData = googleRestaurants.slice(0, 15).map(r => {
-    const details = detailsMap.get(r.dataId)
-    const reviews = reviewsMap.get(r.dataId)
-    return buildPlaceContext(r, details, reviews)
-  }).join('\n\n')
-
-  const raw = await llmGenerate(`
+  const enriched = await batchEnrich(places, detailsMap, reviewsMap, (batchContext) => `
 You are enriching REAL restaurant data for ${ctx.config.city}, ${ctx.config.country}.
 Destination vibes: ${ctx.config.vibes.join(', ')}
 
-REAL DATA FROM GOOGLE MAPS (with reviews and details):
-${richRestaurantData || 'No Google Maps data available.'}
+REAL DATA FROM GOOGLE (with reviews and details where available):
+${batchContext}
 
-Using ONLY the real restaurants above, produce AI-ready structured data.
-DO NOT invent restaurants. Only use names from the data above.
-Pick the best 8-10 (mix of street food, casual, fine dining).
+Enrich ALL of the restaurants above. Do not skip any. Do not invent restaurants.
+If a restaurant has limited data, still include it with available fields and reasonable defaults.
 
 Return JSON array:
 [{
@@ -660,50 +861,43 @@ Return JSON array:
     "complaints": ["Common complaints — long wait, cash only, etc."],
     "vibe_words": ["How people describe the atmosphere"]
   },
-  "practical_tips": ["Arrive before 6pm to avoid 1-hour wait", "Cash only", "Order the off-menu special"],
-  "honest_take": "Is it worth the hype? What makes it special? Who should skip it?",
+  "practical_tips": ["Arrive before 6pm to avoid 1-hour wait", "Cash only"],
+  "honest_take": "Is it worth the hype? What makes it special?",
   "best_for": ["couples", "families", "foodies", "solo", "groups"],
   "pairs_with": ["Nearby bar or dessert spot to hit after"],
-  "dietary": ["Vegetarian options available", "Halal", "Gluten-free menu"]
-}]`)
+  "dietary": ["Vegetarian options available", "Halal"]
+}]`, 4, ctx.quota)
 
-  let enriched: Record<string, unknown>[]
-  try {
-    enriched = JSON.parse(repairJsonArray(raw))
-    console.log(`[Pipeline] Restaurants: LLM returned ${enriched.length} enriched restaurants`)
-  } catch (parseErr) {
-    console.error(`[Pipeline] Restaurants: Failed to parse LLM JSON response`)
-    console.error(`[Pipeline] Raw response (first 500 chars): ${raw.slice(0, 500)}`)
-    throw new Error(`Restaurants LLM JSON parse failed: ${parseErr}`)
-  }
+  const valid = enriched.filter(r => validateItem(r, 'restaurants'))
+  console.log(`[Pipeline] Restaurants: ${valid.length}/${enriched.length} passed validation`)
 
-  await db.from('catalog_restaurants').delete().eq('destination_id', ctx.destinationId)
-
-  const rows = enriched.map((r: Record<string, unknown>) => {
+  const rows = valid.map((r: Record<string, unknown>) => {
     const rName = (r.name as string).toLowerCase()
-    const gpMatch = googleRestaurants.find(g =>
+    const gpMatch = places.find(g =>
       g.name.toLowerCase().includes(rName.split(' ')[0]) ||
       rName.includes(g.name.toLowerCase().split(' ')[0])
     )
-    const details = gpMatch ? detailsMap.get(gpMatch.dataId) : undefined
-    const reviews = gpMatch ? reviewsMap.get(gpMatch.dataId) : undefined
+    const details = gpMatch?.dataId ? detailsMap.get(gpMatch.dataId) : undefined
+    const reviews = gpMatch?.dataId ? reviewsMap.get(gpMatch.dataId) : undefined
 
     return {
       destination_id: ctx.destinationId,
       name: r.name,
+      place_id: gpMatch?.placeId || null,
       description: (r.honest_take as string) || '',
       detail: r.detail,
       cuisine: r.cuisine,
       price_level: ['budget', 'mid', 'luxury'].includes(r.price_level as string) ? r.price_level : 'mid',
       avg_cost: r.avg_cost,
+      rating: gpMatch?.rating || 0,
       vibes: r.vibes || [],
       must_try: r.must_try || [],
       image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
       location: r.location || details?.address || gpMatch?.address || '',
       booking_url: details?.bookingUrl || gpMatch?.mapsUrl || null,
-      source: gpMatch ? 'serpapi+ai' : 'ai',
+      source: gpMatch ? 'google+ai' : 'ai',
       metadata: {
-        ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, rating: gpMatch.rating, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
+        ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
         ...(details ? {
           phone: details.phone,
           website: details.website,
@@ -713,7 +907,7 @@ Return JSON array:
         } : {}),
         ...(reviews ? {
           topReviewTopics: reviews.topTopics,
-          sampleReviews: reviews.reviews.slice(0, 3).map(rv => ({ rating: rv.rating, text: rv.text.slice(0, 300) })),
+          sampleReviews: reviews.reviews.slice(0, 3).map((rv: { rating: number; text: string }) => ({ rating: rv.rating, text: rv.text.slice(0, 300) })),
         } : {}),
         review_synthesis: r.review_synthesis || {},
         practical_tips: r.practical_tips || [],
@@ -735,14 +929,7 @@ Return JSON array:
     }
   })
 
-  console.log(`[Pipeline] Restaurants: inserting ${rows.length} rows — sources: ${rows.map(r => r.source).join(', ')}`)
-  const { error } = await db.from('catalog_restaurants').insert(rows)
-  if (error) {
-    console.error(`[Pipeline] Restaurants insert failed: ${error.message}`)
-    console.error(`[Pipeline] Restaurants insert details: ${JSON.stringify(error)}`)
-    throw new Error(`Restaurants insert failed: ${error.message}`)
-  }
-  console.log(`[Pipeline] Restaurants: ${rows.length} inserted OK`)
+  await upsertCatalogItems('catalog_restaurants', rows, ctx)
 
   return rows.length
 }
@@ -769,7 +956,8 @@ ${(activities || []).map(a => `- ${a.name} (${a.price}, ${a.duration}) — ${a.b
 REAL RESTAURANTS IN CATALOG:
 ${(restaurants || []).map(r => `- ${r.name} (${r.cuisine}, ${r.avg_cost}) — ${r.location}`).join('\n')}`
 
-  const raw = await llmGenerate(`
+  const raw = await withRetry(
+    () => llmGenerate(`
 Build a 5-day itinerary template for ${ctx.config.city}, ${ctx.config.country} using ONLY items from our real catalog:
 
 ${catalogSummary}
@@ -803,7 +991,10 @@ Return JSON array:
 
 IMPORTANT: Every non-day, non-transfer item MUST have metadata.reason (a short, opinionated tagline) and metadata.whyFactors (2-4 bullet reasons based on vibes, budget, timing, or location flow).
 
-Start each day with a "day" separator (category: "day", name: "Day 1 — Theme").`)
+Start each day with a "day" separator (category: "day", name: "Day 1 — Theme").`),
+    'LLM:template-generation',
+  )
+  ctx.quota.increment('llm')
 
   let items: Record<string, unknown>[]
   try {
@@ -815,16 +1006,22 @@ Start each day with a "day" separator (category: "day", name: "Day 1 — Theme")
     throw new Error(`Template LLM JSON parse failed: ${parseErr}`)
   }
 
-  await db.from('catalog_templates').delete().eq('destination_id', ctx.destinationId)
+  await withRetry(
+    () => db.from('catalog_templates').delete().eq('destination_id', ctx.destinationId),
+    'DB:delete-templates',
+  )
 
-  const { error } = await db.from('catalog_templates').insert({
-    destination_id: ctx.destinationId,
-    name: `${ctx.config.city} — ${ctx.config.vibes.slice(0, 2).join(' & ')}`,
-    vibes: ctx.config.vibes,
-    budget_level: 'mid',
-    duration_days: 5,
-    items,
-  })
+  const { error } = await withRetry(
+    () => db.from('catalog_templates').insert({
+      destination_id: ctx.destinationId,
+      name: `${ctx.config.city} — ${ctx.config.vibes.slice(0, 2).join(' & ')}`,
+      vibes: ctx.config.vibes,
+      budget_level: 'mid',
+      duration_days: 5,
+      items,
+    }),
+    'DB:insert-templates',
+  )
 
   if (error) {
     console.error(`[Pipeline] Template insert failed: ${error.message}`)
@@ -840,12 +1037,16 @@ async function stepEnrichDestination(ctx: PipelineContext) {
   const db = getAdminClient()
   console.log(`[Pipeline] Enriching destination metadata for ${ctx.config.city}...`)
 
-  const raw = await llmGenerate(`
+  const raw = await withRetry(
+    () => llmGenerate(`
 Write a compelling 2-3 sentence description of ${ctx.config.city}, ${ctx.config.country} as a travel destination.
 Target vibes: ${ctx.config.vibes.join(', ')}.
 Write in a warm, editorial tone. Make someone want to book immediately.
 Return JSON: {"description": "...", "avg_budget_per_day": {"budget": 50, "mid": 120, "luxury": 350}}
-Use realistic daily budget numbers in USD for this destination.`)
+Use realistic daily budget numbers in USD for this destination.`),
+    'LLM:destination-enrichment',
+  )
+  ctx.quota.increment('llm')
 
   let enriched: Record<string, unknown>
   try {
@@ -858,14 +1059,17 @@ Use realistic daily budget numbers in USD for this destination.`)
     throw new Error(`Enrich LLM JSON parse failed: ${parseErr}`)
   }
 
-  const { error } = await db
-    .from('catalog_destinations')
-    .update({
-      description: enriched.description,
-      avg_budget_per_day: enriched.avg_budget_per_day,
-      status: 'active',
-    })
-    .eq('id', ctx.destinationId)
+  const { error } = await withRetry(
+    () => db
+      .from('catalog_destinations')
+      .update({
+        description: enriched.description,
+        avg_budget_per_day: enriched.avg_budget_per_day,
+        status: 'active',
+      })
+      .eq('id', ctx.destinationId),
+    'DB:update-destination-enrichment',
+  )
 
   if (error) {
     console.error(`[Pipeline] Enrich update failed: ${error.message}`)
@@ -886,6 +1090,8 @@ export async function runSingleStep(
     destinationId,
     runId: `manual-${Date.now()}`,
     steps: [],
+    quota: new QuotaTracker(),
+    runStartTime: new Date().toISOString(),
   }
 
   const stepMap: Record<string, () => Promise<number | void>> = {
@@ -904,11 +1110,30 @@ export async function runSingleStep(
   return { step: stepName, count: typeof result === 'number' ? result : 1 }
 }
 
+// ─── Resolve Google Places API URLs ──────────────────────────
+// Google Places API photo URLs (places.googleapis.com) embed the API key
+// and act as redirects. Resolve them server-side to direct CDN URLs.
+async function resolveGooglePlacesUrl(url: string): Promise<string> {
+  if (!url.includes('places.googleapis.com')) return url
+  try {
+    const res = await fetch(url, { redirect: 'manual' })
+    const location = res.headers.get('location')
+    if (location && location.includes('googleusercontent.com')) {
+      return location
+    }
+    // If no redirect, keep original (might still work as direct image)
+    return res.ok ? url : ''
+  } catch {
+    return url
+  }
+}
+
 // ─── Photo Backfill Step ────────────────────────────────────
 // Runs after all catalog items are created.
-// 1. Upsizes existing Google images to w800
-// 2. Fills missing images with Unsplash search
-// 3. Stores multiple photos in metadata.photos
+// 1. Resolves Google Places API URLs to direct CDN URLs
+// 2. Upsizes existing Google images to w800
+// 3. Fills missing images with Unsplash search
+// 4. Stores multiple photos in metadata.photos
 async function stepBackfillPhotos(ctx: PipelineContext): Promise<number> {
   const db = getAdminClient()
   const tables = ['catalog_hotels', 'catalog_activities', 'catalog_restaurants'] as const
@@ -928,12 +1153,21 @@ async function stepBackfillPhotos(ctx: PipelineContext): Promise<number> {
       let imageUrl = item.image_url as string | null
       let photos = [...existingPhotos]
 
-      // Step 1: Upsize existing Google image
+      // Step 1: Resolve Google Places API URLs to direct CDN URLs
+      if (imageUrl && imageUrl.includes('places.googleapis.com')) {
+        imageUrl = await resolveGooglePlacesUrl(imageUrl)
+      }
+      photos = await Promise.all(photos.map(p =>
+        p.includes('places.googleapis.com') ? resolveGooglePlacesUrl(p) : Promise.resolve(p)
+      ))
+      photos = photos.filter(p => p.length > 0)
+
+      // Step 2: Upsize existing Google CDN images
       if (imageUrl && imageUrl.includes('googleusercontent.com')) {
         imageUrl = upsizeGoogleImage(imageUrl, 800, 600)
       }
 
-      // Step 2: If no photos in metadata, try Unsplash
+      // Step 3: If no photos in metadata, try Unsplash
       if (photos.length === 0 && !imageUrl) {
         const category = (item.category as string) || (table === 'catalog_hotels' ? 'hotel' : table === 'catalog_restaurants' ? 'food' : 'activity')
         const fallback = await getPlaceFallbackPhotos(
@@ -949,12 +1183,12 @@ async function stepBackfillPhotos(ctx: PipelineContext): Promise<number> {
         }
       }
 
-      // Step 3: Upsize any Google photos in the array
+      // Step 4: Upsize any Google CDN photos in the array
       photos = photos.map(p =>
         p.includes('googleusercontent.com') ? upsizeGoogleImage(p, 800, 600) : p
       )
 
-      // Step 4: If we have an image_url but no photos array, seed photos with it
+      // Step 5: If we have an image_url but no photos array, seed photos with it
       if (imageUrl && photos.length === 0) {
         photos = [imageUrl]
       }
@@ -1002,7 +1236,9 @@ export async function runPipeline(config: DestinationConfig): Promise<{
 
   const runId = run?.id || 'unknown'
   console.log(`[Pipeline] Run ID: ${runId}`)
-  const ctx: PipelineContext = { config, destinationId, runId, steps: [] }
+  const quota = new QuotaTracker()
+  const runStartTime = new Date().toISOString()
+  const ctx: PipelineContext = { config, destinationId, runId, steps: [], quota, runStartTime }
   const stats: Record<string, number> = {}
 
   const steps = [
@@ -1026,14 +1262,14 @@ export async function runPipeline(config: DestinationConfig): Promise<{
 
       await db
         .from('pipeline_runs')
-        .update({ steps_completed: ctx.steps, stats })
+        .update({ steps_completed: ctx.steps, stats: { ...stats, quota: ctx.quota.getSummary() } })
         .eq('id', runId)
     }
 
     const totalElapsed = ((Date.now() - pipelineStart) / 1000).toFixed(1)
     await db
       .from('pipeline_runs')
-      .update({ status: 'completed', completed_at: new Date().toISOString(), stats })
+      .update({ status: 'completed', completed_at: new Date().toISOString(), stats: { ...stats, quota: ctx.quota.getSummary() } })
       .eq('id', runId)
 
     console.log(`\n${'='.repeat(60)}`)
@@ -1048,7 +1284,7 @@ export async function runPipeline(config: DestinationConfig): Promise<{
     if (error instanceof Error && error.stack) console.error(`[Pipeline] Stack: ${error.stack}`)
     await db
       .from('pipeline_runs')
-      .update({ status: 'failed', error: msg, completed_at: new Date().toISOString(), stats })
+      .update({ status: 'failed', error: msg, completed_at: new Date().toISOString(), stats: { ...stats, quota: ctx.quota.getSummary() } })
       .eq('id', runId)
     throw error
   }
