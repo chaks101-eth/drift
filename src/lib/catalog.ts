@@ -139,9 +139,9 @@ export async function getCatalogData(destinationId: string, vibes?: string[], bu
     { data: templates, error: tmplErr },
   ] = await Promise.all([
     db.from('catalog_destinations').select('*').eq('id', destinationId).single(),
-    db.from('catalog_hotels').select('*').eq('destination_id', destinationId),
-    db.from('catalog_activities').select('*').eq('destination_id', destinationId),
-    db.from('catalog_restaurants').select('*').eq('destination_id', destinationId),
+    db.from('catalog_hotels').select('*').eq('destination_id', destinationId).eq('status', 'active'),
+    db.from('catalog_activities').select('*').eq('destination_id', destinationId).eq('status', 'active'),
+    db.from('catalog_restaurants').select('*').eq('destination_id', destinationId).eq('status', 'active'),
     db.from('catalog_templates').select('*').eq('destination_id', destinationId),
   ])
 

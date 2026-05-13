@@ -147,7 +147,7 @@ export async function loadCatalogContext(
 
   // Load each category separately for proper typing
   if (loadHotels) {
-    const { data: hotels } = await db.from('catalog_hotels').select('name, detail, price_per_night, price_level, rating, amenities, location, metadata').eq('destination_id', dest.id)
+    const { data: hotels } = await db.from('catalog_hotels').select('name, detail, price_per_night, price_level, rating, amenities, location, metadata').eq('destination_id', dest.id).eq('status', 'active')
     if (hotels?.length) {
       parts.push('\nHOTELS:')
       for (const h of hotels) {
@@ -162,7 +162,7 @@ export async function loadCatalogContext(
   }
 
   if (loadActivities) {
-    const { data: activities } = await db.from('catalog_activities').select('name, detail, price, duration, best_time, location, metadata').eq('destination_id', dest.id)
+    const { data: activities } = await db.from('catalog_activities').select('name, detail, price, duration, best_time, location, metadata').eq('destination_id', dest.id).eq('status', 'active')
     if (activities?.length) {
       parts.push('\nACTIVITIES:')
       for (const a of activities) {
@@ -176,7 +176,7 @@ export async function loadCatalogContext(
   }
 
   if (loadRestaurants) {
-    const { data: restaurants } = await db.from('catalog_restaurants').select('name, detail, cuisine, avg_cost, price_level, must_try, location, metadata').eq('destination_id', dest.id)
+    const { data: restaurants } = await db.from('catalog_restaurants').select('name, detail, cuisine, avg_cost, price_level, must_try, location, metadata').eq('destination_id', dest.id).eq('status', 'active')
     if (restaurants?.length) {
       parts.push('\nRESTAURANTS:')
       for (const r of restaurants) {
@@ -220,7 +220,7 @@ export async function searchCatalog(
     : category === 'activity' ? 'catalog_activities'
     : 'catalog_restaurants'
 
-  let query = db.from(table).select('*').eq('destination_id', dest.id)
+  let query = db.from(table).select('*').eq('destination_id', dest.id).eq('status', 'active')
 
   if (filters?.priceLevel) {
     query = query.eq('price_level', filters.priceLevel)
@@ -284,9 +284,9 @@ export async function loadCatalogSummary(destination: string, tripItems?: Itiner
   // If catalog exists, use it
   if (dest) {
     const [{ data: hotels }, { data: activities }, { data: restaurants }] = await Promise.all([
-      db.from('catalog_hotels').select('name, price_per_night, price_level').eq('destination_id', dest.id),
-      db.from('catalog_activities').select('name, price').eq('destination_id', dest.id),
-      db.from('catalog_restaurants').select('name, avg_cost, price_level').eq('destination_id', dest.id),
+      db.from('catalog_hotels').select('name, price_per_night, price_level').eq('destination_id', dest.id).eq('status', 'active'),
+      db.from('catalog_activities').select('name, price').eq('destination_id', dest.id).eq('status', 'active'),
+      db.from('catalog_restaurants').select('name, avg_cost, price_level').eq('destination_id', dest.id).eq('status', 'active'),
     ])
 
     const parts: string[] = [`\nCATALOG SUMMARY FOR ${dest.city.toUpperCase()}, ${dest.country.toUpperCase()}:`]
