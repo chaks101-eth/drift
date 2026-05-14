@@ -41,6 +41,12 @@ export async function GET(req: NextRequest) {
   if (destinationId && type !== 'destinations') {
     query = query.eq('destination_id', destinationId)
   }
+  // Status filter for catalog item tables. Default 'active'. status=all returns soft-deleted too.
+  const ITEM_TABLES = ['catalog_hotels', 'catalog_activities', 'catalog_restaurants']
+  if (ITEM_TABLES.includes(table)) {
+    const status = req.nextUrl.searchParams.get('status') || 'active'
+    if (status !== 'all') query = query.eq('status', status)
+  }
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

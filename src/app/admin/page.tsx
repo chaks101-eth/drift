@@ -29,8 +29,11 @@ type CatalogItem = {
   vibes?: string[]; amenities?: string[]; must_try?: string[]
   image_url?: string; location?: string; duration?: string; rating?: number
   source?: string; booking_url?: string
+  place_id?: string; status?: string; updated_at?: string
   metadata?: Record<string, unknown>
 }
+
+type VendorOffer = { vendor: string; kind: string; url: string }
 
 type PipelineRun = {
   id: string; destination_id: string; status: string
@@ -368,15 +371,16 @@ function CatalogTab({ destinations }: { destinations: Destination[] }) {
   const [search, setSearch] = useState('')
   const [sourceFilter, setSourceFilter] = useState<string>('all')
   const [priceFilter, setPriceFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('active')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!selectedDest) { setItems([]); return }
     setLoading(true)
-    fetch(api('/api/admin/catalog', { type: catalogType, destination_id: selectedDest }))
+    fetch(api('/api/admin/catalog', { type: catalogType, destination_id: selectedDest, status: statusFilter }))
       .then(r => r.json())
-      .then(data => { setItems(data); setLoading(false) })
-  }, [selectedDest, catalogType])
+      .then(data => { setItems(Array.isArray(data) ? data : []); setLoading(false) })
+  }, [selectedDest, catalogType, statusFilter])
 
   // Filters
   const filtered = items.filter(item => {
@@ -389,10 +393,20 @@ function CatalogTab({ destinations }: { destinations: Destination[] }) {
     return true
   })
 
-  // Data quality stats
+  // ─── Distribution stats ─────────────────────────────────────
   const withImages = items.filter(i => i.image_url).length
   const withBooking = items.filter(i => i.booking_url).length
-  const sources = [...new Set(items.map(i => i.source).filter(Boolean))]
+  const withPlaceId = items.filter(i => i.place_id).length
+  const withHonestTake = items.filter(i => (i.metadata as Record<string, unknown>)?.honest_take).length
+  const withVendors = items.filter(i => Array.isArray((i.metadata as Record<string, unknown>)?.vendors) && ((i.metadata as Record<string, unknown>).vendors as unknown[]).length > 0).length
+  const withSources = items.filter(i => Array.isArray((i.metadata as Record<string, unknown>)?.sources) && ((i.metadata as Record<string, unknown>).sources as unknown[]).length > 0).length
+  const withVibeScore = items.filter(i => (i.metadata as Record<string, unknown>)?.vibe_score).length
+  // By tier
+  const tierCount = (t: string) => items.filter(i => (i.price_level || 'mid') === t).length
+  // By source
+  const sourceCount: Record<string, number> = {}
+  for (const i of items) { const s = i.source || 'unknown'; sourceCount[s] = (sourceCount[s] || 0) + 1 }
+  const sources = Object.keys(sourceCount)
 
   const destCity = destinations.find(d => d.id === selectedDest)?.city || ''
 
@@ -448,11 +462,22 @@ function CatalogTab({ destinations }: { destinations: Destination[] }) {
               className="px-3 py-1.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-[#f0efe8] outline-none focus:border-[#c8a44e] transition-colors placeholder-[#4a4a55] w-[200px]"
             />
             <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-[#f0efe8] outline-none"
+              title="Status filter"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive (soft-deleted)</option>
+              <option value="all">All statuses</option>
+            </select>
+            <select
               value={sourceFilter}
               onChange={e => setSourceFilter(e.target.value)}
               className="px-3 py-1.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-[#f0efe8] outline-none"
             >
               <option value="all">All Sources</option>
+              <option value="google-places+gemini">Google+Gemini</option>
               <option value="serpapi">SerpAPI</option>
               <option value="amadeus">Amadeus</option>
               <option value="ai">AI Only</option>
@@ -462,36 +487,52 @@ function CatalogTab({ destinations }: { destinations: Destination[] }) {
               onChange={e => setPriceFilter(e.target.value)}
               className="px-3 py-1.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-[#f0efe8] outline-none"
             >
-              <option value="all">All Prices</option>
-              <option value="budget">Budget</option>
-              <option value="mid">Mid</option>
+              <option value="all">All Tiers</option>
               <option value="luxury">Luxury</option>
+              <option value="mid">Mid</option>
+              <option value="budget">Budget</option>
             </select>
           </div>
 
-          {/* Data quality bar */}
+          {/* ─── Distribution panel ─────────────────────────────── */}
           {!loading && items.length > 0 && (
-            <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-4">
-              <div className="flex items-center gap-6 text-xs">
+            <div className="bg-[#0e0e14] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-4 space-y-3">
+              {/* Row 1: top-line counts */}
+              <div className="flex items-center gap-6 text-xs flex-wrap">
                 <span className="text-[#7a7a85]">
-                  <strong className="text-[#f0efe8]">{items.length}</strong> {catalogType}
-                </span>
-                <span className="text-[#7a7a85]">
-                  Images: <strong className={withImages === items.length ? 'text-[#70c1b3]' : withImages > 0 ? 'text-[#c8a44e]' : 'text-[#e07a5f]'}>
-                    {withImages}/{items.length}
-                  </strong>
-                </span>
-                <span className="text-[#7a7a85]">
-                  Booking URLs: <strong className={withBooking === items.length ? 'text-[#70c1b3]' : withBooking > 0 ? 'text-[#c8a44e]' : 'text-[#e07a5f]'}>
-                    {withBooking}/{items.length}
-                  </strong>
-                </span>
-                <span className="text-[#7a7a85]">
-                  Sources: {sources.map(s => (
-                    <span key={s} className="ml-1 px-1.5 py-0.5 bg-[rgba(255,255,255,0.04)] rounded text-[9px]">{s}</span>
-                  ))}
+                  <strong className="text-[#f0efe8] text-base font-serif">{items.length}</strong> {catalogType}
+                  {statusFilter !== 'active' && <span className="ml-1 text-[10px] text-[#c8a44e]">(status: {statusFilter})</span>}
                 </span>
                 {search && <span className="text-[#c8a44e]">Showing {filtered.length} of {items.length}</span>}
+              </div>
+
+              {/* Row 2: price tier breakdown */}
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="text-[#7a7a85] w-[80px]">Tiers</span>
+                <TierChip label="Luxury" n={tierCount('luxury')} total={items.length} color="#c8a44e" />
+                <TierChip label="Mid"    n={tierCount('mid')}    total={items.length} color="#70c1b3" />
+                <TierChip label="Budget" n={tierCount('budget')} total={items.length} color="#5b9bd5" />
+              </div>
+
+              {/* Row 3: source breakdown */}
+              <div className="flex items-center gap-2 text-[11px] flex-wrap">
+                <span className="text-[#7a7a85] w-[80px]">Sources</span>
+                {sources.map(s => (
+                  <span key={s} className={`px-2 py-0.5 rounded text-[10px] ${sourceBadgeClasses(s)}`}>
+                    {s} <span className="opacity-70">×{sourceCount[s]}</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* Row 4: data completeness bars */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 pt-1 text-[10px]">
+                <CompletenessRow label="Image"        n={withImages}     total={items.length} />
+                <CompletenessRow label="Booking URL"  n={withBooking}    total={items.length} />
+                <CompletenessRow label="Place ID"     n={withPlaceId}    total={items.length} />
+                <CompletenessRow label="Honest take"  n={withHonestTake} total={items.length} />
+                <CompletenessRow label="Vendors"      n={withVendors}    total={items.length} />
+                <CompletenessRow label="Grounding"    n={withSources}    total={items.length} />
+                <CompletenessRow label="Vibe score"   n={withVibeScore}  total={items.length} />
               </div>
             </div>
           )}
@@ -608,12 +649,34 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
           <div className="text-[11px] text-[#7a7a85] truncate">{item.detail}</div>
         </div>
         <div className="flex items-center gap-2 px-3 flex-shrink-0">
-          {item.source && (
+          {item.status && item.status !== 'active' && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] bg-[rgba(224,122,95,0.1)] text-[#e07a5f] border border-[rgba(224,122,95,0.25)]" title={`Status: ${item.status}`}>
+              {item.status}
+            </span>
+          )}
+          {item.price_level && (
             <span className={`px-1.5 py-0.5 rounded text-[9px] ${
-              item.source.includes('serpapi') ? 'bg-[rgba(112,193,179,0.1)] text-[#70c1b3]' :
-              item.source.includes('amadeus') ? 'bg-[rgba(91,155,213,0.1)] text-[#5b9bd5]' :
-              'bg-[rgba(255,255,255,0.04)] text-[#4a4a55]'
-            }`}>{item.source}</span>
+              item.price_level === 'luxury' ? 'bg-[rgba(200,164,78,0.1)] text-[#c8a44e]' :
+              item.price_level === 'budget' ? 'bg-[rgba(91,155,213,0.1)] text-[#5b9bd5]' :
+              'bg-[rgba(112,193,179,0.1)] text-[#70c1b3]'
+            }`} title={`Price tier: ${item.price_level}`}>
+              {item.price_level}
+            </span>
+          )}
+          {Array.isArray(meta?.vendors) && (meta.vendors as VendorOffer[]).length > 0 && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] bg-[rgba(255,255,255,0.04)] text-[#7a7a85]" title="Multi-vendor booking links">
+              {(meta.vendors as VendorOffer[]).length} vendors
+            </span>
+          )}
+          {Array.isArray(meta?.sources) && (meta.sources as string[]).length > 0 && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] bg-[rgba(176,124,216,0.08)] text-[#b07cd8]" title="Gemini grounding sources">
+              {(meta.sources as string[]).length} src
+            </span>
+          )}
+          {item.source && (
+            <span className={`px-1.5 py-0.5 rounded text-[9px] ${sourceBadgeClasses(item.source)}`} title={`Source: ${item.source}`}>
+              {item.source}
+            </span>
           )}
           {price && <span className="text-xs text-[#c8a44e] font-light">{price}</span>}
           <span className="text-[#4a4a55] text-xs">{expanded ? '\u25B2' : '\u25BC'}</span>
@@ -757,6 +820,128 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
             </div>
           )}
 
+          {/* ─── Rich sections: identifiers, vendors, grounding, vibe match, pairs, location ───────── */}
+          {!editing && (() => {
+            const m = (meta ?? {}) as Record<string, unknown>
+            const mapsUrl: string | null = typeof m.mapsUrl === 'string' ? m.mapsUrl : null
+            const lat: number | null = typeof m.lat === 'number' ? m.lat : null
+            const lng: number | null = typeof m.lng === 'number' ? m.lng : null
+            const reviewCount: number | null = typeof m.reviewCount === 'number' ? m.reviewCount : null
+            const placeId: string = item.place_id || ''
+            const placeIdShort: string = placeId.slice(0, 24) + (placeId.length > 24 ? '...' : '')
+            return (
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]">
+              {/* Identifiers */}
+              <div className="space-y-1.5">
+                <div className="text-[10px] text-[#7a7a85] uppercase tracking-wider">Identifiers</div>
+                {placeId ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#7a7a85] w-[80px] flex-shrink-0">Place ID</span>
+                    <code className="text-[10px] text-[#c8a44e] bg-[rgba(200,164,78,0.05)] px-1.5 py-0.5 rounded truncate" title={placeId}>{placeIdShort}</code>
+                    {mapsUrl ? (
+                      <a href={mapsUrl} target="_blank" rel="noreferrer" className="text-[10px] text-[#70c1b3] hover:underline">↗ Maps</a>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#7a7a85] w-[80px]">Place ID</span>
+                    <span className="text-[#e07a5f]">Missing (no dedup)</span>
+                  </div>
+                )}
+                {lat !== null && lng !== null ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#7a7a85] w-[80px] flex-shrink-0">Coords</span>
+                    <a href={`https://maps.google.com/?q=${lat},${lng}`} target="_blank" rel="noreferrer" className="text-[10px] text-[#70c1b3] hover:underline">
+                      {lat.toFixed(5)}, {lng.toFixed(5)} ↗
+                    </a>
+                  </div>
+                ) : null}
+                {item.updated_at ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#7a7a85] w-[80px]">Updated</span>
+                    <span className="text-[10px] text-[#7a7a85]">{new Date(item.updated_at).toLocaleString()}</span>
+                  </div>
+                ) : null}
+                {reviewCount !== null ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#7a7a85] w-[80px]">Reviews</span>
+                    <span className="text-[10px] text-[#f0efe8]">{reviewCount} on Google</span>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Vibe match */}
+              {meta?.vibe_score !== null && meta?.vibe_score !== undefined && typeof meta.vibe_score === 'object' && (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] text-[#7a7a85] uppercase tracking-wider">Vibe match (0–10)</div>
+                  {Object.entries(meta.vibe_score as Record<string, number>).map(([vibe, rawScore]) => {
+                    const score = Number(rawScore) || 0
+                    return (
+                      <div key={vibe} className="flex items-center gap-2">
+                        <span className="text-[#7a7a85] w-[80px] flex-shrink-0 truncate text-[10px]">{vibe}</span>
+                        <div className="flex-1 h-[5px] bg-[rgba(255,255,255,0.04)] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${score * 10}%`, backgroundColor: score >= 7 ? '#c8a44e' : score >= 4 ? '#70c1b3' : '#5b9bd5' }} />
+                        </div>
+                        <span className="text-[10px] text-[#f0efe8] w-[24px] text-right">{score}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Multi-vendor offers */}
+              {Array.isArray(meta?.vendors) && (meta.vendors as VendorOffer[]).length > 0 && (
+                <div className="md:col-span-2 space-y-1.5">
+                  <div className="text-[10px] text-[#7a7a85] uppercase tracking-wider">
+                    Booking & comparison ({(meta.vendors as VendorOffer[]).length} vendors)
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(meta.vendors as VendorOffer[]).map((v, i) => (
+                      <a key={i} href={v.url} target="_blank" rel="noreferrer"
+                         className="px-2 py-1 rounded text-[10px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] hover:border-[#c8a44e] hover:text-[#c8a44e] text-[#f0efe8] transition-colors flex items-center gap-1.5"
+                         title={`${v.vendor} (${v.kind})`}>
+                        <span>{v.vendor}</span>
+                        <span className="text-[8px] text-[#7a7a85]">{v.kind}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pairs with — nearby places worth combining */}
+              {Array.isArray(meta?.pairs_with) && (meta.pairs_with as string[]).length > 0 && (
+                <div className="md:col-span-2 space-y-1.5">
+                  <div className="text-[10px] text-[#7a7a85] uppercase tracking-wider">Pairs with (same-day combos)</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(meta.pairs_with as string[]).map((p, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-[rgba(176,124,216,0.08)] text-[#b07cd8] rounded text-[10px]">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Grounding sources — proves honest_take came from real web research */}
+              {Array.isArray(meta?.sources) && (meta.sources as string[]).length > 0 && (
+                <div className="md:col-span-2 space-y-1.5">
+                  <div className="text-[10px] text-[#7a7a85] uppercase tracking-wider">
+                    Grounding sources ({(meta.sources as string[]).length} pages Gemini cited)
+                  </div>
+                  <div className="space-y-0.5 max-h-[120px] overflow-y-auto">
+                    {(meta.sources as string[]).slice(0, 20).map((url, i) => {
+                      let host = ''
+                      try { host = new URL(url).hostname.replace(/^www\./, '') } catch { host = url.slice(0, 40) }
+                      return (
+                        <a key={i} href={url} target="_blank" rel="noreferrer" className="block text-[10px] text-[#70c1b3] hover:underline truncate" title={url}>
+                          {host}
+                        </a>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )})()}
+
           {!editing && (
             <details className="mt-3">
               <summary className="text-[10px] text-[#4a4a55] cursor-pointer hover:text-[#7a7a85]">Raw metadata JSON</summary>
@@ -769,6 +954,44 @@ function CatalogItemRow({ item, type, expanded, onToggle, onUpdate }: {
       )}
     </div>
   )
+}
+
+function TierChip({ label, n, total, color }: { label: string; n: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round(100 * n / total) : 0
+  return (
+    <span
+      className="px-2 py-0.5 rounded text-[10px] flex items-center gap-1"
+      style={{ backgroundColor: `${color}1f`, color }}
+      title={`${label}: ${n} of ${total} (${pct}%)`}
+    >
+      <span>{label}</span>
+      <strong className="font-light">{n}</strong>
+      <span className="opacity-60">{pct}%</span>
+    </span>
+  )
+}
+
+function CompletenessRow({ label, n, total }: { label: string; n: number; total: number }) {
+  const pct = total > 0 ? Math.round(100 * n / total) : 0
+  const color = pct >= 80 ? '#70c1b3' : pct >= 40 ? '#c8a44e' : '#e07a5f'
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[#7a7a85] w-[80px] flex-shrink-0">{label}</span>
+      <div className="flex-1 h-[5px] bg-[rgba(255,255,255,0.04)] rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-[#7a7a85] w-[60px] text-right">{n}/{total} ({pct}%)</span>
+    </div>
+  )
+}
+
+function sourceBadgeClasses(source: string): string {
+  if (source.includes('google-places+gemini')) return 'bg-[rgba(200,164,78,0.12)] text-[#c8a44e] border border-[rgba(200,164,78,0.3)]'
+  if (source.includes('places-broad+gemini'))  return 'bg-[rgba(200,164,78,0.08)] text-[#c8a44e]'
+  if (source.includes('serpapi'))               return 'bg-[rgba(112,193,179,0.1)] text-[#70c1b3]'
+  if (source.includes('amadeus'))               return 'bg-[rgba(91,155,213,0.1)] text-[#5b9bd5]'
+  if (source.includes('google+ai'))             return 'bg-[rgba(176,124,216,0.1)] text-[#b07cd8]'
+  return 'bg-[rgba(255,255,255,0.04)] text-[#7a7a85]'
 }
 
 function DetailRow({ label, value, warn }: { label: string; value?: string | null; warn?: boolean }) {
