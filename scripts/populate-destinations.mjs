@@ -280,7 +280,7 @@ async function searchHotels(city, country) {
     `premium hostels ${city}`,
     `top rated homestays ${city}`,
   ];
-  const all = (await Promise.all(queries.map(q => placesSearch(q, 8)))).flat();
+  const all = (await Promise.all(queries.map(q => placesSearch(q, 20)))).flat();
   return dedupeByPlaceId(all);
 }
 async function searchActivities(city, country) {
@@ -292,9 +292,10 @@ async function searchActivities(city, country) {
     `unique experiences ${city}`,
     `adventure activities ${city}`,
     `nightlife ${city}`,
+    `live music venues ${city}`,
     `cultural sites ${city}`,
   ];
-  const all = (await Promise.all(queries.map(q => placesSearch(q, 8)))).flat();
+  const all = (await Promise.all(queries.map(q => placesSearch(q, 20)))).flat();
   return dedupeByPlaceId(all);
 }
 async function searchRestaurants(city, country) {
@@ -307,8 +308,13 @@ async function searchRestaurants(city, country) {
     `rooftop restaurants ${city}`,
     `cafes ${city}`,
     `vegetarian restaurants ${city}`,
+    // Scene-coded: catches hybrid venues, popular hangouts, older institutions
+    `where locals eat ${city}`,
+    `iconic cafes and bars ${city}`,
+    `popular hangouts ${city}`,
+    `old famous restaurant ${city}`,
   ];
-  const all = (await Promise.all(queries.map(q => placesSearch(q, 8)))).flat();
+  const all = (await Promise.all(queries.map(q => placesSearch(q, 20)))).flat();
   return dedupeByPlaceId(all);
 }
 
@@ -319,8 +325,13 @@ function dedupeByPlaceId(arr) {
 
 // Pick top across all price tiers (luxury/mid/budget) so result has full range.
 // Drops the minRating bar for smaller destinations and ranks per tier.
-function rankAndPick(items, n, { minRating = 3.6, minReviews = 15 } = {}) {
-  const qualifying = items.filter(p => p.rating >= minRating && p.reviewCount >= minReviews);
+function rankAndPick(items, n, { minRating = 3.6, minReviews = 8 } = {}) {
+  // Landmark exemption: anything rated ≥ 4.4 always qualifies regardless of review count,
+  // so family-run institutions with proportionally fewer reviews aren't filtered out.
+  const isLandmark = p => p.rating >= 4.4 && p.reviewCount >= 5;
+  const qualifying = items.filter(p =>
+    isLandmark(p) || (p.rating >= minRating && p.reviewCount >= minReviews)
+  );
   const score = p => p.rating * Math.log10(p.reviewCount + 1);
   const tiers = { luxury: [], mid: [], budget: [] };
   for (const p of qualifying) (tiers[p.priceLevel || 'mid'] || tiers.mid).push(p);
@@ -727,6 +738,29 @@ async function populateDestination(dest) {
     searchRestaurants(dest.city, dest.country),
   ]);
   console.log(`  ✓ raw: ${rawHotels.length}H / ${rawActs.length}A / ${rawRests.length}R`);
+
+  // Cross-category promotion: hybrid venues (cafe/bar/live-music + food) can land in BOTH
+  // activities AND restaurants pools so they're discoverable from either lens.
+  const HYBRID_TYPES = ['bar','night_club','lounge','live_music_venue','cafe','event_venue','meal_takeaway','meal_delivery'];
+  const RESTAURANT_TYPES = ['restaurant','food','cafe','bakery','meal_takeaway'];
+  const isFoodish = p => (p.types || []).some(t => RESTAURANT_TYPES.includes(t));
+  const isHybridVenue = p => (p.types || []).some(t => HYBRID_TYPES.includes(t));
+  const seenAct = new Set(rawActs.map(p => p.placeId));
+  const seenRest = new Set(rawRests.map(p => p.placeId));
+  let promotedToRest = 0, promotedToAct = 0;
+  for (const p of rawActs) {
+    if (!seenRest.has(p.placeId) && isFoodish(p) && isHybridVenue(p)) {
+      rawRests.push(p); seenRest.add(p.placeId); promotedToRest++;
+    }
+  }
+  for (const p of rawRests) {
+    if (!seenAct.has(p.placeId) && isHybridVenue(p)) {
+      rawActs.push(p); seenAct.add(p.placeId); promotedToAct++;
+    }
+  }
+  if (promotedToRest + promotedToAct > 0) {
+    console.log(`  ↔ cross-category: +${promotedToRest} to restaurants, +${promotedToAct} to activities`);
+  }
 
   const topHotels = rankAndPick(rawHotels, 15);
   const topActs   = rankAndPick(rawActs, 22);
