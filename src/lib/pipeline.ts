@@ -518,6 +518,74 @@ function generateBookingLink(hotelName: string, city: string, country: string): 
   return `https://www.booking.com/searchresults.html?ss=${query}&lang=en-us`
 }
 
+// ─── Multi-vendor offer URLs ─────────────────────────────────
+// Builds search URLs across all relevant aggregators so the UI can
+// offer price comparison. Domestic-IN vendors get included for India.
+
+export interface VendorOffer {
+  vendor: string
+  kind: string
+  url: string
+}
+
+export function buildVendorOffers(
+  item: { name: string; placeId?: string | null; mapsUrl?: string | null; website?: string | null },
+  category: 'hotel' | 'activity' | 'restaurant',
+  city: string,
+  country: string,
+): VendorOffer[] {
+  const q = encodeURIComponent(`${item.name} ${city}`)
+  const qNoCity = encodeURIComponent(item.name)
+  const isIndia = country.toLowerCase() === 'india'
+  const mapsFallback = item.mapsUrl
+    || `https://www.google.com/maps/search/?api=1&query=${q}${item.placeId ? `&query_place_id=${item.placeId}` : ''}`
+
+  if (category === 'hotel') {
+    return [
+      { vendor: 'Booking.com', kind: 'aggregator', url: `https://www.booking.com/searchresults.html?ss=${q}` },
+      { vendor: 'Agoda', kind: 'aggregator', url: `https://www.agoda.com/search?city=&textToSearch=${q}` },
+      ...(isIndia ? [
+        { vendor: 'MakeMyTrip', kind: 'aggregator-in', url: `https://www.makemytrip.com/hotels/hotel-listing/?checkin=&checkout=&city=${qNoCity}&country=IN` },
+        { vendor: 'Goibibo', kind: 'aggregator-in', url: `https://www.goibibo.com/hotels/hotels-in-${encodeURIComponent(city.toLowerCase())}-ct/?q=${qNoCity}` },
+      ] : []),
+      { vendor: 'Expedia', kind: 'aggregator', url: `https://www.expedia.com/Hotel-Search?destination=${q}` },
+      { vendor: 'Hotels.com', kind: 'aggregator', url: `https://www.hotels.com/Hotel-Search?destination=${q}` },
+      { vendor: 'Trivago', kind: 'meta', url: `https://www.trivago.com/?query=${q}` },
+      { vendor: 'Kayak', kind: 'meta', url: `https://www.kayak.com/hotels/${q}` },
+      { vendor: 'Tripadvisor', kind: 'reviews', url: `https://www.tripadvisor.com/Search?q=${q}` },
+      { vendor: 'Google Maps', kind: 'official', url: mapsFallback },
+      ...(item.website ? [{ vendor: 'Direct', kind: 'direct', url: item.website }] : []),
+    ]
+  }
+  if (category === 'activity') {
+    return [
+      { vendor: 'GetYourGuide', kind: 'aggregator', url: `https://www.getyourguide.com/s?q=${q}` },
+      { vendor: 'Viator', kind: 'aggregator', url: `https://www.viator.com/searchResults/all?text=${q}` },
+      { vendor: 'Klook', kind: 'aggregator', url: `https://www.klook.com/search/result/?keyword=${q}` },
+      { vendor: 'Tripadvisor', kind: 'reviews', url: `https://www.tripadvisor.com/Search?q=${q}` },
+      ...(isIndia ? [
+        { vendor: 'MakeMyTrip', kind: 'aggregator-in', url: `https://www.makemytrip.com/things-to-do/search?q=${qNoCity}` },
+        { vendor: 'Headout', kind: 'aggregator-in', url: `https://www.headout.com/search/?query=${q}` },
+      ] : []),
+      { vendor: 'Google Maps', kind: 'official', url: mapsFallback },
+      ...(item.website ? [{ vendor: 'Official', kind: 'direct', url: item.website }] : []),
+    ]
+  }
+  // restaurant
+  return [
+    ...(isIndia ? [
+      { vendor: 'Zomato', kind: 'reviews-in', url: `https://www.zomato.com/search?query=${q}` },
+      { vendor: 'Swiggy Dineout', kind: 'reservations-in', url: `https://www.swiggy.com/dineout/search?query=${q}` },
+      { vendor: 'EazyDiner', kind: 'reservations-in', url: `https://www.eazydiner.com/search?keyword=${q}` },
+    ] : []),
+    { vendor: 'Tripadvisor', kind: 'reviews', url: `https://www.tripadvisor.com/Search?q=${q}` },
+    { vendor: 'Yelp', kind: 'reviews', url: `https://www.yelp.com/search?find_desc=${q}` },
+    { vendor: 'OpenTable', kind: 'reservations', url: `https://www.opentable.com/s?term=${q}` },
+    { vendor: 'Google Maps', kind: 'official', url: mapsFallback },
+    ...(item.website ? [{ vendor: 'Official', kind: 'direct', url: item.website }] : []),
+  ]
+}
+
 // ─── Helper: build rich place context for LLM ───────────────
 
 function buildPlaceContext(
@@ -637,10 +705,14 @@ Return JSON array:
       amenities: h.amenities || [],
       image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
       location: h.location || details?.address || gpMatch?.address || '',
-      booking_url: details?.bookingUrl || generateBookingLink(h.name as string, ctx.config.city, ctx.config.country),
+      booking_url: (() => {
+        const vendors = buildVendorOffers({ name: h.name as string, placeId: gpMatch?.placeId, mapsUrl: gpMatch?.mapsUrl, website: details?.website }, 'hotel', ctx.config.city, ctx.config.country)
+        return vendors.find(v => v.vendor === 'Booking.com')?.url || details?.bookingUrl || generateBookingLink(h.name as string, ctx.config.city, ctx.config.country)
+      })(),
       source: gpMatch ? 'google+ai' : 'ai',
       metadata: {
         ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
+        vendors: buildVendorOffers({ name: h.name as string, placeId: gpMatch?.placeId, mapsUrl: gpMatch?.mapsUrl, website: details?.website }, 'hotel', ctx.config.city, ctx.config.country),
         ...(details ? {
           phone: details.phone,
           website: details.website,
@@ -777,10 +849,14 @@ Return JSON array:
       best_time: a.best_time,
       image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
       location: a.location || details?.address || gpMatch?.address || '',
-      booking_url: details?.bookingUrl || null,
+      booking_url: (() => {
+        const vendors = buildVendorOffers({ name: a.name as string, placeId: gpMatch?.placeId, mapsUrl: gpMatch?.mapsUrl, website: details?.website }, 'activity', ctx.config.city, ctx.config.country)
+        return vendors.find(v => v.vendor === 'GetYourGuide')?.url || details?.bookingUrl || null
+      })(),
       source: gpMatch ? 'google+ai' : 'ai',
       metadata: {
         ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
+        vendors: buildVendorOffers({ name: a.name as string, placeId: gpMatch?.placeId, mapsUrl: gpMatch?.mapsUrl, website: details?.website }, 'activity', ctx.config.city, ctx.config.country),
         ...(details ? {
           phone: details.phone,
           website: details.website,
@@ -894,10 +970,16 @@ Return JSON array:
       must_try: r.must_try || [],
       image_url: details?.photos?.[0] || gpMatch?.photoUrls?.[0] || null,
       location: r.location || details?.address || gpMatch?.address || '',
-      booking_url: details?.bookingUrl || gpMatch?.mapsUrl || null,
+      booking_url: (() => {
+        const vendors = buildVendorOffers({ name: r.name as string, placeId: gpMatch?.placeId, mapsUrl: gpMatch?.mapsUrl, website: details?.website }, 'restaurant', ctx.config.city, ctx.config.country)
+        const isIN = ctx.config.country.toLowerCase() === 'india'
+        const primary = isIN ? vendors.find(v => v.vendor === 'Zomato') : vendors.find(v => v.vendor === 'OpenTable')
+        return primary?.url || details?.bookingUrl || gpMatch?.mapsUrl || null
+      })(),
       source: gpMatch ? 'google+ai' : 'ai',
       metadata: {
         ...(gpMatch ? { placeId: gpMatch.placeId, dataId: gpMatch.dataId, reviewCount: gpMatch.reviewCount, mapsUrl: gpMatch.mapsUrl } : {}),
+        vendors: buildVendorOffers({ name: r.name as string, placeId: gpMatch?.placeId, mapsUrl: gpMatch?.mapsUrl, website: details?.website }, 'restaurant', ctx.config.city, ctx.config.country),
         ...(details ? {
           phone: details.phone,
           website: details.website,
