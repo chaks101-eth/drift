@@ -211,11 +211,60 @@ function normalizePlace(p) {
 }
 
 function mapPriceLevel(level) {
-  if (!level) return 'mid';
+  if (!level) return null; // unknown — derive later from name + synth price
   if (['PRICE_LEVEL_FREE', 'PRICE_LEVEL_INEXPENSIVE'].includes(level)) return 'budget';
   if (level === 'PRICE_LEVEL_MODERATE') return 'mid';
   if (['PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE'].includes(level)) return 'luxury';
-  return 'mid';
+  return null;
+}
+
+// ─── Tier derivation ──────────────────────────────────────────
+// Google Places rarely returns priceLevel for hotels, so combine signals:
+// 1. Explicit Google priceLevel (when present and non-mid)
+// 2. Brand/name heuristics (luxury chains, hostels, homestays)
+// 3. Gemini's extracted local-currency price, compared to currency-specific thresholds
+const HOTEL_THRESHOLDS_PER_NIGHT = {
+  INR: [4000, 15000],   USD: [100, 300],     EUR: [100, 300],     THB: [2500, 7000],
+  IDR: [1500000, 4500000], LKR: [15000, 40000], VND: [2000000, 6000000], AED: [400, 1200],
+  JPY: [12000, 35000],  SGD: [180, 500],     CHF: [220, 600],     LAK: [800000, 2500000],
+  MYR: [300, 900],      PHP: [5000, 15000],  MMK: [50000, 150000],
+};
+const RESTAURANT_THRESHOLDS_PER_PERSON = {
+  INR: [400, 1500],     USD: [15, 50],       EUR: [15, 50],       THB: [200, 800],
+  IDR: [80000, 400000], LKR: [1500, 5000],   VND: [150000, 600000], AED: [50, 200],
+  JPY: [1500, 6000],    SGD: [20, 80],       CHF: [25, 90],       LAK: [50000, 200000],
+  MYR: [25, 100],       PHP: [400, 1500],    MMK: [5000, 20000],
+};
+const LUXURY_BRAND_RE = /(ritz[- ]?carlton|aman|four seasons|st\.?\s*regis|park hyatt|bvlgari|raffles|mandarin oriental|peninsula|burj al arab|atlantis|the leela|taj exotica|oberoi|umaid bhawan|rambagh palace|six senses|alila|conrad|edition|capella|rosewood|chedi|cheval blanc|soneva|anantara|kempinski|w hotel| trump | aman[a-z]+|jumeirah|raj palace|raj vilas|chanakya|the imperial|the lalit|itc grand|leela palace)/i;
+const BUDGET_NAME_RE = /(hostel|hosteller|backpackers?|guest\s*house|guesthouse|dorm|inn\b|lodge\b|homestay|home stay|paying guest|pg\b|airbnb)/i;
+const LUXURY_NAME_RE = /(palace\b|resort & spa|grand hyatt|grand hotel|7\s*star|seven star|villa\b.*private|penthouse|royal suite)/i;
+
+function deriveTier(item, synth, dest, category) {
+  // Signal 1: explicit non-default Google priceLevel
+  if (item.priceLevel === 'budget' || item.priceLevel === 'luxury') return item.priceLevel;
+
+  // Signal 2: name/brand heuristic
+  if (category === 'hotel') {
+    if (LUXURY_BRAND_RE.test(item.name)) return 'luxury';
+    if (BUDGET_NAME_RE.test(item.name)) return 'budget';
+    if (LUXURY_NAME_RE.test(item.name)) return 'luxury';
+  }
+
+  // Signal 3: Gemini-synthesized local price, compared to currency thresholds
+  const t = category === 'hotel' ? HOTEL_THRESHOLDS_PER_NIGHT[dest.currency]
+          : category === 'restaurant' ? RESTAURANT_THRESHOLDS_PER_PERSON[dest.currency]
+          : null;
+  const price = category === 'hotel' ? synth?.price_per_night_local
+              : category === 'restaurant' ? synth?.avg_cost_local
+              : null;
+  if (t && typeof price === 'number' && price > 0) {
+    if (price < t[0]) return 'budget';
+    if (price > t[1]) return 'luxury';
+    return 'mid';
+  }
+
+  // Signal 4: activities — use Google priceLevel if mapped, else mid
+  return item.priceLevel || 'mid';
 }
 
 // ─── Per-category search — TIER-AWARE ─────────────────────────
@@ -494,7 +543,7 @@ async function insertHotel(destId, item, synth, dest) {
     detail: synth?.honest_take || item.editorialSummary || '',
     category: inferHotelCategory(item),
     price_per_night: synth?.price_per_night_local ? `${dest.currency} ${synth.price_per_night_local}` : null,
-    price_level: item.priceLevel,
+    price_level: deriveTier(item, synth, dest, 'hotel'),
     rating: item.rating,
     vibes: synth?.vibe_score ? Object.entries(synth.vibe_score).filter(([, v]) => v >= 6).map(([k]) => k) : [],
     amenities: synth?.amenities || [],
@@ -532,7 +581,7 @@ async function insertActivity(destId, item, synth, dest) {
     description: item.editorialSummary || (synth?.honest_take?.split('.')[0] + '.'),
     detail: synth?.honest_take || item.editorialSummary || '',
     category: inferActivityCategory(item),
-    price: item.priceLevel === 'budget' ? 'Low' : item.priceLevel === 'luxury' ? 'High' : 'Mid',
+    price: (() => { const t = deriveTier(item, synth, dest, 'activity'); return t === 'budget' ? 'Low' : t === 'luxury' ? 'High' : 'Mid' })(),
     duration: synth?.duration_hours ? `${synth.duration_hours}h` : '2h',
     vibes: synth?.vibe_score ? Object.entries(synth.vibe_score).filter(([, v]) => v >= 6).map(([k]) => k) : [],
     best_time: synth?.best_time_of_day || 'morning',
@@ -571,7 +620,7 @@ async function insertRestaurant(destId, item, synth, dest) {
     description: item.editorialSummary || (synth?.honest_take?.split('.')[0] + '.'),
     detail: synth?.honest_take || item.editorialSummary || '',
     cuisine: synth?.cuisine?.[0] || 'Local',
-    price_level: item.priceLevel,
+    price_level: deriveTier(item, synth, dest, 'restaurant'),
     avg_cost: synth?.avg_cost_local ? `${dest.currency} ${synth.avg_cost_local}` : null,
     rating: item.rating,
     vibes: synth?.vibe_score ? Object.entries(synth.vibe_score).filter(([, v]) => v >= 6).map(([k]) => k) : [],
@@ -644,19 +693,32 @@ async function populateDestination(dest) {
   const t0 = Date.now();
   console.log(`\n━━━ ${dest.city}, ${dest.country} [${dest.tag}] ━━━`);
 
-  const { id: destId, isNew } = await upsertDestination(dest);
-  console.log(`  ✓ destination ${isNew ? 'created' : 'reused'} ${destId.slice(0, 8)}`);
-
-  // Skip if already populated by this script (idempotency). Pass --force to override.
+  // Skip check BEFORE upsertDestination — otherwise status flips to 'processing'
+  // and then we return early, leaving the row stuck.
   if (!FORCE) {
-    const { count: existingFromScript } = await sb.from('catalog_hotels')
-      .select('*', { count: 'exact', head: true })
-      .eq('destination_id', destId).eq('status', 'active').eq('source', 'google-places+gemini');
-    if ((existingFromScript || 0) >= 8) {
-      console.log(`  ⏭ skipping — already has ${existingFromScript} hotels from this script. Use --force to repopulate.`);
-      return { dest: dest.city, hotels: existingFromScript, activities: 0, restaurants: 0, elapsed: 0, skipped: true };
+    const { data: pre } = await sb.from('catalog_destinations')
+      .select('id, status')
+      .ilike('city', dest.city)
+      .ilike('country', dest.country)
+      .maybeSingle();
+    if (pre) {
+      const { count: existingFromScript } = await sb.from('catalog_hotels')
+        .select('*', { count: 'exact', head: true })
+        .eq('destination_id', pre.id).eq('status', 'active').eq('source', 'google-places+gemini');
+      if ((existingFromScript || 0) >= 8) {
+        console.log(`  ⏭ skipping — already has ${existingFromScript} hotels from this script. Use --force to repopulate.`);
+        // Defensive: if a prior buggy run left it stuck in processing, restore to active
+        if (pre.status !== 'active') {
+          await sb.from('catalog_destinations').update({ status: 'active', updated_at: new Date().toISOString() }).eq('id', pre.id);
+          console.log(`  ✓ status reset from '${pre.status}' to 'active'`);
+        }
+        return { dest: dest.city, hotels: existingFromScript, activities: 0, restaurants: 0, elapsed: 0, skipped: true };
+      }
     }
   }
+
+  const { id: destId, isNew } = await upsertDestination(dest);
+  console.log(`  ✓ destination ${isNew ? 'created' : 'reused'} ${destId.slice(0, 8)}`);
 
   console.log(`  → searching places...`);
   const [rawHotels, rawActs, rawRests] = await Promise.all([
