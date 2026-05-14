@@ -47,6 +47,10 @@
   "optionalDependencies": {
     "@tailwindcss/oxide-linux-x64-gnu": "4.2.1",
     "lightningcss-linux-x64-gnu": "1.31.1",
-    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.11"
+    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.11",
+    "@remotion/compositor-linux-x64-gnu": "4.0.440",
+    "@rollup/rollup-linux-x64-gnu": "4.60.0",
+    "@rspack/binding-linux-x64-gnu": "1.7.6",
+    "@unrs/resolver-binding-linux-x64-gnu": "1.11.1"
   }
 }
