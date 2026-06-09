@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drift Booking · V1 Concierge</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+
+<div class="proto-header">
+  <div class="proto-crumbs">
+    <a href="index.html">Booking prototypes</a>
+    <span class="sep">/</span>
+    <span>V1 · Concierge</span>
+  </div>
+  <span class="proto-tagline">Direction 1 — MVP without payment infra</span>
+  <h1 class="proto-title">Book it for me — <em>we'll confirm in 5 minutes</em>.</h1>
+  <p class="proto-subtitle">User taps "Book flight" → Drift collects minimal details → the actual booking happens out-of-band (manual queue, partner email, or Zapier-driven affiliate handoff). Best for shipping fast before securing any API contracts. Feels concierge, not OTA.</p>
+</div>
+
+<div class="flow-rail-wrap">
+<div class="flow-rail">
+
+  <!-- ─── Step 1: Trigger from itinerary card ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">1</span>
+      <span class="step-name">Tap "Book" on board</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:41</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Goa, India</h1>
+        </div>
+        <div class="app-body">
+          <div class="eyebrow">Day 1 · Sat, Jun 14</div>
+          <div class="mock-card">
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+              <span style="font-family:var(--font-mono); font-size:10px; color:var(--gold); letter-spacing:1.5px;">✈ FLIGHT</span>
+              <span style="margin-left:auto; font-size:13px; font-weight:600;">$67</span>
+            </div>
+            <div class="flight-route">
+              <div>
+                <div class="iata">DEL</div>
+                <div style="font-size:11px; color:var(--text2); margin-top:4px;">12:00</div>
+              </div>
+              <div class="mid">
+                <div class="dash"></div>
+                <span class="icon">✈</span>
+                <div class="dash"></div>
+              </div>
+              <div style="text-align:right;">
+                <div class="iata">GOI</div>
+                <div style="font-size:11px; color:var(--text2); margin-top:4px;">13:00</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:var(--text3); text-align:center; margin-top:6px;">Direct · 1h 0m</div>
+            <div style="border-top:1px solid var(--border); margin-top:12px; padding-top:10px; font-size:11px; color:var(--text2);">Air India · AI882</div>
+          </div>
+          <button class="btn-primary" style="background: var(--gold); margin-top:8px;">Book this flight →</button>
+          <button class="btn-link" style="display:block; margin: 12px auto 0;">Find alternatives</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Same booking CTA as today — gold, primary. The difference is what happens after the tap.</p>
+  </div>
+
+  <!-- ─── Step 2: Confirm intent + travelers ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">2</span>
+      <span class="step-name">Confirm your travelers</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:42</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Book Flight</h1>
+          <span class="step-pill">1 / 3</span>
+        </div>
+        <div class="app-body">
+          <div class="mock-card" style="background: rgba(200,164,78,0.04); border-color: rgba(200,164,78,0.2);">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--gold); letter-spacing:1.5px; margin-bottom:6px;">YOU'RE BOOKING</div>
+            <div class="name">Air India AI882 · Direct</div>
+            <div style="font-size:12px; color:var(--text2);">DEL → GOI · Sat, Jun 14 · 12:00</div>
+            <div style="font-size:22px; font-family:var(--font-serif); margin-top:8px;">$67 <span style="font-size:11px; color:var(--text3); font-family:var(--font-sans);">per person</span></div>
+          </div>
+          <div class="eyebrow" style="margin-top:18px;">Travelers · 2 adults</div>
+          <div class="field">
+            <label>Adult 1 — Full name (as on passport)</label>
+            <input value="Chakshu Tyagi" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Date of birth</label>
+              <input value="14 Mar 1996" />
+            </div>
+            <div class="field">
+              <label>Gender</label>
+              <select><option>Male</option></select>
+            </div>
+          </div>
+          <div class="line"></div>
+          <div class="field">
+            <label>Adult 2 — Full name</label>
+            <input placeholder="Tap to add traveler" />
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Continue →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Reuses Drift's existing form patterns. Pre-fills the authenticated user. Other travelers stay optional — many trips are solo.</p>
+  </div>
+
+  <!-- ─── Step 3: Contact + confirmation timeline ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">3</span>
+      <span class="step-name">Where we'll reach you</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:43</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Book Flight</h1>
+          <span class="step-pill">2 / 3</span>
+        </div>
+        <div class="app-body">
+          <div class="h-large">How we'll <em>confirm</em></div>
+          <p class="lede">We'll email you a secure payment link in under 5 minutes. Lock the price now — no card needed yet.</p>
+
+          <div class="field">
+            <label>Email — for confirmation</label>
+            <input value="chakshu@inomy.shop" />
+          </div>
+          <div class="field">
+            <label>WhatsApp (optional, for urgent updates)</label>
+            <input placeholder="+91 ____ ____" />
+          </div>
+
+          <div class="line"></div>
+
+          <div class="eyebrow gold">What happens next</div>
+          <div class="timeline-step done">
+            <div class="dot">✓</div>
+            <div class="body">
+              <div class="ttl">You confirm details</div>
+              <div class="sub">Now — locks the fare for 24h</div>
+            </div>
+          </div>
+          <div class="timeline-step active">
+            <div class="dot">2</div>
+            <div class="body">
+              <div class="ttl">Drift secures the booking</div>
+              <div class="sub">~5 min — we book with the airline directly</div>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="dot">3</div>
+            <div class="body">
+              <div class="ttl">You pay & it's done</div>
+              <div class="sub">Email with secure payment link</div>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Reserve for 24h →</button>
+          <p style="text-align:center; font-size:10px; color:var(--text3); margin-top:8px;">No payment until step 3</p>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">The trust moment. We're honest that booking happens out-of-band — but we frame it as concierge service, not a delay.</p>
+  </div>
+
+  <!-- ─── Step 4: Reserved status ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">4</span>
+      <span class="step-name">Working on it</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:43</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <h1 style="text-align:center; padding-right:32px;">Reserved</h1>
+        </div>
+        <div class="app-body" style="display:flex; flex-direction:column; justify-content:center;">
+          <div class="success-icon">✓</div>
+          <div style="text-align:center;">
+            <div class="h-large" style="text-align:center;">Fare locked for <em>24h</em></div>
+            <p class="lede" style="text-align:center;">DEL → GOI on Sat, Jun 14 at 12:00. We're securing it now — watch your inbox.</p>
+          </div>
+
+          <div class="mock-card" style="margin-top:24px; background: rgba(78,205,196,0.04); border-color: rgba(78,205,196,0.15);">
+            <div class="row">
+              <span class="lbl">Reservation</span>
+              <span class="val" style="font-family:var(--font-mono); font-size:11px;">DR-8F2K-2026</span>
+            </div>
+            <div class="row">
+              <span class="lbl">Expires</span>
+              <span class="val">Tomorrow, 9:43</span>
+            </div>
+            <div class="row">
+              <span class="lbl">Total</span>
+              <span class="val gold">$134.00</span>
+            </div>
+          </div>
+
+          <div class="timeline-step done" style="margin-top:18px;">
+            <div class="dot">✓</div>
+            <div class="body">
+              <div class="ttl">Details confirmed</div>
+              <div class="sub">Just now</div>
+            </div>
+          </div>
+          <div class="timeline-step active">
+            <div class="dot">⏳</div>
+            <div class="body">
+              <div class="ttl">Securing your seat</div>
+              <div class="sub">Drift is talking to Air India — usually <5 min</div>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-secondary">Back to my trip</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Honest progress communication. The "Drift is talking to Air India" line is the brand voice — feels like a person, not a checkout flow.</p>
+  </div>
+
+  <!-- ─── Step 5: Email arrives ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">5</span>
+      <span class="step-name">Pay → done</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:47</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Inbox</h1>
+        </div>
+        <div class="app-body">
+          <div class="mock-card" style="background: var(--card); border-color: rgba(200,164,78,0.25); padding:18px;">
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+              <div style="width:36px; height:36px; border-radius:50%; background: var(--gold); display:flex; align-items:center; justify-content:center; color:var(--bg); font-family:var(--font-serif); font-style:italic; font-weight:600;">D</div>
+              <div>
+                <div style="font-size:12px; font-weight:600;">Drift</div>
+                <div style="font-size:10px; color:var(--text3);">hi@driftntravel.com · 4 min ago</div>
+              </div>
+            </div>
+            <div style="font-family:var(--font-serif); font-size:18px; font-weight:300; line-height:1.3; margin-bottom:8px;">Your seat on AI882 is held — confirm now ↓</div>
+            <div style="font-size:12px; color:var(--text2); line-height:1.55; margin-bottom:16px;">
+              We secured a window seat (7A) for you on the Air India direct to Goa. Pay $134 to confirm — you've got <strong style="color:var(--gold);">23h 56m</strong> on this fare.
+            </div>
+            <button class="btn-primary">Pay $134 securely →</button>
+            <div style="font-size:10px; color:var(--text3); text-align:center; margin-top:10px;">
+              Powered by Stripe · Booking by Drift
+            </div>
+          </div>
+
+          <div style="text-align:center; margin-top:20px; padding: 16px; background: var(--surface); border-radius: 12px;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--gold); letter-spacing:1.5px; margin-bottom:6px;">PRO TIP</div>
+            <div style="font-size:12px; color:var(--text2); line-height:1.5;">The email link opens a Drift-branded payment page. Stripe handles the card. Confirmation comes back from Drift, not the airline.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">The payment lives outside the app on the first MVP — a Stripe Checkout link in the email. Drift wraps everything in its brand.</p>
+  </div>
+
+</div>
+</div>
+
+<div class="tradeoffs">
+  <div class="tradeoff win">
+    <h4>Wins</h4>
+    <p><strong>Ships in 2 weeks.</strong> Zero API contracts, zero PCI scope, zero Amadeus/Duffel integration. The "5 min concierge" framing is a feature, not a bug — it builds trust.</p>
+  </div>
+  <div class="tradeoff cost">
+    <h4>Costs</h4>
+    <p>Manual labor doesn't scale past ~100 bookings/day. Out-of-band payment loses the "in-app feel" for the actual money moment. Affiliate revenue only — no margin on the inventory.</p>
+  </div>
+  <div class="tradeoff dep">
+    <h4>Dependencies</h4>
+    <p>Stripe Checkout, Resend (already wired), and a manual queue (Airtable or Linear). Optional: Skyscanner/Travelpayouts affiliate link for tracked revenue.</p>
+  </div>
+</div>
+
+</body>
+</html>

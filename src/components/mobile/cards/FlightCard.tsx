@@ -2,7 +2,19 @@
 
 import { useTripStore } from '@/stores/trip-store'
 import { parsePrice } from '@/lib/parse-price'
+import { AIRLINE_NAMES } from '@/lib/amadeus'
 import type { ItineraryItem, ItemMetadata } from '@/stores/trip-store'
+
+// Resolve a useful airline label: full name + flight number when we have them.
+// Existing trips stored just the IATA code in meta.airline; new ones store both.
+function resolveAirlineLabel(meta: ItemMetadata, detail: string): string {
+  const code = meta.airline as string | undefined
+  const name = (meta.airlineName as string | undefined) || (code && AIRLINE_NAMES[code]) || ''
+  const flightNumber = meta.flightNumber as string | undefined
+  if (name && flightNumber) return `${name} · ${flightNumber}`
+  if (name) return name
+  return detail || code || ''
+}
 
 interface FlightCardProps {
   item: ItineraryItem
@@ -32,7 +44,7 @@ export default function FlightCard({ item, onTap }: FlightCardProps) {
     <div className="relative" onClick={onTap}>
       <div className="relative rounded-2xl border border-drift-border2 bg-drift-card p-4">
         {/* Mode label */}
-        <div className="mb-3 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-drift-gold">
+        <div className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-drift-gold">
           {isTrainOrBus ? (
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               {transportMode === 'train' ? (
@@ -52,8 +64,8 @@ export default function FlightCard({ item, onTap }: FlightCardProps) {
         {/* Station/Airport codes */}
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className={`font-serif font-light text-drift-text ${isTrainOrBus ? 'text-xl' : 'text-4xl'}`}>{fromStation}</div>
-            {!isTrainOrBus && <div className="text-[10px] text-drift-text3">{dep.time || ''}</div>}
+            <div className={`font-serif font-light text-drift-text ${isTrainOrBus ? 'text-2xl' : 'text-4xl'}`}>{fromStation}</div>
+            {!isTrainOrBus && <div className="text-[11px] text-drift-text2">{dep.time || ''}</div>}
           </div>
 
           <div className="flex flex-1 flex-col items-center px-4">
@@ -70,29 +82,29 @@ export default function FlightCard({ item, onTap }: FlightCardProps) {
               )}
               <div className="h-px flex-1 border-t border-dashed border-white/12" />
             </div>
-            <div className="mt-1 text-[9px] text-drift-text3">
+            <div className="mt-1 text-[11px] text-drift-text2">
               {dur}{stops && !isTrainOrBus ? ` · ${stops}` : ''}
             </div>
           </div>
 
           <div className="text-right">
-            <div className={`font-serif font-light text-drift-text ${isTrainOrBus ? 'text-xl' : 'text-4xl'}`}>{toStation}</div>
-            {!isTrainOrBus && <div className="text-[10px] text-drift-text3">{arr.time || ''}</div>}
+            <div className={`font-serif font-light text-drift-text ${isTrainOrBus ? 'text-2xl' : 'text-4xl'}`}>{toStation}</div>
+            {!isTrainOrBus && <div className="text-[11px] text-drift-text2">{arr.time || ''}</div>}
           </div>
         </div>
 
         {/* Operator + price */}
         <div className="flex items-center justify-between border-t border-drift-border2 pt-3">
-          <span className="text-xs text-drift-text2">{isTrainOrBus ? item.detail : ((meta.airline as string) || item.detail || '')}</span>
+          <span className="text-xs text-drift-text2">{isTrainOrBus ? (item.detail || '') : resolveAirlineLabel(meta, item.detail || '')}</span>
           <span className="text-sm font-bold text-drift-gold">{(() => { const n = parsePrice(item.price); return n === 0 ? '' : formatBudget(n) })()}</span>
         </div>
 
         {/* Route hints — train/bus alternatives on this route */}
         {transportAlts && transportAlts.length > 0 && (
           <div className="mt-3 border-t border-drift-border2 pt-3">
-            <div className="mb-2 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-drift-text3">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-drift-text2">
               <span>Also by train or bus</span>
-              <span className="text-drift-text3/50 font-normal normal-case tracking-normal">· tap to search live times</span>
+              <span className="text-drift-text3 font-normal normal-case tracking-normal">· tap to search live times</span>
             </div>
             {transportAlts.map((alt, i) => (
               <a
@@ -115,7 +127,7 @@ export default function FlightCard({ item, onTap }: FlightCardProps) {
                       </svg>
                     )}
                   </span>
-                  <span className="text-[11px] text-drift-text2 line-clamp-1 min-w-0">{alt.detail}</span>
+                  <span className="text-[12px] text-drift-text2 line-clamp-1 min-w-0">{alt.detail}</span>
                 </div>
                 <svg className="h-3 w-3 text-drift-text3 shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />

@@ -477,6 +477,10 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
                       {/* Regular activities/food/flights */}
                       {dayItems.map((item, ii) => {
                         const isLast = ii === dayItems.length - 1
+                        const nextItem = !isLast ? dayItems[ii + 1] : null
+                        const meta = (item.metadata || {}) as ItemMetadata
+                        const travel = meta.travelToNext as { to: string; duration: string; distance: string; mode: string } | undefined
+                        const showTravel = travel && nextItem && nextItem.category !== 'flight'
                         return (
                           <div key={item.id} className="flex items-start shrink-0">
                             {item.category === 'flight'
@@ -496,9 +500,31 @@ export default function DesktopBoardView({ trip, items, onOpenDetail, onOpenChat
                             }
 
                             {!isLast && (
-                              <div className="flex flex-col items-center justify-center px-1 pt-[70px] opacity-30">
-                                <div className="h-px w-4 bg-white/12" />
-                              </div>
+                              showTravel ? (
+                                <div className="flex flex-col items-center justify-start px-2 pt-[68px] shrink-0 w-[88px]" aria-label={`${travel.mode === 'walk' ? 'Walk' : 'Drive'} ${travel.duration}`}>
+                                  <div className="flex items-center w-full">
+                                    <div className="flex-1 border-t border-dashed border-drift-gold/30" />
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-drift-gold/10 border border-drift-gold/25 text-drift-gold mx-1">
+                                      {travel.mode === 'walk' ? (
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                          <circle cx="12" cy="5" r="2" /><path d="M10 22l2-7 4 1v-6l-4-1-2 3" />
+                                        </svg>
+                                      ) : (
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                          <path d="M5 17h14l1-5H4l1 5z" /><circle cx="7.5" cy="17" r="2" /><circle cx="16.5" cy="17" r="2" /><path d="M5 12l1-4h12l1 4" />
+                                        </svg>
+                                      )}
+                                    </span>
+                                    <div className="flex-1 border-t border-dashed border-drift-gold/30" />
+                                  </div>
+                                  <div className="mt-1.5 text-[11px] font-medium text-drift-text tabular-nums whitespace-nowrap">{travel.duration}</div>
+                                  {travel.distance && <div className="text-[10px] text-drift-text2 tabular-nums whitespace-nowrap">{travel.distance}</div>}
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center px-1 pt-[70px] opacity-30">
+                                  <div className="h-px w-4 bg-white/12" />
+                                </div>
+                              )
                             )}
                           </div>
                         )

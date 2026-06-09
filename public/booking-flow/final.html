@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drift Booking · Final spec (Trip Bundle, full customization, mobile + desktop)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body { padding: 56px 32px 80px; }
+  .hero { max-width: 1100px; margin: 0 auto 32px; }
+  .hero .stamp { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+  .hero h1 { font-family: var(--font-serif); font-style: italic; font-weight: 300; font-size: clamp(40px, 5vw, 64px); line-height: 1.04; margin-bottom: 20px; }
+  .hero h1 em { color: var(--gold); }
+  .hero p { font-size: 15px; color: var(--text2); line-height: 1.7; max-width: 720px; margin-bottom: 12px; }
+  .hero p strong { color: var(--text); }
+  .legend { display: flex; gap: 28px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .legend .ll {
+    display: flex; gap: 10px; align-items: center;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--text2);
+  }
+  .legend .ll .sw {
+    width: 12px; height: 12px; border-radius: 4px;
+    background: var(--gold);
+  }
+  .legend .ll .sw.mob { background: rgba(200,164,78,0.3); border: 1px solid rgba(200,164,78,0.5); }
+  .legend .ll .sw.dsk { background: rgba(78, 205, 196, 0.3); border: 1px solid rgba(78, 205, 196, 0.5); }
+
+  .step-cap {
+    max-width: 1100px;
+    margin: 14px auto 0;
+    padding-left: 4px;
+    color: var(--text3);
+    font-size: 12px;
+  }
+
+  /* Flight/return tab pills */
+  .leg-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .leg-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .leg-tab.active { background: rgba(200,164,78,0.1); border-color: rgba(200,164,78,0.4); color: var(--gold); }
+
+  /* Add-on rows (hotel extras) */
+  .addon {
+    display: grid;
+    grid-template-columns: 36px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .addon.sel { border-color: rgba(200,164,78,0.4); background: rgba(200,164,78,0.04); }
+  .addon .ico {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .addon.sel .ico { background: rgba(200,164,78,0.1); }
+  .addon .nm { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+  .addon .desc { font-size: 11px; color: var(--text2); }
+  .addon .price { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .addon.sel .price { color: var(--gold); }
+  .addon .check {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .addon.sel .check {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .addon.sel .check::before { content: '✓'; }
+
+  /* Smaller pills for flight summary */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 999px;
+    font-size: 10px;
+    color: var(--text2);
+  }
+  .pill.gold { color: var(--gold); background: rgba(200,164,78,0.08); }
+
+  /* Step progress indicator (cart) */
+  .stage-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .stage-row.done { border-color: rgba(78,205,196,0.2); background: rgba(78,205,196,0.03); }
+  .stage-row.todo { border-color: rgba(200,164,78,0.3); background: rgba(200,164,78,0.04); }
+  .stage-row .ic { font-size: 16px; width: 22px; text-align: center; }
+  .stage-row .nm { flex: 1; font-size: 12px; font-weight: 500; }
+  .stage-row .status {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .stage-row.done .status { color: var(--ok); }
+  .stage-row.todo .status { color: var(--gold); }
+
+  .footer-rec {
+    max-width: 1100px;
+    margin: 80px auto 0;
+    padding: 32px;
+    background: rgba(200,164,78,0.04);
+    border: 1px solid rgba(200,164,78,0.18);
+    border-radius: 20px;
+  }
+  .footer-rec h3 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 22px;
+    margin-bottom: 14px;
+  }
+  .footer-rec p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+  .footer-rec p + p { margin-top: 10px; }
+  .footer-rec strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ─── HERO ─────────────────────────────────────────── -->
+<div class="hero">
+  <div class="stamp">Direction II · Trip Bundle · Mobile + Desktop · Final spec v2</div>
+  <h1>The whole trip, <em>customized in one go</em>.</h1>
+  <p>The user taps "Reserve trip" → reviews the cart → walks through <strong>customizing flights</strong> (seat, baggage, meal) → <strong>customizing the hotel</strong> (room + add-ons like breakfast, late checkout, transfer, spa) → enters travelers → pays once → gets every PNR + reservation on one screen.</p>
+  <p><strong>What changed in v2:</strong> the customization moments are now first-class steps. Step 3 covers flights (with seat maps + bags); step 4 covers the hotel (room pick + add-ons). The flow only feels like a "bundle" if users get to make the small decisions that matter — anything less is Drift guessing for them.</p>
+
+  <div class="legend">
+    <div class="ll"><span class="sw mob"></span>Mobile · 430px max</div>
+    <div class="ll"><span class="sw dsk"></span>Desktop · modal overlay</div>
+    <div class="ll" style="margin-left:auto; color: var(--text3);">7 steps · 14 frames · scroll →</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 1 · BOARD + RESERVE CTA
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">1</span>
+  <div class="ttl">The <em>entry</em> point</div>
+  <div class="sub">User finishes browsing the trip → sees bundled total + savings → taps "Reserve trip" on the cost estimate block.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile · /m/board/[id]</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:41</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header"><div class="back">‹</div><h1>Goa, India</h1></div>
+        <div class="app-body">
+          <div class="eyebrow gold">Trip estimate</div>
+          <div class="mock-card" style="background: rgba(200,164,78,0.04); border-color: rgba(200,164,78,0.25);">
+            <div class="row"><span class="lbl">Flights · 2</span><span class="val">$268</span></div>
+            <div class="row"><span class="lbl">Hotel · 5 nights</span><span class="val">from $990</span></div>
+            <div class="row"><span class="lbl">Activities · 2</span><span class="val">$160</span></div>
+            <div class="totals" style="margin-top: 14px;">
+              <div>
+                <div class="tot-lbl">Bundled total</div>
+                <div class="tot-sub" style="color: var(--ok);">save $185 vs separate</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="tot-val">from $1,233</div>
+                <div class="tot-sub">+ extras you pick</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" style="margin-top: 14px;">Reserve entire trip →</button>
+          <p style="font-size:10px; color:var(--text3); text-align:center; margin-top:10px;">You'll pick seats, room & extras next</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · /trip/[id]</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14</div>
+      </div>
+      <div class="desktop-screen">
+        <div class="dsk-header">
+          <span class="logo">Drift</span>
+          <h2 style="margin-left:0;">Goa, India · Jun 14–19</h2>
+          <span style="margin-left:auto; font-family:var(--font-mono); font-size:10px; color:var(--text3); letter-spacing:1.5px;">5N · 2 PAX</span>
+        </div>
+        <div style="flex:1; padding: 24px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; overflow:hidden;">
+          <div style="overflow-y:auto; scrollbar-width:none;">
+            <div class="eyebrow gold">Day 1 · Sat, Jun 14</div>
+            <div class="dsk-cart-item">
+              <div class="icon">✈</div>
+              <div><div class="name">DEL → GOI · AI882</div><div class="meta">12:00 · Direct · 1h</div></div>
+              <div class="price">$67</div><div></div>
+            </div>
+            <div class="dsk-cart-item">
+              <div class="icon">🏨</div>
+              <div><div class="name">Taj Exotica · Check-in</div><div class="meta">Deluxe Sea View · 5 nights</div></div>
+              <div class="price">$248/n</div><div></div>
+            </div>
+            <div class="dsk-cart-item">
+              <div class="icon">🌅</div>
+              <div><div class="name">Sunset at Vagator Beach</div><div class="meta">6:00 PM · Free</div></div>
+              <div class="price">Free</div><div></div>
+            </div>
+          </div>
+          <div style="background: rgba(200,164,78,0.04); border: 1px solid rgba(200,164,78,0.2); border-radius: 14px; padding: 18px;">
+            <div class="eyebrow gold" style="margin-bottom: 14px;">Trip estimate</div>
+            <div class="sum-row"><span>Flights · 2</span><span style="color:var(--text);">$268</span></div>
+            <div class="sum-row"><span>Hotel · from</span><span style="color:var(--text);">$990</span></div>
+            <div class="sum-row"><span>Activities · 2</span><span style="color:var(--text);">$160</span></div>
+            <div class="sum-row win"><span>Bundle savings</span><span>–$185</span></div>
+            <div style="border-top: 1px dashed var(--border2); margin-top:14px; padding-top: 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:end;">
+                <div>
+                  <div class="tot-lbl">From total</div>
+                  <div style="font-size:10px; color:var(--text3); margin-top:2px;">+ extras you pick</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:var(--font-serif); font-size:22px;">$1,233</div>
+                </div>
+              </div>
+              <button class="btn-primary" style="margin-top:14px; padding: 12px;">Reserve entire trip →</button>
+              <p style="font-size:10px; color:var(--text3); text-align:center; margin-top:8px;">Seats, room & extras next</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">"From" prefix on the total is critical — users see the floor, then choose what to add. Sets expectations vs the final $1,700-ish total they'll see after add-ons.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 2 · CART PREVIEW
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">2</span>
+  <div class="ttl">Review your <em>cart</em></div>
+  <div class="sub">User sees what's in the bundle and toggles items off they want to handle elsewhere. The "needs your input" hints flag the customization steps coming next.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:42</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div><h1>Your trip cart</h1><span class="step-pill">1 / 5</span>
+        </div>
+        <div class="app-body">
+          <p class="lede">Toggle anything off you'd rather book separately. Then we'll customize each piece.</p>
+
+          <div class="eyebrow gold">Flights · 2</div>
+          <div class="cart-item">
+            <div class="thumb">✈</div>
+            <div class="body">
+              <div class="name">DEL → GOI · AI882</div>
+              <div class="meta">Sat, Jun 14 · 12:00 · Direct</div>
+            </div>
+            <div style="text-align:right;"><div class="price">$67</div></div>
+            <div class="toggle"></div>
+          </div>
+          <div class="cart-item">
+            <div class="thumb">✈</div>
+            <div class="body">
+              <div class="name">GOI → DEL · 6E2188</div>
+              <div class="meta">Wed, Jun 19 · 18:30 · Direct</div>
+            </div>
+            <div style="text-align:right;"><div class="price">$201</div></div>
+            <div class="toggle"></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 14px;">Hotel · 1</div>
+          <div class="cart-item">
+            <div class="thumb">🏨</div>
+            <div class="body">
+              <div class="name">Taj Exotica Resort</div>
+              <div class="meta">5 nights · room not picked yet</div>
+            </div>
+            <div style="text-align:right;"><div class="price">from $990</div></div>
+            <div class="toggle"></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 14px;">Activities · 2</div>
+          <div class="cart-item">
+            <div class="thumb">⛵</div>
+            <div class="body">
+              <div class="name">Dolphin sunset cruise</div>
+              <div class="meta">Jun 15 · 5:30 PM</div>
+            </div>
+            <div style="text-align:right;"><div class="price">$48</div></div>
+            <div class="toggle"></div>
+          </div>
+          <div class="cart-item">
+            <div class="thumb">🏍</div>
+            <div class="body">
+              <div class="name">South Goa scooter tour</div>
+              <div class="meta">Jun 17 · all day</div>
+            </div>
+            <div style="text-align:right;"><div class="price">$112</div></div>
+            <div class="toggle"></div>
+          </div>
+
+          <div class="note" style="margin-top:12px;">
+            <span class="ic">→</span>
+            <span class="txt"><strong>Next:</strong> pick seats for flights, then choose your room + extras at Taj Exotica.</span>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <div class="totals">
+            <div><div class="tot-lbl">From total</div><div class="tot-sub" style="color:var(--ok);">save $185</div></div>
+            <div style="text-align:right;"><div class="tot-val">$1,233</div></div>
+          </div>
+          <button class="btn-primary">Customize flights →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · modal overlay</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14</div>
+      </div>
+      <div class="desktop-screen">
+        <div class="dsk-header">
+          <span class="logo">Drift</span><h2>Your trip cart</h2>
+          <span class="step-pill">1 / 5</span><div class="close">×</div>
+        </div>
+        <div class="dsk-body">
+          <div class="dsk-main">
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">✈ Flights · 2</div>
+              <div class="dsk-cart-item">
+                <div class="icon">✈</div>
+                <div><div class="name">DEL → GOI · AI882</div><div class="meta">Sat, Jun 14 · 12:00 · Direct</div></div>
+                <div class="price">$67</div>
+                <div class="dsk-toggle"></div>
+              </div>
+              <div class="dsk-cart-item">
+                <div class="icon">✈</div>
+                <div><div class="name">GOI → DEL · 6E2188</div><div class="meta">Wed, Jun 19 · 18:30 · Direct</div></div>
+                <div class="price">$201</div>
+                <div class="dsk-toggle"></div>
+              </div>
+            </div>
+
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">🏨 Hotel · 1</div>
+              <div class="dsk-cart-item">
+                <div class="icon">🏨</div>
+                <div><div class="name">Taj Exotica Resort</div><div class="meta">5 nights · room not picked yet</div></div>
+                <div class="price">from $990</div>
+                <div class="dsk-toggle"></div>
+              </div>
+            </div>
+
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">🌅 Activities · 2</div>
+              <div class="dsk-cart-item">
+                <div class="icon">⛵</div>
+                <div><div class="name">Dolphin sunset cruise</div><div class="meta">Jun 15 · 5:30 PM</div></div>
+                <div class="price">$48</div>
+                <div class="dsk-toggle"></div>
+              </div>
+              <div class="dsk-cart-item">
+                <div class="icon">🏍</div>
+                <div><div class="name">South Goa scooter tour</div><div class="meta">Jun 17 · all day</div></div>
+                <div class="price">$112</div>
+                <div class="dsk-toggle"></div>
+              </div>
+            </div>
+
+            <div class="note" style="margin-top:12px;">
+              <span class="ic">→</span>
+              <span class="txt"><strong>Next 3 steps:</strong> pick seats & baggage for flights, then choose your room + extras at the Taj.</span>
+            </div>
+          </div>
+          <div class="dsk-sidebar">
+            <div class="sum-h">Order summary</div>
+            <div class="sum-row"><span>Flights · 2</span><span style="color:var(--text);">$268</span></div>
+            <div class="sum-row"><span>Hotel · from</span><span style="color:var(--text);">$990</span></div>
+            <div class="sum-row"><span>Activities · 2</span><span style="color:var(--text);">$160</span></div>
+            <div class="sum-row win"><span>Bundle savings</span><span>–$185</span></div>
+            <div class="sum-total">
+              <div style="display:flex; justify-content:space-between; align-items:end;">
+                <div class="sum-h" style="margin:0; color: var(--text2);">From total</div>
+                <div class="tot">$1,233</div>
+              </div>
+              <div class="sub">+ extras you pick next</div>
+              <button class="btn-primary" style="margin-top: 12px; padding: 11px;">Customize flights →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">Hotel row shows "from $990" since the room isn't picked yet — sets the right expectation. CTA says "Customize flights →" (not "Continue →") so the user knows what's coming.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 3 · FLIGHTS — SEAT + BAGGAGE + MEAL  ⭐ NEW
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">3</span>
+  <div class="ttl">Customize your <em>flights</em></div>
+  <div class="sub">Both flights customized in one screen. User toggles between Outbound and Return at the top. Picks a seat, adds baggage, sets meal preference. Drift pre-fills sensible defaults (cheapest seat available, cabin only, no special meal) so the user can blast through if they want.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:43</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div><h1>Flights</h1><span class="step-pill">2 / 5</span>
+        </div>
+        <div class="app-body">
+          <div class="leg-tabs">
+            <div class="leg-tab active">Outbound · AI882</div>
+            <div class="leg-tab">Return · 6E2188</div>
+          </div>
+
+          <div class="mock-card" style="margin-bottom: 14px;">
+            <div class="flight-route">
+              <div><div class="iata">DEL</div><div style="font-size:10px; color:var(--text2); margin-top:2px;">12:00</div></div>
+              <div class="mid"><div class="dash"></div><span class="icon">✈</span><div class="dash"></div></div>
+              <div style="text-align:right;"><div class="iata">GOI</div><div style="font-size:10px; color:var(--text2); margin-top:2px;">13:00</div></div>
+            </div>
+            <div style="font-size:10px; color:var(--text3); text-align:center; margin-top:4px;">Sat, Jun 14 · Direct · 1h</div>
+          </div>
+
+          <div class="eyebrow gold">Pick your seat</div>
+          <div class="seat-map" style="margin-bottom: 14px;">
+            <div style="text-align:center; font-family:var(--font-mono); font-size:9px; color:var(--text3); letter-spacing: 1.5px; margin-bottom:8px;">FRONT</div>
+            <div class="seat-row"><span class="row-num">5</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">6</span><span class="seat avail">A</span><span class="seat avail">B</span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat taken"></span></div>
+            <div class="seat-row"><span class="row-num">7</span><span class="seat sel">A</span><span class="seat avail">B</span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">8</span><span class="seat taken"></span><span class="seat avail">B</span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat taken"></span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">9</span><span class="seat avail">A</span><span class="seat taken"></span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+            <div class="seat-legend">
+              <span><span class="sw" style="background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2);"></span>Free</span>
+              <span><span class="sw" style="background: var(--gold);"></span>You</span>
+              <span><span class="sw" style="background: rgba(255,255,255,0.03);"></span>Taken</span>
+            </div>
+          </div>
+          <div class="mock-card" style="background: rgba(200,164,78,0.04); border-color: rgba(200,164,78,0.2); padding: 10px 12px; margin-bottom: 14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px;">🪟</span>
+              <div style="flex:1;">
+                <div style="font-size: 12px; font-weight: 600;">Seat 7A · Window</div>
+                <div style="font-size: 10px; color: var(--text2);">Extra legroom · row 7</div>
+              </div>
+              <div style="font-size: 12px; color: var(--gold); font-weight: 600;">+$8</div>
+            </div>
+          </div>
+
+          <div class="eyebrow gold">Baggage</div>
+          <div class="addon sel" style="margin-bottom: 4px;">
+            <div class="ico">🎒</div>
+            <div><div class="nm">Cabin only</div><div class="desc">7kg + personal item</div></div>
+            <div class="price" style="color: var(--ok);">Free</div>
+            <div class="check"></div>
+          </div>
+          <div class="addon">
+            <div class="ico">🧳</div>
+            <div><div class="nm">+ Check 15kg</div><div class="desc">Standard bag</div></div>
+            <div class="price">+$22</div>
+            <div class="check"></div>
+          </div>
+          <div class="addon">
+            <div class="ico">🛄</div>
+            <div><div class="nm">+ Check 25kg</div><div class="desc">Longer trips / gear</div></div>
+            <div class="price">+$38</div>
+            <div class="check"></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 14px;">Meal preference</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="pill gold">✓ No meal</span>
+            <span class="pill">Veg</span>
+            <span class="pill">Non-veg</span>
+            <span class="pill">Jain</span>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <div class="totals">
+            <div><div class="tot-lbl">This flight</div><div class="tot-sub">7A · cabin · no meal</div></div>
+            <div style="text-align:right;"><div class="tot-val">$75</div></div>
+          </div>
+          <button class="btn-primary">Continue to return flight →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · modal overlay</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14</div>
+      </div>
+      <div class="desktop-screen">
+        <div class="dsk-header">
+          <span class="logo">Drift</span><h2>Customize flights</h2>
+          <span class="step-pill">2 / 5</span><div class="close">×</div>
+        </div>
+        <div class="dsk-body">
+          <div class="dsk-main">
+            <div class="leg-tabs">
+              <div class="leg-tab active">✈ Outbound · DEL → GOI · AI882</div>
+              <div class="leg-tab">Return · GOI → DEL · 6E2188</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px;">
+              <div>
+                <div class="eyebrow gold">Pick your seat</div>
+                <div class="seat-map">
+                  <div style="text-align:center; font-family:var(--font-mono); font-size:9px; color:var(--text3); letter-spacing: 1.5px; margin-bottom:8px;">FRONT</div>
+                  <div class="seat-row"><span class="row-num">3</span><span class="seat taken"></span><span class="seat avail">B</span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat avail">F</span></div>
+                  <div class="seat-row"><span class="row-num">4</span><span class="seat avail">A</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat taken"></span><span class="seat taken"></span></div>
+                  <div class="seat-row"><span class="row-num">5</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+                  <div class="seat-row"><span class="row-num">6</span><span class="seat avail">A</span><span class="seat avail">B</span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat taken"></span></div>
+                  <div class="seat-row"><span class="row-num">7</span><span class="seat sel">A</span><span class="seat avail">B</span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+                  <div class="seat-row"><span class="row-num">8</span><span class="seat taken"></span><span class="seat avail">B</span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat taken"></span><span class="seat avail">F</span></div>
+                  <div class="seat-row"><span class="row-num">9</span><span class="seat avail">A</span><span class="seat taken"></span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+                  <div class="seat-legend">
+                    <span><span class="sw" style="background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2);"></span>Free</span>
+                    <span><span class="sw" style="background: var(--gold);"></span>You</span>
+                    <span><span class="sw" style="background: rgba(255,255,255,0.03);"></span>Taken</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="eyebrow gold">Selected</div>
+                <div class="mock-card" style="background:rgba(200,164,78,0.04); border-color:rgba(200,164,78,0.2); padding: 12px; margin-bottom: 14px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px;">🪟</span>
+                    <div style="flex:1;">
+                      <div style="font-size: 12px; font-weight: 600;">Seat 7A · Window</div>
+                      <div style="font-size: 10px; color: var(--text2);">Extra legroom row</div>
+                    </div>
+                    <div style="font-size: 13px; color: var(--gold); font-weight: 600;">+$8</div>
+                  </div>
+                </div>
+
+                <div class="eyebrow gold">Baggage</div>
+                <div class="addon sel">
+                  <div class="ico">🎒</div>
+                  <div><div class="nm">Cabin only</div><div class="desc">7kg + personal</div></div>
+                  <div class="price" style="color: var(--ok);">Free</div>
+                  <div class="check"></div>
+                </div>
+                <div class="addon">
+                  <div class="ico">🧳</div>
+                  <div><div class="nm">+ 15kg</div><div class="desc">Standard bag</div></div>
+                  <div class="price">+$22</div>
+                  <div class="check"></div>
+                </div>
+                <div class="addon">
+                  <div class="ico">🛄</div>
+                  <div><div class="nm">+ 25kg</div><div class="desc">Heavier</div></div>
+                  <div class="price">+$38</div>
+                  <div class="check"></div>
+                </div>
+
+                <div class="eyebrow gold" style="margin-top: 14px;">Meal</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <span class="pill gold">✓ None</span>
+                  <span class="pill">Veg</span>
+                  <span class="pill">Non-veg</span>
+                  <span class="pill">Jain</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dsk-sidebar">
+            <div class="sum-h">This flight</div>
+            <div class="sum-row"><span>AI882 · base</span><span style="color:var(--text);">$67</span></div>
+            <div class="sum-row"><span>Seat 7A</span><span style="color:var(--text);">$8</span></div>
+            <div class="sum-row"><span>Baggage</span><span style="color:var(--text);">$0</span></div>
+            <div style="margin: 14px 0; padding-top: 14px; border-top: 1px dashed var(--border2);">
+              <div class="sum-h" style="margin:0;">Trip running total</div>
+              <div style="display:flex; justify-content:space-between; align-items:end; margin-top: 8px;">
+                <span style="font-size: 11px; color: var(--text2);">From</span>
+                <span style="font-family: var(--font-serif); font-size: 22px;">$1,241</span>
+              </div>
+            </div>
+            <div class="sum-total" style="margin-top:0;">
+              <button class="btn-primary" style="padding: 11px;">Continue to return →</button>
+              <button class="btn-secondary" style="margin-top:6px; padding: 10px;">Skip — use defaults</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">Both flights customized via tab toggle (one screen, two views). "Skip — use defaults" lets impatient users blast through with Drift's auto-picks (cheapest aisle, cabin only, no meal). The running total on the right keeps the bundled context visible.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 4 · HOTEL — ROOM + ADD-ONS  ⭐ NEW (add-ons)
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">4</span>
+  <div class="ttl">Customize your <em>hotel</em></div>
+  <div class="sub">Top half: pick a room from 4 options (Drift's pick pre-selected). Bottom half: add extras that change the trip — breakfast for the family, late checkout for the lazy day, airport transfer for arrival, spa credit. Total updates live as choices change.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:45</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div><h1>Taj Exotica</h1><span class="step-pill">3 / 5</span>
+        </div>
+        <div class="app-body">
+          <div class="gallery-row" style="margin-bottom: 10px;">
+            <div class="gtile main">🏨</div>
+            <div class="gtile">🌅</div>
+            <div class="gtile">🛏</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text2); margin-bottom: 14px;">
+            <span style="color:var(--gold);">★ 9.2</span>
+            <span>· Cavelossim · 5N · Jun 14–19</span>
+          </div>
+
+          <div class="eyebrow gold">Pick your room</div>
+          <div class="mob-room sel">
+            <div class="photo">🌅</div>
+            <div class="body">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <span class="name" style="margin-bottom: 0;">Deluxe Sea View</span>
+                <span style="font-size:9px; color:var(--gold); background:rgba(200,164,78,0.1); border:1px solid rgba(200,164,78,0.25); padding:2px 6px; border-radius: 999px; letter-spacing:1px; text-transform: uppercase;">Drift pick</span>
+              </div>
+              <div class="feats">
+                <span class="chip">King</span><span class="chip">480 sqft</span><span class="chip">Sea view</span><span class="chip">Free cancel</span>
+              </div>
+              <div class="price-row">
+                <div><div class="price-per">$248<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                <div style="text-align:right;">
+                  <div style="font-size:10px; color:var(--text3);">5N total</div>
+                  <div style="font-size:14px; color:var(--gold); font-weight:600;">$1,240</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mob-room">
+            <div class="photo">🌳</div>
+            <div class="body">
+              <div class="name">Premier Garden View</div>
+              <div class="feats"><span class="chip">King</span><span class="chip">420 sqft</span><span class="chip">Garden</span><span class="chip">Free cancel</span></div>
+              <div class="price-row">
+                <div><div class="price-per">$198<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                <div style="text-align:right;"><div style="font-size:10px; color:var(--text3);">save $250</div><div style="font-size:14px; font-weight:600;">$990</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mob-room">
+            <div class="photo">🏊</div>
+            <div class="body">
+              <div class="name">Pool Villa · 1BR</div>
+              <div class="feats"><span class="chip">King + sofa</span><span class="chip">920 sqft</span><span class="chip">Private pool</span><span class="chip">Non-refundable</span></div>
+              <div class="price-row">
+                <div><div class="price-per">$425<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                <div style="text-align:right;"><div style="font-size:10px; color:var(--text3);">5N total</div><div style="font-size:14px; font-weight:600;">$2,125</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Add-ons · optional</div>
+          <div class="addon sel">
+            <div class="ico">🍳</div>
+            <div><div class="nm">Daily breakfast for 2</div><div class="desc">South-Indian + European spread</div></div>
+            <div class="price">+$240</div>
+            <div class="check"></div>
+          </div>
+          <div class="addon">
+            <div class="ico">🕓</div>
+            <div><div class="nm">Late checkout · 4 PM</div><div class="desc">Extra half-day on departure</div></div>
+            <div class="price">+$60</div>
+            <div class="check"></div>
+          </div>
+          <div class="addon sel">
+            <div class="ico">🚗</div>
+            <div><div class="nm">Airport pickup · arrival</div><div class="desc">Driver waits at GOI baggage claim</div></div>
+            <div class="price">+$45</div>
+            <div class="check"></div>
+          </div>
+          <div class="addon sel">
+            <div class="ico">💆</div>
+            <div><div class="nm">Spa credit · $100</div><div class="desc">Use towards any treatment · save $10</div></div>
+            <div class="price">+$90</div>
+            <div class="check"></div>
+          </div>
+          <div class="addon">
+            <div class="ico">🍾</div>
+            <div><div class="nm">Welcome champagne</div><div class="desc">Bottle + chocolates in room</div></div>
+            <div class="price">+$35</div>
+            <div class="check"></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 14px;">Special requests</div>
+          <div class="field" style="margin-bottom:6px;">
+            <input placeholder="High floor, twin beds, anything else…" />
+          </div>
+        </div>
+        <div class="cta-bar">
+          <div class="totals">
+            <div><div class="tot-lbl">Hotel total</div><div class="tot-sub">Room + 3 add-ons</div></div>
+            <div style="text-align:right;"><div class="tot-val">$1,615</div></div>
+          </div>
+          <button class="btn-primary">Continue to travelers →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · modal overlay</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14</div>
+      </div>
+      <div class="desktop-screen">
+        <div class="dsk-header">
+          <span class="logo">Drift</span><h2>Taj Exotica · Customize stay</h2>
+          <span class="step-pill">3 / 5</span><div class="close">×</div>
+        </div>
+        <div class="dsk-body">
+          <div class="dsk-main">
+            <div class="gallery-row" style="margin-bottom: 8px;">
+              <div class="gtile main">🏨</div>
+              <div class="gtile">🌅</div>
+              <div class="gtile">🛏</div>
+              <div class="gtile">🍴</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text2); margin-bottom: 14px;">
+              <span style="color:var(--gold);">★ 9.2</span>
+              <span>· Cavelossim Beach · Jun 14 → Jun 19 · 5N · 2 guests</span>
+            </div>
+
+            <div class="eyebrow gold">Pick your room</div>
+            <div class="room-grid">
+              <div class="dsk-room sel">
+                <div class="room-photo">🌅</div>
+                <div class="room-body">
+                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <span class="room-name">Deluxe Sea View</span>
+                    <span style="font-size:8px; color:var(--gold); background:rgba(200,164,78,0.12); border:1px solid rgba(200,164,78,0.3); padding:2px 5px; border-radius: 999px; letter-spacing:1px; text-transform: uppercase;">Drift pick</span>
+                  </div>
+                  <div class="room-feat">King · 480 sqft · Sea balcony · Free cancellation</div>
+                  <div class="room-price-row">
+                    <div><div class="price-per">$248<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                    <div style="text-align:right;"><div style="font-size:14px; color:var(--gold); font-weight:600;">$1,240</div><div class="price-total">5N total</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="dsk-room">
+                <div class="room-photo">🌳</div>
+                <div class="room-body">
+                  <div class="room-name">Premier Garden View</div>
+                  <div class="room-feat">King · 420 sqft · Garden · Free cancellation</div>
+                  <div class="room-price-row">
+                    <div><div class="price-per">$198<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                    <div style="text-align:right;"><div style="font-size:14px; font-weight:600;">$990</div><div class="price-total" style="color:var(--ok);">save $250</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="dsk-room">
+                <div class="room-photo">🏊</div>
+                <div class="room-body">
+                  <div class="room-name">Pool Villa · 1BR</div>
+                  <div class="room-feat">King + sofa · 920 sqft · Private pool · Non-refundable</div>
+                  <div class="room-price-row">
+                    <div><div class="price-per">$425<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                    <div style="text-align:right;"><div style="font-size:14px; font-weight:600;">$2,125</div><div class="price-total">5N total</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="dsk-room">
+                <div class="room-photo">🛏</div>
+                <div class="room-body">
+                  <div class="room-name">Twin Sea View</div>
+                  <div class="room-feat">2 singles · 480 sqft · Sea view · Free cancellation</div>
+                  <div class="room-price-row">
+                    <div><div class="price-per">$248<span style="font-size:10px; color:var(--text3);">/n</span></div></div>
+                    <div style="text-align:right;"><div style="font-size:14px; font-weight:600;">$1,240</div><div class="price-total">5N total</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="eyebrow gold" style="margin-top: 8px;">Add-ons · optional</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="addon sel" style="margin-bottom: 0;">
+                <div class="ico">🍳</div>
+                <div><div class="nm">Daily breakfast for 2</div><div class="desc">SI + EU spread · $48/day</div></div>
+                <div class="price">+$240</div>
+                <div class="check"></div>
+              </div>
+              <div class="addon" style="margin-bottom: 0;">
+                <div class="ico">🕓</div>
+                <div><div class="nm">Late checkout · 4 PM</div><div class="desc">Extra half-day</div></div>
+                <div class="price">+$60</div>
+                <div class="check"></div>
+              </div>
+              <div class="addon sel" style="margin-bottom: 0;">
+                <div class="ico">🚗</div>
+                <div><div class="nm">Airport pickup</div><div class="desc">Driver at baggage claim</div></div>
+                <div class="price">+$45</div>
+                <div class="check"></div>
+              </div>
+              <div class="addon sel" style="margin-bottom: 0;">
+                <div class="ico">💆</div>
+                <div><div class="nm">Spa credit $100</div><div class="desc">Toward any treatment · save $10</div></div>
+                <div class="price">+$90</div>
+                <div class="check"></div>
+              </div>
+              <div class="addon" style="margin-bottom: 0;">
+                <div class="ico">🍾</div>
+                <div><div class="nm">Welcome champagne</div><div class="desc">Bottle + chocolates</div></div>
+                <div class="price">+$35</div>
+                <div class="check"></div>
+              </div>
+              <div class="addon" style="margin-bottom: 0;">
+                <div class="ico">🌹</div>
+                <div><div class="nm">Romance package</div><div class="desc">Rose petals + candles night 1</div></div>
+                <div class="price">+$80</div>
+                <div class="check"></div>
+              </div>
+            </div>
+
+            <div class="eyebrow gold" style="margin-top: 14px;">Special requests</div>
+            <div class="field" style="margin-bottom:0;">
+              <input placeholder="High floor, twin beds, dietary needs, anything else…" />
+            </div>
+          </div>
+          <div class="dsk-sidebar">
+            <div class="sum-h">Selected</div>
+            <div style="font-size:12px; font-weight: 600; margin-bottom: 4px;">Deluxe Sea View</div>
+            <div style="font-size:11px; color: var(--text2); line-height: 1.5; margin-bottom: 10px;">King · 480 sqft · Sea-facing</div>
+            <div class="sum-row" style="border-top:1px solid var(--border); padding-top: 10px;"><span>Room · 5N</span><span style="color:var(--text);">$1,240</span></div>
+            <div class="sum-row"><span>+ Breakfast</span><span style="color:var(--text);">$240</span></div>
+            <div class="sum-row"><span>+ Airport pickup</span><span style="color:var(--text);">$45</span></div>
+            <div class="sum-row"><span>+ Spa credit</span><span style="color:var(--text);">$90</span></div>
+            <div class="sum-row win"><span>Spa savings</span><span>–$10</span></div>
+            <div class="sum-total">
+              <div style="display:flex; justify-content:space-between; align-items:end;">
+                <div class="sum-h" style="margin:0; color: var(--text2);">Hotel total</div>
+                <div class="tot">$1,615</div>
+              </div>
+              <div class="sub" style="color:var(--ok);">Free cancel until Jun 13</div>
+              <button class="btn-primary" style="margin-top: 12px; padding: 11px;">Continue to travelers →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">The add-ons section is where Drift makes margin — a 15% markup on a $48 breakfast pays for the bundle savings discount. Spa-credit framing ("get $100 for $90") is a small thing that feels generous and increases conversion. Special-requests field captures qualitative asks the API can't.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 5 · TRAVELERS
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">5</span>
+  <div class="ttl">Add <em>travelers</em> once</div>
+  <div class="sub">One form, fanned out to each provider behind the scenes. Booking.com makes users re-enter this for every booking. Drift does it once.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:47</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div><h1>Travelers</h1><span class="step-pill">4 / 5</span>
+        </div>
+        <div class="app-body">
+          <div class="h-large">One form, <em>every booking</em></div>
+          <p class="lede">Airlines need passports. Hotels need names. We send the right data to each.</p>
+
+          <div class="eyebrow gold">Adult 1 · Lead</div>
+          <div class="mock-card">
+            <div class="field"><label>Full name (passport)</label><input value="Chakshu Tyagi" /></div>
+            <div class="field-row">
+              <div class="field"><label>DOB</label><input value="14 Mar 1996" /></div>
+              <div class="field"><label>Passport</label><input placeholder="P1234567" /></div>
+            </div>
+            <div class="field"><label>Email</label><input value="chakshu@inomy.shop" /></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 16px;">Adult 2</div>
+          <div class="mock-card" style="padding: 18px; text-align:center; border-style:dashed;">
+            <div style="font-size: 24px; color: var(--gold); margin-bottom: 6px;">+</div>
+            <div style="font-size: 13px; color: var(--text2);">Add second traveler</div>
+            <div style="font-size: 11px; color: var(--text3); margin-top:4px;">Or invite them to self-fill</div>
+          </div>
+
+          <div class="note">
+            <span class="ic">✓</span>
+            <span class="txt"><strong>Why we ask:</strong> airlines need passport details, hotels need a name on file, activities need a count. We route the right data to each provider.</span>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Continue to payment →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · modal overlay</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14</div>
+      </div>
+      <div class="desktop-screen">
+        <div class="dsk-header">
+          <span class="logo">Drift</span><h2>Add travelers</h2>
+          <span class="step-pill">4 / 5</span><div class="close">×</div>
+        </div>
+        <div class="dsk-body">
+          <div class="dsk-main">
+            <div class="dsk-h1">One form, <em>every booking</em></div>
+            <p class="dsk-lede">Airlines need passport details. Hotels need a name on file. Activities just need a count. Drift routes the right data to each provider — you fill it in once.</p>
+
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">Adult 1 · Lead traveler</div>
+              <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+                <div class="field-row" style="margin-bottom: 0;">
+                  <div class="field"><label>Full name (matches passport)</label><input value="Chakshu Tyagi" /></div>
+                  <div class="field"><label>Email</label><input value="chakshu@inomy.shop" /></div>
+                </div>
+                <div class="field-row">
+                  <div class="field"><label>Date of birth</label><input value="14 Mar 1996" /></div>
+                  <div class="field"><label>Passport</label><input placeholder="P1234567" /></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">Adult 2</div>
+              <div style="background: var(--surface); border: 1px dashed var(--border2); border-radius: 12px; padding: 24px; text-align: center;">
+                <div style="font-size: 26px; color: var(--gold); margin-bottom: 6px;">+</div>
+                <div style="font-size: 13px; color: var(--text2); margin-bottom: 2px;">Add second traveler</div>
+                <div style="font-size: 11px; color: var(--text3);">Or paste an invite link they can self-fill</div>
+              </div>
+            </div>
+          </div>
+          <div class="dsk-sidebar">
+            <div class="sum-h">Trip total</div>
+            <div class="sum-row"><span>Flights · 2</span><span style="color:var(--text);">$320</span></div>
+            <div class="sum-row"><span>Hotel · 5N + extras</span><span style="color:var(--text);">$1,615</span></div>
+            <div class="sum-row"><span>Activities · 2</span><span style="color:var(--text);">$160</span></div>
+            <div class="sum-row win"><span>Bundle savings</span><span>–$185</span></div>
+            <div class="sum-total">
+              <div style="display:flex; justify-content:space-between; align-items:end;">
+                <div class="sum-h" style="margin:0; color: var(--text2);">Total</div>
+                <div class="tot">$1,910</div>
+              </div>
+              <div class="sub">2 travelers</div>
+              <button class="btn-primary" style="margin-top: 12px; padding: 11px;">Continue to payment →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">Sidebar now reflects all customization done in steps 3 + 4. Hotel line goes from "$1,240" → "$1,615" (room + add-ons). Flights go from "$268" → "$320" (seats + bags). The bundle savings holds.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 6 · PAYMENT
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">6</span>
+  <div class="ttl">Pay <em>once</em></div>
+  <div class="sub">One Stripe charge. Behind the scenes Drift fans out to Duffel + Hotelbeds + activity providers in parallel — but the user sees one transaction with one card.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:48</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header"><div class="back">‹</div><h1>Payment</h1><span class="step-pill">5 / 5</span></div>
+        <div class="app-body">
+          <div class="eyebrow gold">Order</div>
+          <div class="mock-card">
+            <div class="row"><span class="lbl">Flights · 2 + seats + bags</span><span class="val">$320</span></div>
+            <div class="row"><span class="lbl">Hotel · 5N + add-ons</span><span class="val">$1,615</span></div>
+            <div class="row"><span class="lbl">Activities · 2</span><span class="val">$160</span></div>
+            <div class="row"><span class="lbl">Bundle savings</span><span class="val" style="color:var(--ok);">–$185</span></div>
+            <div class="totals" style="margin-top: 10px;">
+              <div><div class="tot-lbl">Total · 2 travelers</div><div class="tot-sub">All taxes & fees</div></div>
+              <div style="text-align:right;">
+                <div class="tot-val">$1,910</div>
+                <div class="tot-sub" style="color:var(--ok);">~$955 each</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Pay with</div>
+          <div class="pay-card">
+            <div class="chip"></div>
+            <div class="num">•••• •••• •••• 4242</div>
+            <div class="meta"><span>VISA · Chakshu Tyagi</span><span>12 / 28</span></div>
+          </div>
+          <button class="btn-link" style="display:block; margin: 0 auto; font-size: 11px;">+ Use a different card</button>
+
+          <div class="line"></div>
+          <div style="display:flex; gap: 10px; font-size: 11px; color: var(--text2); line-height: 1.5;">
+            <input type="checkbox" checked style="margin-top: 2px;" />
+            <span>I agree to <span style="color: var(--gold);">cancellation policies</span> per provider.</span>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Confirm & Pay $1,910 →</button>
+          <p style="text-align: center; font-size: 10px; color: var(--text3); margin-top:8px;">🔒 Stripe · PCI-DSS Level 1</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · modal overlay</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14</div>
+      </div>
+      <div class="desktop-screen">
+        <div class="dsk-header">
+          <span class="logo">Drift</span><h2>Payment</h2>
+          <span class="step-pill">5 / 5</span><div class="close">×</div>
+        </div>
+        <div class="dsk-body">
+          <div class="dsk-main">
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">Card</div>
+              <div class="pay-card" style="max-width: 340px;">
+                <div class="chip"></div>
+                <div class="num">•••• •••• •••• 4242</div>
+                <div class="meta"><span>VISA · Chakshu Tyagi</span><span>12 / 28</span></div>
+              </div>
+              <button class="btn-link" style="font-size:11px;">+ Use a different card</button>
+            </div>
+
+            <div class="dsk-grp">
+              <div class="dsk-grp-h">Billing address</div>
+              <div class="field"><label>Country</label><select><option>India</option></select></div>
+              <div class="field-row" style="margin-bottom:0;">
+                <div class="field"><label>City</label><input value="New Delhi" /></div>
+                <div class="field"><label>ZIP</label><input value="110001" /></div>
+              </div>
+            </div>
+
+            <div class="note" style="margin-top: 18px;">
+              <span class="ic">🔒</span>
+              <span class="txt">Card processed by Stripe (PCI-DSS Level 1). Drift never sees your card number.</span>
+            </div>
+          </div>
+          <div class="dsk-sidebar">
+            <div class="sum-h">Final total</div>
+            <div class="sum-row"><span>Flights + extras</span><span style="color:var(--text);">$320</span></div>
+            <div class="sum-row"><span>Hotel · Deluxe + add-ons</span><span style="color:var(--text);">$1,615</span></div>
+            <div class="sum-row"><span>Activities</span><span style="color:var(--text);">$160</span></div>
+            <div class="sum-row win"><span>Bundle discount</span><span>–$185</span></div>
+            <div class="sum-total">
+              <div style="display:flex; justify-content:space-between; align-items:end;">
+                <div class="sum-h" style="margin:0; color: var(--text2);">Total</div>
+                <div class="tot">$1,910</div>
+              </div>
+              <div class="sub" style="color:var(--ok);">~$955 per traveler</div>
+              <button class="btn-primary" style="margin-top: 12px; padding: 11px;">Pay $1,910 →</button>
+              <p style="text-align: center; font-size: 9px; color: var(--text3); margin-top:6px; letter-spacing: 1px;">🔒 STRIPE SECURE</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">Itemized total now reflects everything customized. "Flights · 2 + seats + bags" line tells the user that price includes their additions — no surprises at confirmation.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     STEP 7 · CONFIRMATION
+═══════════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="num">7</span>
+  <div class="ttl">All <em>confirmed</em></div>
+  <div class="sub">Every PNR, hotel reservation, activity ticket — and every add-on confirmation — on one screen, organized by your trip.</div>
+</div>
+
+<div class="compare-row">
+  <!-- MOBILE -->
+  <div class="compare-cell">
+    <div class="platform-label">Mobile</div>
+    <div class="phone">
+      <div class="phone-statusbar"><span>9:49</span><span class="right">●●●● ▮</span></div>
+      <div class="phone-screen">
+        <div class="app-header"><h1 style="text-align:center; padding-right:32px;">Booked</h1></div>
+        <div class="app-body">
+          <div class="success-icon" style="margin: 20px auto 12px;">✓</div>
+          <div style="text-align:center;">
+            <div class="h-large" style="text-align:center;">Goa is <em>locked in</em>.</div>
+            <p class="lede" style="text-align:center;">Confirmations sent to chakshu@inomy.shop.</p>
+          </div>
+
+          <div class="eyebrow gold">Your bookings</div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">✈</span>
+              <span style="font-size: 12px; font-weight: 600;">Air India AI882</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">X4F7K2</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">DEL → GOI · Sat, Jun 14 · Seat 7A · Cabin only</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">✈</span>
+              <span style="font-size: 12px; font-weight: 600;">IndiGo 6E2188</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">NLM8RR</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">GOI → DEL · Wed, Jun 19 · Seat 14F · 15kg checked</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">🏨</span>
+              <span style="font-size: 12px; font-weight: 600;">Taj Exotica · Deluxe Sea View</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">RES-92841</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">5 nights · Breakfast + airport pickup + $100 spa credit</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">⛵</span>
+              <span style="font-size: 12px; font-weight: 600;">Dolphin sunset cruise</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">DR-A92K</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">Jun 15 · 5:30 PM · 2 tickets</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">🏍</span>
+              <span style="font-size: 12px; font-weight: 600;">South Goa scooter tour</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">DR-7BN3</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">Jun 17 · all day · 2 riders</div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Open trip board →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="compare-cell">
+    <div class="platform-label">Desktop · full-page</div>
+    <div class="desktop">
+      <div class="desktop-chrome">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">driftntravel.com/trip/goa-jun-14/confirmation</div>
+      </div>
+      <div class="desktop-screen">
+        <div style="flex:1; overflow-y:auto; padding: 28px 36px; scrollbar-width: none;">
+          <div style="text-align:center; padding: 12px 0 20px;">
+            <div class="success-icon" style="margin: 0 auto 14px;">✓</div>
+            <div class="dsk-h1" style="text-align:center; font-size: 30px;">Goa is <em>locked in</em>.</div>
+            <p style="font-size:13px; color: var(--text2); max-width: 480px; margin: 0 auto; line-height: 1.6;">8 bookings, one trip. All confirmations sent to chakshu@inomy.shop.</p>
+          </div>
+
+          <div class="dsk-grp">
+            <div class="dsk-grp-h">✈ Flights · 2</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 12px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 6px;">
+                  <span style="font-size:14px;">✈</span>
+                  <span style="font-size: 12px; font-weight: 600;">Air India AI882</span>
+                  <span style="margin-left:auto; font-family:var(--font-mono); font-size:11px; color: var(--gold);">X4F7K2</span>
+                </div>
+                <div style="font-size:11px; color:var(--text2);">DEL → GOI · Sat, Jun 14 · Seat 7A · Cabin only</div>
+              </div>
+              <div style="background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 12px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 6px;">
+                  <span style="font-size:14px;">✈</span>
+                  <span style="font-size: 12px; font-weight: 600;">IndiGo 6E2188</span>
+                  <span style="margin-left:auto; font-family:var(--font-mono); font-size:11px; color: var(--gold);">NLM8RR</span>
+                </div>
+                <div style="font-size:11px; color:var(--text2);">GOI → DEL · Wed, Jun 19 · Seat 14F · 15kg checked</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsk-grp">
+            <div class="dsk-grp-h">🏨 Hotel · 1</div>
+            <div style="background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 14px;">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
+                <span style="font-size:16px;">🏨</span>
+                <span style="font-size: 13px; font-weight: 600;">Taj Exotica · Deluxe Sea View</span>
+                <span style="margin-left:auto; font-family:var(--font-mono); font-size:11px; color: var(--gold);">RES-92841</span>
+              </div>
+              <div style="font-size:11px; color:var(--text2); margin-bottom: 8px;">Check-in Jun 14, 3:00 PM · Check-out Jun 19, 11:00 AM · 5 nights, 2 guests</div>
+              <div style="display:flex; flex-wrap:wrap; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border);">
+                <span class="pill gold">✓ Daily breakfast for 2</span>
+                <span class="pill gold">✓ Airport pickup arrival</span>
+                <span class="pill gold">✓ $100 spa credit</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsk-grp">
+            <div class="dsk-grp-h">🌅 Activities · 2</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 12px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 6px;">
+                  <span style="font-size:14px;">⛵</span>
+                  <span style="font-size: 12px; font-weight: 600;">Dolphin sunset cruise</span>
+                  <span style="margin-left:auto; font-family:var(--font-mono); font-size:11px; color: var(--gold);">DR-A92K</span>
+                </div>
+                <div style="font-size:11px; color:var(--text2);">Jun 15 · 5:30 PM · 2 tickets</div>
+              </div>
+              <div style="background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 12px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 6px;">
+                  <span style="font-size:14px;">🏍</span>
+                  <span style="font-size: 12px; font-weight: 600;">South Goa scooter tour</span>
+                  <span style="margin-left:auto; font-family:var(--font-mono); font-size:11px; color: var(--gold);">DR-7BN3</span>
+                </div>
+                <div style="font-size:11px; color:var(--text2);">Jun 17 · all day · 2 riders</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 22px;">
+            <button class="btn-primary" style="padding: 12px;">Open trip board →</button>
+            <button class="btn-secondary" style="padding: 12px;">Email me a copy</button>
+            <button class="btn-secondary" style="padding: 12px;">Add to Wallet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="step-cap">Hotel confirmation card now includes the add-ons as gold pills — visible proof that breakfast, pickup, and spa credit are all locked in. Every choice the user made in steps 3 & 4 surfaces here.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     FOOTER · BUILD NOTES
+═══════════════════════════════════════════════════════ -->
+<div class="footer-rec">
+  <h3>What we ship & in what order</h3>
+  <p><strong>Phase 1 (2–3 weeks):</strong> Steps 1, 2, 5, 6, 7 wired with Stripe Checkout backed by a manual concierge queue. Steps 3 (seats) and 4 (room + add-ons) ship as UI shells using mock data. Tests whether users will trust Drift with their card before any API contracts.</p>
+  <p><strong>Phase 2 (4–6 weeks):</strong> Replace concierge with Duffel (flights + live seat maps) and Hotelbeds (hotels + live room inventory + add-on catalog). Steps 3 & 4 become real. Confirmation screen renders live PNRs and reservation IDs.</p>
+  <p><strong>Phase 3 (post-launch):</strong> Activity provider integration (GetYourGuide / Viator), Apple/Google Wallet boarding passes, shareable confirmation links as a marketing surface.</p>
+  <p style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text3); font-size: 12px;">
+    Mobile lives at <code style="color: var(--gold); font-family: var(--font-mono);">/m/book/[tripId]/*</code> · Desktop lives as a stacked-modal overlay on <code style="color: var(--gold); font-family: var(--font-mono);">/trip/[id]</code>.
+  </p>
+</div>
+
+</body>
+</html>

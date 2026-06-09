@@ -106,7 +106,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
               onError={onImgError}
             />
             {imgSrc.includes('unsplash.com') && (
-              <span className="absolute bottom-0.5 left-0.5 rounded bg-black/50 px-1 py-px text-[6px] text-white/50">
+              <span className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 py-px text-[9px] text-white/70">
                 Illustration
               </span>
             )}
@@ -114,28 +114,26 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
 
           {/* Body */}
           <div className="flex flex-1 flex-col justify-center p-3">
-            <div className="mb-1 flex items-center gap-1">
-              <span className={`inline-block self-start rounded-md px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider ${tag.cls}`}>
-                {tag.label}
-              </span>
-              {item.time && (
-                <span className="inline-block rounded-md bg-drift-surface2 px-1.5 py-0.5 text-[7px] font-semibold text-drift-text3">
+            {/* Category + time only — Verified/AI moved to DetailSheet */}
+            {item.time && (
+              <div className="mb-1 flex items-center gap-1">
+                <span className={`inline-block self-start rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${tag.cls}`}>
+                  {tag.label}
+                </span>
+                <span className="inline-block rounded-md bg-drift-surface2 px-1.5 py-0.5 text-[9px] font-semibold text-drift-text2">
                   {item.time}
                 </span>
-              )}
-              {meta.source && (
-                <span className={`inline-block rounded-md px-1 py-0.5 text-[6px] font-bold uppercase tracking-wider ${
-                  ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
-                    ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text3'
-                }`}>
-                  {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? 'Verified' : 'AI'}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
+            {!item.time && (
+              <span className={`mb-1 inline-block self-start rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${tag.cls}`}>
+                {tag.label}
+              </span>
+            )}
             <div className="text-[13px] font-semibold leading-tight text-drift-text line-clamp-1">
               {item.name}
             </div>
-            <div className="mt-0.5 text-[10px] leading-snug text-drift-text3 line-clamp-1">
+            <div className="mt-0.5 text-[11px] leading-snug text-drift-text2 line-clamp-1">
               {item.detail || ''}
             </div>
             <div className="mt-1 flex items-center gap-2">
@@ -146,11 +144,11 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
                 })()}
               </span>
               {(meta.rating as number) > 0 && (
-                <span className="text-[10px] text-drift-text3">
+                <span className="text-[11px] text-drift-text2">
                   <span className="text-amber-400">★</span>{' '}
                   {(meta.rating as number).toFixed(1)}
                   {(meta.reviewCount as number) > 0 && (
-                    <span className="text-drift-text3/60">
+                    <span className="text-drift-text3">
                       {' '}({(meta.reviewCount as number) >= 1000
                         ? `${((meta.reviewCount as number) / 1000).toFixed(1)}K`
                         : meta.reviewCount})
@@ -169,8 +167,8 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
         {onReact && (
           <button
             onClick={(e) => { e.stopPropagation(); onReact() }}
-            className={`flex items-center gap-1 text-[10px] transition-colors active:scale-90 ${
-              reaction?.reacted ? 'text-drift-gold' : 'text-drift-text3'
+            className={`flex items-center gap-1 text-[11px] transition-colors active:scale-90 ${
+              reaction?.reacted ? 'text-drift-gold' : 'text-drift-text2'
             }`}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill={reaction?.reacted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
@@ -182,7 +180,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
         {onStartPoll && !poll && (
           <button
             onClick={(e) => { e.stopPropagation(); onStartPoll() }}
-            className="text-[9px] text-drift-text3 active:text-drift-gold"
+            className="text-[11px] text-drift-text2 active:text-drift-gold"
           >
             Not sure?
           </button>
@@ -194,7 +192,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
           {reason && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowWhy(!showWhy); setShowAlts(false) }}
-              className="flex items-center gap-1 text-[9px] font-semibold text-drift-gold/70 transition-colors hover:text-drift-gold"
+              className="flex items-center gap-1 text-[11px] font-semibold text-drift-gold/80 transition-colors hover:text-drift-gold"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -205,7 +203,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
           {alts.length > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowAlts(!showAlts); setShowWhy(false) }}
-              className="flex items-center gap-1 text-[9px] font-semibold text-drift-gold/60 transition-colors hover:text-drift-gold"
+              className="flex items-center gap-1 text-[11px] font-semibold text-drift-gold/80 transition-colors hover:text-drift-gold"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
@@ -221,16 +219,16 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
       {showWhy && reason && (
         <div className="border-t border-drift-border2 px-3 py-2.5 animate-[fadeUp_0.2s_ease-out]">
           <div className="flex gap-2">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-drift-gold-dim text-[7px] font-extrabold text-drift-bg">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-drift-gold-dim text-[9px] font-extrabold text-drift-bg">
               D
             </div>
-            <p className="flex-1 text-[10px] leading-relaxed text-drift-text2">{reason}</p>
+            <p className="flex-1 text-[12px] leading-relaxed text-drift-text2">{reason}</p>
           </div>
           {meta.whyFactors && (meta.whyFactors as string[]).length > 0 && (
             <div className="mt-2 ml-7 flex flex-col gap-1">
               {(meta.whyFactors as string[]).slice(0, 3).map((f, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[9px] text-drift-text3">
-                  <span className="mt-0.5 text-drift-gold/50">•</span>
+                <div key={i} className="flex items-start gap-1.5 text-[11px] text-drift-text2">
+                  <span className="mt-0.5 text-drift-gold/60">•</span>
                   <span>{f}</span>
                 </div>
               ))}
@@ -255,23 +253,23 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
                     </div>
                   )}
                   <div className="p-2.5">
-                    <div className="text-[11px] font-semibold text-drift-text line-clamp-1">{alt.name}</div>
-                    <div className="mt-0.5 text-[9px] text-drift-text3 line-clamp-1">{alt.detail}</div>
+                    <div className="text-[12px] font-semibold text-drift-text line-clamp-1">{alt.name}</div>
+                    <div className="mt-0.5 text-[11px] text-drift-text2 line-clamp-1">{alt.detail}</div>
                     {ratingBadge && (
-                      <span className="mt-1 inline-block rounded bg-drift-ok/10 px-1.5 py-0.5 text-[7px] font-bold text-drift-ok">
+                      <span className="mt-1 inline-block rounded bg-drift-ok/10 px-1.5 py-0.5 text-[10px] font-bold text-drift-ok">
                         {ratingBadge.text}
                       </span>
                     )}
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-drift-text">
+                      <span className="text-[12px] font-bold text-drift-text">
                         {altNum === 0 ? 'Free' : formatBudget(altNum)}
                       </span>
                       <button
                         onClick={(e) => handleSwap(alt, e)}
                         disabled={swapping}
-                        className="rounded-md bg-drift-gold px-2 py-0.5 text-[8px] font-bold text-drift-bg disabled:opacity-50"
+                        className="rounded-md bg-drift-gold px-2.5 py-1 text-[10px] font-bold text-drift-bg disabled:opacity-50"
                       >
-                        {swapping ? '...' : 'Swap'}
+                        {swapping ? '…' : 'Swap'}
                       </button>
                     </div>
                   </div>
@@ -286,8 +284,8 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
       {poll && poll.status === 'open' && onVote && (
         <div className="border-t border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-drift-gold">Group vote</span>
-            {isOwner && onClosePoll && <button onClick={(e) => { e.stopPropagation(); onClosePoll() }} className="text-[7px] text-drift-text3">Dismiss</button>}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-drift-gold">Group vote</span>
+            {isOwner && onClosePoll && <button onClick={(e) => { e.stopPropagation(); onClosePoll() }} className="text-[10px] text-drift-text2">Dismiss</button>}
           </div>
           <div className="space-y-1">
             {poll.options.map((opt, i) => {
@@ -299,14 +297,14 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); onVote(i) }}
-                  className={`relative w-full rounded-lg border px-2.5 py-1.5 text-left text-[10px] overflow-hidden ${
+                  className={`relative w-full rounded-lg border px-2.5 py-2 text-left text-[12px] overflow-hidden ${
                     voted ? 'border-drift-gold/40 text-drift-text' : 'border-drift-border2 text-drift-text2'
                   }`}
                 >
                   <div className="absolute inset-0 bg-drift-gold/10 rounded-lg" style={{ width: `${pct}%` }} />
                   <div className="relative flex justify-between">
                     <span className="truncate font-medium">{opt.name}</span>
-                    <span className="shrink-0 ml-1 text-drift-text3 tabular-nums">{opt.votes.length}</span>
+                    <span className="shrink-0 ml-1 text-drift-text2 tabular-nums">{opt.votes.length}</span>
                   </div>
                 </button>
               )
@@ -319,7 +317,7 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
             return (
               <button
                 onClick={(e) => { e.stopPropagation(); onApplyPoll() }}
-                className="mt-1.5 w-full rounded-lg bg-drift-gold/10 border border-drift-gold/25 py-1.5 text-[9px] font-semibold text-drift-gold active:scale-95"
+                className="mt-1.5 w-full rounded-lg bg-drift-gold/10 border border-drift-gold/25 py-2 text-[11px] font-semibold text-drift-gold active:scale-95"
               >
                 Apply: {winner.name}
               </button>

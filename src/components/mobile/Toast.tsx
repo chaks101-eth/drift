@@ -19,17 +19,17 @@ export default function Toast() {
 
   return (
     <div
-      className={`fixed left-1/2 z-[200] -translate-x-1/2 transition-all duration-300 ${
+      className={`fixed left-1/2 z-[300] -translate-x-1/2 transition-all duration-300 ${
         toastVisible
-          ? 'bottom-[100px] opacity-100 translate-y-0'
-          : 'bottom-[100px] opacity-0 translate-y-2 pointer-events-none'
+          ? 'bottom-[110px] opacity-100 translate-y-0'
+          : 'bottom-[110px] opacity-0 translate-y-2 pointer-events-none'
       }`}
     >
       <div
-        className={`flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-xs font-medium shadow-lg backdrop-blur-xl ${
+        className={`flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-[13px] font-medium shadow-lg backdrop-blur-xl ${
           toastError
-            ? 'border-drift-err/30 bg-drift-card/95'
-            : 'border-drift-gold/20 bg-drift-card/95'
+            ? 'border-drift-err/30 bg-drift-card'
+            : 'border-drift-gold/20 bg-drift-card'
         }`}
       >
         <span

@@ -212,11 +212,11 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
             </svg>
           </div>
           <div>
-            <div className="font-serif text-[16px] text-drift-text">Chat with Drift</div>
-            <div className="text-[9px] text-drift-text3 uppercase tracking-wider">AI Travel Assistant</div>
+            <div className="font-serif text-[17px] text-drift-text">Chat with Drift</div>
+            <div className="text-[10px] text-drift-text2 uppercase tracking-wider">AI Travel Assistant</div>
           </div>
         </div>
-        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-drift-surface transition-colors">
+        <button type="button" onClick={onClose} aria-label="Close chat" className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-drift-surface transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-drift-gold/60">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -233,13 +233,14 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
               </svg>
             </div>
             <div className="font-serif text-xl text-drift-text mb-2">Ask anything about your trip</div>
-            <p className="text-[12px] text-drift-text3 mb-6 leading-relaxed">Swap hotels, find cheaper options, add activities, or get local tips — I&apos;ll handle it.</p>
+            <p className="text-[13px] text-drift-text2 mb-6 leading-relaxed">Swap hotels, find cheaper options, add activities, or get local tips — I&apos;ll handle it.</p>
             <div className="flex flex-col gap-2">
               {SUGGESTIONS.map(s => (
                 <button
+                  type="button"
                   key={s}
                   onClick={() => sendMessage(s)}
-                  className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-2.5 text-[12px] text-drift-text2 transition-all hover:border-drift-gold/20 hover:text-drift-gold hover:bg-drift-gold/[0.04]"
+                  className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-[13px] text-drift-text2 transition-all hover:border-drift-gold/30 hover:text-drift-gold hover:bg-drift-gold/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-drift-gold/40"
                 >
                   {s}
                 </button>
@@ -260,10 +261,10 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
                 </div>
               )}
               <div className="flex flex-col gap-2 max-w-[320px]">
-                <div className={`rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
+                <div className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-drift-gold/10 border border-drift-gold/15 text-drift-text rounded-tr-sm'
-                    : 'bg-drift-surface border border-drift-border text-drift-text2 rounded-tl-sm'
+                    : 'bg-drift-surface border border-drift-border text-drift-text rounded-tl-sm'
                 }`}>
                   {msg.content || (streaming && i === chatHistory.length - 1 ? (
                     <span className="flex gap-1">
@@ -278,7 +279,7 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
                 {actions.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {actions.map((action, ai) => (
-                      <div key={ai} className="rounded-lg bg-drift-gold/[0.06] border border-drift-gold/15 px-3 py-2 text-[11px] text-drift-gold">
+                      <div key={ai} className="rounded-lg bg-drift-gold/[0.06] border border-drift-gold/15 px-3 py-2 text-[12px] text-drift-gold">
                         <div className="flex items-center gap-1.5">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
                           <span className="font-semibold">{action.label || action.type}</span>
@@ -309,12 +310,14 @@ export default function ChatPanel({ open, onClose, tripId }: ChatPanelProps) {
             placeholder="Ask about your trip..."
             rows={1}
             disabled={streaming}
-            className="flex-1 resize-none rounded-xl border border-drift-border bg-[rgba(255,255,255,0.02)] px-4 py-3 text-[13px] text-drift-text placeholder:text-drift-text3 focus:border-drift-gold/30 focus:outline-none max-h-[120px] overflow-y-auto disabled:opacity-60"
+            className="flex-1 resize-none rounded-xl border border-drift-border bg-[rgba(255,255,255,0.02)] px-4 py-3 text-[14px] text-drift-text placeholder:text-drift-text2 focus:border-drift-gold/40 focus:outline-none max-h-[120px] overflow-y-auto disabled:opacity-60"
           />
           <button
+            type="button"
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || streaming}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-drift-gold text-drift-bg disabled:opacity-30 hover:scale-105 transition-all"
+            aria-label="Send message"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-drift-gold text-drift-bg disabled:opacity-30 hover:scale-105 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-drift-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-drift-bg"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />

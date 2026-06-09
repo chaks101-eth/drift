@@ -77,15 +77,12 @@ export default function LoadingPage() {
     try {
       if ('wakeLock' in navigator && !wakeLockRef.current) {
         wakeLockRef.current = await navigator.wakeLock.request('screen')
-        console.log('[Loading] Wake lock acquired — screen will stay on')
         wakeLockRef.current.addEventListener('release', () => {
-          console.log('[Loading] Wake lock released')
           wakeLockRef.current = null
         })
       }
     } catch {
       // Wake lock not supported or failed — non-fatal
-      console.log('[Loading] Wake lock not available')
     }
   }, [])
 
@@ -127,7 +124,6 @@ export default function LoadingPage() {
 
       // Check if the server created the trip while we were suspended
       if (token && userId && onboarding.destination) {
-        console.log('[Loading] Screen resumed — checking if trip was created...')
         try {
           const { data } = await supabase
             .from('trips')
@@ -138,7 +134,6 @@ export default function LoadingPage() {
             .limit(1)
 
           if (data?.length) {
-            console.log('[Loading] Trip found after screen resume:', data[0].id)
             generatedTripId.current = data[0].id
             setGenerationDone(true)
             setError(null)
@@ -162,8 +157,8 @@ export default function LoadingPage() {
             releaseWakeLock()
             setTimeout(() => router.replace(`/m/board/${data[0].id}`), 600)
           }
-        } catch (e) {
-          console.warn('[Loading] Recovery check failed:', e)
+        } catch {
+          // recovery check failed — fall through to normal flow
         }
       }
     }
@@ -316,8 +311,7 @@ export default function LoadingPage() {
               .limit(1)
 
             if (data?.length) {
-              // Trip exists! The fetch failed but the server succeeded
-              console.log('[Loading] Trip found despite fetch error:', data[0].id)
+              // Trip exists — server succeeded even though fetch failed
               generatedTripId.current = data[0].id
               setGenerationDone(true)
 

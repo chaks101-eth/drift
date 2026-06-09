@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drift Booking · V2 Trip Bundle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+
+<div class="proto-header">
+  <div class="proto-crumbs">
+    <a href="index.html">Booking prototypes</a>
+    <span class="sep">/</span>
+    <span>V2 · Trip Bundle</span>
+  </div>
+  <span class="proto-tagline">Direction 2 — the actual moat</span>
+  <h1 class="proto-title">Book the <em>whole trip</em>, one checkout.</h1>
+  <p class="proto-subtitle">User taps "Reserve trip" from the board → a single cart with every flight, hotel, and activity → one payment → unified itinerary with all confirmation numbers. This is the move Booking.com structurally can't make — they sell pieces; we sell trips.</p>
+</div>
+
+<div class="flow-rail-wrap">
+<div class="flow-rail">
+
+  <!-- ─── Step 1: Trigger from board total ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">1</span>
+      <span class="step-name">"Reserve trip" on board</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:41</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Goa, India</h1>
+        </div>
+        <div class="app-body">
+          <div class="eyebrow gold">Trip estimate</div>
+          <div class="mock-card" style="background: rgba(200,164,78,0.04); border-color: rgba(200,164,78,0.25);">
+            <div class="row"><span class="lbl">Flights</span><span class="val">$268</span></div>
+            <div class="row"><span class="lbl">Hotels · 5 nights</span><span class="val">$1,240</span></div>
+            <div class="row"><span class="lbl">Activities</span><span class="val">$340</span></div>
+            <div class="row"><span class="lbl">Food (est.)</span><span class="val" style="color:var(--text3);">$220</span></div>
+            <div class="totals" style="margin-top: 14px;">
+              <div>
+                <div class="tot-lbl">Bookable now</div>
+                <div class="tot-sub">9 items · save $185 bundled</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="tot-val">$1,848</div>
+                <div class="tot-sub"><s style="color:var(--text3);">$2,033</s></div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" style="margin-top: 14px;">Reserve entire trip →</button>
+          <p style="font-size:10px; color:var(--text3); text-align:center; margin-top:10px;">Or book items individually below</p>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">The CTA lives in the trip estimate block on the board. The bundle savings number is the hook — visible before commitment.</p>
+  </div>
+
+  <!-- ─── Step 2: Cart review with toggles ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">2</span>
+      <span class="step-name">Review your cart</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:42</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Your Trip Cart</h1>
+          <span class="step-pill">1 / 4</span>
+        </div>
+        <div class="app-body">
+          <p class="lede" style="margin-bottom:14px;">Toggle anything off you'd rather book later. We hold the price for 24h once you confirm.</p>
+
+          <div class="eyebrow gold">Flights · 2</div>
+          <div class="cart-item">
+            <div class="thumb">✈</div>
+            <div class="body">
+              <div class="name">DEL → GOI · AI882</div>
+              <div class="meta">Sat, Jun 14 · 12:00 · Direct</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price">$67</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="cart-item">
+            <div class="thumb">✈</div>
+            <div class="body">
+              <div class="name">GOI → DEL · 6E2188</div>
+              <div class="meta">Wed, Jun 19 · 18:30 · Direct</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price">$201</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 16px;">Hotels · 1</div>
+          <div class="cart-item">
+            <div class="thumb">🏨</div>
+            <div class="body">
+              <div class="name">Taj Exotica Resort</div>
+              <div class="meta">5 nights · Deluxe Sea View</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price">$1,240</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 16px;">Activities · 3</div>
+          <div class="cart-item">
+            <div class="thumb">⛵</div>
+            <div class="body">
+              <div class="name">Dolphin sunset cruise</div>
+              <div class="meta">Sun, Jun 15 · 5:30 PM</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price">$48</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="cart-item off">
+            <div class="thumb">🧘</div>
+            <div class="body">
+              <div class="name">Ayurveda spa day</div>
+              <div class="meta">Mon, Jun 16 · 10 AM</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price">$180</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="cart-item">
+            <div class="thumb">🏍</div>
+            <div class="body">
+              <div class="name">South Goa scooter tour</div>
+              <div class="meta">Tue, Jun 17 · all day</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price">$112</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <div class="totals">
+            <div>
+              <div class="tot-lbl">8 items selected</div>
+              <div class="tot-sub" style="color:var(--ok);">You save $185</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="tot-val">$1,668</div>
+              <div class="tot-sub">for 2 travelers</div>
+            </div>
+          </div>
+          <button class="btn-primary">Continue to travelers →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Per-item toggles preserve user agency — if they want to book the spa day with their own deal, that's fine. The savings recalculate live.</p>
+  </div>
+
+  <!-- ─── Step 3: Travelers (one form for everyone) ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">3</span>
+      <span class="step-name">Add travelers — once</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:43</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Travelers</h1>
+          <span class="step-pill">2 / 4</span>
+        </div>
+        <div class="app-body">
+          <div class="h-large">One form, <em>every booking</em></div>
+          <p class="lede">Booking.com makes you re-enter this 4 times. We do it once and route to each provider.</p>
+
+          <div class="eyebrow gold">Adult 1 · Lead traveler</div>
+          <div class="mock-card">
+            <div class="field">
+              <label>Full name (matches passport)</label>
+              <input value="Chakshu Tyagi" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>DOB</label>
+                <input value="14 Mar 1996" />
+              </div>
+              <div class="field">
+                <label>Passport</label>
+                <input placeholder="P1234567" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input value="chakshu@inomy.shop" />
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 16px;">Adult 2</div>
+          <div class="mock-card" style="padding: 18px; text-align:center; border-style:dashed;">
+            <div style="font-size: 24px; color: var(--gold); margin-bottom: 6px;">+</div>
+            <div style="font-size: 13px; color: var(--text2);">Add second traveler</div>
+            <div style="font-size: 11px; color: var(--text3); margin-top:4px;">Or invite them to fill in their own</div>
+          </div>
+
+          <div class="line"></div>
+
+          <div style="background: rgba(78, 205, 196, 0.05); border: 1px solid rgba(78, 205, 196, 0.15); padding: 12px; border-radius: 10px; display:flex; gap:10px; align-items:start;">
+            <span style="color: var(--ok); font-size: 13px;">✓</span>
+            <div>
+              <div style="font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px;">Why we ask</div>
+              <div style="font-size: 11px; color: var(--text2); line-height: 1.5;">Airlines need passport details. Hotels need a name on file. Activities just need a count. We send the right data to each.</div>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Continue to payment →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">The single-form pitch is the demo moment. Even the option to invite a co-traveler to self-fill is a small thing OTAs don't do.</p>
+  </div>
+
+  <!-- ─── Step 4: Single payment with itemized total ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">4</span>
+      <span class="step-name">Pay once</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:44</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Payment</h1>
+          <span class="step-pill">3 / 4</span>
+        </div>
+        <div class="app-body">
+          <div class="eyebrow gold">Order summary</div>
+          <div class="mock-card">
+            <div class="row"><span class="lbl">Flights · 2</span><span class="val">$268</span></div>
+            <div class="row"><span class="lbl">Hotels · 5 nights</span><span class="val">$1,240</span></div>
+            <div class="row"><span class="lbl">Activities · 2</span><span class="val">$160</span></div>
+            <div class="row"><span class="lbl">Bundle discount</span><span class="val" style="color:var(--ok);">–$185</span></div>
+            <div class="totals" style="margin-top: 10px;">
+              <div>
+                <div class="tot-lbl">Total · 2 travelers</div>
+                <div class="tot-sub">Includes all taxes & fees</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="tot-val">$1,483</div>
+                <div class="tot-sub" style="color:var(--ok);">~$741 each</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Pay with</div>
+          <div class="pay-card">
+            <div class="chip"></div>
+            <div class="num">•••• •••• •••• 4242</div>
+            <div class="meta">
+              <span>VISA · Chakshu Tyagi</span>
+              <span>12 / 28</span>
+            </div>
+          </div>
+          <button class="btn-link" style="display:block; margin: 0 auto; font-size: 11px;">+ Use a different card</button>
+
+          <div class="line"></div>
+
+          <div style="display:flex; gap: 10px; font-size: 11px; color: var(--text2); line-height: 1.5;">
+            <input type="checkbox" checked style="margin-top: 2px;" />
+            <span>I agree to the <span style="color: var(--gold);">cancellation policy</span> per provider. Most items refundable within 24h.</span>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Confirm & Pay $1,483 →</button>
+          <p style="text-align: center; font-size: 10px; color: var(--text3); margin-top:8px;">🔒 Secured by Stripe · PCI-DSS Level 1</p>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">One Stripe charge, one card on file, one summary. Behind the scenes Drift fans out to Duffel + Hotelbeds + activity providers in parallel.</p>
+  </div>
+
+  <!-- ─── Step 5: Unified confirmation ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">5</span>
+      <span class="step-name">Whole trip booked</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:45</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <h1 style="text-align:center; padding-right:32px;">Booked</h1>
+        </div>
+        <div class="app-body">
+          <div class="success-icon" style="margin: 24px auto 16px;">✓</div>
+          <div style="text-align:center;">
+            <div class="h-large" style="text-align:center;">Goa is <em>locked in</em>.</div>
+            <p class="lede" style="text-align:center;">8 bookings, one trip. All confirmations sent to chakshu@inomy.shop.</p>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 8px;">Your confirmations</div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">✈</span>
+              <span style="font-size: 12px; font-weight: 600;">Air India</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">AI-PNR-X4F7K2</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">DEL → GOI · Sat, Jun 14 · Seat 7A confirmed</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">✈</span>
+              <span style="font-size: 12px; font-weight: 600;">IndiGo</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">6E-PNR-NLM8RR</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">GOI → DEL · Wed, Jun 19 · Seat 14F confirmed</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">🏨</span>
+              <span style="font-size: 12px; font-weight: 600;">Taj Exotica</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">RES-92841</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">Check-in Jun 14 · Deluxe Sea View · Confirmed</div>
+          </div>
+
+          <div class="mock-card" style="padding: 12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-size: 16px;">⛵</span>
+              <span style="font-size: 12px; font-weight: 600;">Dolphin sunset cruise</span>
+              <span style="margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--gold);">DR-A92K</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text2);">Sun, Jun 15 · 5:30 PM · 2 tickets</div>
+          </div>
+
+          <div style="margin-top: 14px; padding: 12px; background: rgba(200, 164, 78, 0.05); border: 1px solid rgba(200, 164, 78, 0.15); border-radius: 12px; font-size: 11px; color: var(--text2); text-align: center; line-height: 1.5;">
+            All confirmations in one place — managed from your trip board.
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Open trip board →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">The killer screen. No other planner shows you a unified set of PNRs + hotel reservations + activity bookings in one place.</p>
+  </div>
+
+</div>
+</div>
+
+<div class="tradeoffs">
+  <div class="tradeoff win">
+    <h4>Wins</h4>
+    <p><strong>This is the moat.</strong> Booking.com structurally can't bundle because their teams own different inventory. Travelers save real time and money. Drift owns the post-purchase relationship.</p>
+  </div>
+  <div class="tradeoff cost">
+    <h4>Costs</h4>
+    <p>Three API contracts (Duffel + Hotelbeds + activity provider). PCI compliance via Stripe Connect. Failure modes are gnarly — what if 7 succeed and the hotel rejects? Need careful retry + refund logic.</p>
+  </div>
+  <div class="tradeoff dep">
+    <h4>Dependencies</h4>
+    <p>Duffel (flights, NDC), Hotelbeds or Booking.com Partners (hotels), GetYourGuide or Viator (activities), Stripe (charging), strong backend orchestration.</p>
+  </div>
+</div>
+
+</body>
+</html>

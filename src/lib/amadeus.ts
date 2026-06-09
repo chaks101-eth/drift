@@ -244,7 +244,7 @@ function formatTime(isoDatetime: string): string {
 }
 
 // ─── Airline names (common) ───────────────────────────────────
-const AIRLINES: Record<string, string> = {
+export const AIRLINE_NAMES: Record<string, string> = {
   '6E': 'IndiGo', 'AI': 'Air India', 'UK': 'Vistara', 'SG': 'SpiceJet',
   'G8': 'Go First', 'QP': 'Akasa Air', 'IX': 'Air India Express',
   'EK': 'Emirates', 'QR': 'Qatar Airways', 'SQ': 'Singapore Airlines',
@@ -320,7 +320,7 @@ export async function searchFlights(params: {
 
     return {
       airline: airlineCode,
-      airlineName: carriers[airlineCode] || AIRLINES[airlineCode] || airlineCode,
+      airlineName: carriers[airlineCode] || AIRLINE_NAMES[airlineCode] || airlineCode,
       flightNumber: `${airlineCode}${firstSeg.number}`,
       departure: {
         airport: firstSeg.departure.iataCode,
@@ -469,6 +469,7 @@ export function flightToItineraryItem(flight: FlightOffer, position: number) {
       departure: flight.departure,
       arrival: flight.arrival,
       airline: flight.airline,
+      airlineName: flight.airlineName,
       flightNumber: flight.flightNumber,
       bookingUrl: flight.bookingUrl,
       skyscannerUrl: flight.bookingUrl,

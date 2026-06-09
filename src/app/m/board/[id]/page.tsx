@@ -37,13 +37,12 @@ export default function BoardPage() {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ tripId: id }),
         }).then(async (res) => {
-          if (!res.ok) { console.warn('[Board] Personalization endpoint error:', res.status); return }
+          if (!res.ok) return
           const data = await res.json()
-          console.log('[Board] Personalize result:', data.status, data.updated || 0)
           if (data.status === 'personalized' && data.updated > 0) {
             loadTrip(id) // Refresh with personalized data
           }
-        }).catch((e) => console.warn('[Board] Personalization failed:', e))
+        }).catch(() => { /* personalization is best-effort */ })
       })
     }
   }, [id, token, loadTrip])
@@ -59,12 +58,12 @@ export default function BoardPage() {
   if (!currentTrip) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 px-6">
-        <div className="text-sm text-drift-text3">Trip not found</div>
+        <div className="text-base text-drift-text2">Trip not found</div>
         <div className="flex gap-3">
-          <button onClick={() => router.push('/m/plan/vibes')} className="rounded-xl bg-drift-gold px-5 py-2.5 text-xs font-semibold text-drift-bg">
+          <button onClick={() => router.push('/m/plan/vibes')} className="rounded-xl bg-drift-gold px-5 py-3 text-[13px] font-semibold text-drift-bg">
             Plan a New Trip
           </button>
-          <button onClick={() => router.push('/m')} className="rounded-xl border border-drift-border2 px-5 py-2.5 text-xs font-semibold text-drift-text3">
+          <button onClick={() => router.push('/m')} className="rounded-xl border border-drift-border2 px-5 py-3 text-[13px] font-semibold text-drift-text2">
             Home
           </button>
         </div>

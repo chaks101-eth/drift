@@ -98,7 +98,7 @@ export default function RemixOverlay() {
       <button
         onClick={() => useUIStore.getState().openRemix()}
         aria-label="Remix trip"
-        className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-[18px] z-[15] flex h-[50px] w-[50px] items-center justify-center rounded-full bg-drift-gold shadow-[0_6px_24px_rgba(200,164,78,0.3),0_2px_8px_rgba(0,0,0,0.2)] transition-all duration-300 active:scale-90"
+        className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-[18px] z-[110] flex h-[50px] w-[50px] items-center justify-center rounded-full bg-drift-gold shadow-[0_6px_24px_rgba(200,164,78,0.3),0_2px_8px_rgba(0,0,0,0.2)] transition-all duration-300 active:scale-90"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#08080c" strokeWidth="2">
           <polyline points="17 1 21 5 17 9" />
@@ -119,7 +119,7 @@ export default function RemixOverlay() {
           </div>
 
           {/* Description */}
-          <p className="px-6 pb-2.5 text-xs leading-relaxed text-drift-text2">
+          <p className="px-6 pb-2.5 text-[13px] leading-relaxed text-drift-text2">
             Tap vibes to change the energy. Or remix as-is for fresh picks with the same vibes.
           </p>
 
@@ -131,7 +131,7 @@ export default function RemixOverlay() {
                 <button
                   key={v.id}
                   onClick={() => toggleVibe(v.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-[20px] border px-3.5 py-2 text-xs transition-all duration-200 active:scale-95 ${
+                  className={`inline-flex items-center gap-1.5 rounded-[20px] border px-3.5 py-2 text-[13px] transition-all duration-200 active:scale-95 ${
                     isActive
                       ? 'border-drift-gold/30 bg-drift-gold/10 font-semibold text-drift-gold'
                       : 'border-drift-border2 bg-white/3 text-drift-text2'
@@ -148,9 +148,14 @@ export default function RemixOverlay() {
             <button
               onClick={handleRemix}
               disabled={loading}
-              className="w-full rounded-xl bg-drift-gold py-3.5 text-xs font-bold tracking-wider text-drift-bg transition-all duration-300 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-drift-gold py-3.5 text-[13px] font-bold tracking-wider text-drift-bg transition-all duration-300 disabled:opacity-60"
             >
-              {loading ? 'Remixing...' : btnText}
+              {loading && (
+                <svg width="14" height="14" viewBox="0 0 24 24" className="animate-spin">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="32" strokeLinecap="round" opacity="0.6" />
+                </svg>
+              )}
+              {loading ? 'Remixing…' : btnText}
             </button>
 
             <button
@@ -158,7 +163,7 @@ export default function RemixOverlay() {
                 closeRemix()
                 openChat('Suggest improvements for this trip')
               }}
-              className="mt-2 flex w-full items-center justify-center gap-2 border-t border-drift-border2 pt-3.5 text-xs font-medium text-drift-text2"
+              className="mt-2 flex w-full items-center justify-center gap-2 border-t border-drift-border2 pt-3.5 text-[13px] font-medium text-drift-text2"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drift Booking · Prototype hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .hub-header { max-width: 1100px; margin: 0 auto 56px; }
+  .hub-stamp { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+  .hub-title { font-family: var(--font-serif); font-style: italic; font-weight: 300; font-size: clamp(40px, 6vw, 70px); line-height: 1.02; margin-bottom: 18px; }
+  .hub-title em { color: var(--gold); }
+  .hub-sub { font-size: 15px; color: var(--text2); max-width: 720px; line-height: 1.7; margin-bottom: 28px; }
+  .hub-sub strong { color: var(--text); }
+
+  .options { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .option {
+    display: grid;
+    grid-template-columns: 100px 1fr 180px;
+    align-items: center;
+    gap: 28px;
+    padding: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .option:hover { border-color: rgba(200, 164, 78, 0.4); transform: translateY(-2px); box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
+  .option.recommended { border-color: rgba(200, 164, 78, 0.35); background: rgba(200, 164, 78, 0.03); }
+
+  .opt-num {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 64px;
+    color: var(--gold);
+    font-weight: 300;
+    line-height: 1;
+  }
+  .opt-body h2 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 26px;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .opt-body .tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+  .recommended .opt-body .tag { color: var(--gold); }
+  .opt-body p {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .opt-meta { display: flex; gap: 16px; font-size: 11px; color: var(--text3); }
+  .opt-meta span { display: flex; align-items: center; gap: 6px; }
+  .opt-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+
+  .opt-action {
+    text-align: right;
+  }
+  .opt-action .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 8px 14px;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    transition: all 0.3s;
+  }
+  .option:hover .opt-action .pill { background: var(--gold); color: var(--bg); }
+
+  .opt-tagline { font-family: var(--font-serif); font-style: italic; font-size: 14px; color: var(--text2); margin-top: 12px; }
+
+  .recommended .badge {
+    position: absolute; top: 20px; right: 20px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 4px 8px;
+    background: rgba(200, 164, 78, 0.1);
+    border: 1px solid rgba(200, 164, 78, 0.3);
+    border-radius: 6px;
+  }
+  .option { position: relative; }
+
+  .matrix-section { max-width: 1100px; margin: 80px auto 0; }
+  .matrix-section h3 { font-family: var(--font-serif); font-size: 22px; margin-bottom: 6px; font-weight: 400; }
+  .matrix-section p { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .matrix th, .matrix td {
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .matrix th {
+    background: rgba(0,0,0,0.3);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    font-weight: 500;
+  }
+  .matrix td:first-child { color: var(--text2); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .matrix tr:last-child td { border-bottom: none; }
+  .matrix .yes { color: var(--ok); }
+  .matrix .no { color: var(--err); opacity: 0.7; }
+  .matrix .partial { color: var(--warn); }
+
+  @media (max-width: 720px) {
+    .option { grid-template-columns: 1fr; gap: 14px; padding: 22px; }
+    .opt-num { font-size: 44px; }
+    .opt-action { text-align: left; }
+    .matrix th, .matrix td { padding: 10px 12px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hub-header">
+  <div class="hub-stamp">In-app booking · prototype hub</div>
+  <h1 class="hub-title">Three ways to <em>own</em> the booking.</h1>
+  <p class="hub-sub">Today every booking CTA on a Drift card redirects users to a third-party site. That breaks the trip experience and gives away the conversion. These are three product directions for keeping it in-app — from the cheapest MVP to the deepest moat. <strong>Pick a direction; then we build it.</strong></p>
+</div>
+
+<div class="options">
+
+  <a href="v1-concierge.html" class="option">
+    <div class="opt-num">I</div>
+    <div class="opt-body">
+      <div class="tag">Direction 01 · Concierge</div>
+      <h2>Book it for me</h2>
+      <p>User submits a request → Drift confirms via email in 5 minutes → user pays via Stripe link. No real-time inventory API needed. <strong>Ships in 2 weeks.</strong></p>
+      <div class="opt-meta">
+        <span><span class="dot"></span>5 screens</span>
+        <span><span class="dot"></span>Stripe + email</span>
+        <span><span class="dot"></span>Manual queue scales to ~100/day</span>
+      </div>
+      <div class="opt-tagline">"You're not buying a flight. You're hiring a concierge."</div>
+    </div>
+    <div class="opt-action"><span class="pill">View flow →</span></div>
+  </a>
+
+  <a href="v2-bundle.html" class="option recommended">
+    <span class="badge">★ Recommended</span>
+    <div class="opt-num">II</div>
+    <div class="opt-body">
+      <div class="tag">Direction 02 · Trip Bundle (recommended)</div>
+      <h2>Book the whole trip in one checkout</h2>
+      <p>One cart for all flights, hotels, activities. One payment. Unified itinerary with every confirmation number. <strong>The only path where Drift wins structurally vs Booking.com — they can't bundle inventory their teams don't co-own.</strong></p>
+      <div class="opt-meta">
+        <span><span class="dot"></span>5 screens</span>
+        <span><span class="dot"></span>Duffel + Hotelbeds + Stripe</span>
+        <span><span class="dot"></span>~6 week build</span>
+      </div>
+      <div class="opt-tagline">"Reserve entire trip — save $185 bundled."</div>
+    </div>
+    <div class="opt-action"><span class="pill">View flow →</span></div>
+  </a>
+
+  <a href="v3-ota.html" class="option">
+    <div class="opt-num">III</div>
+    <div class="opt-body">
+      <div class="tag">Direction 03 · OTA per-item</div>
+      <h2>Premium one-item checkout</h2>
+      <p>Each booking is its own beautiful flow — visual seat map, real boarding pass, room picker. Like Booking.com but with restraint. <strong>Best craft moment; weakest moat.</strong></p>
+      <div class="opt-meta">
+        <span><span class="dot"></span>5 screens</span>
+        <span><span class="dot"></span>Same APIs as V2</span>
+        <span><span class="dot"></span>Per-item friction repeats</span>
+      </div>
+      <div class="opt-tagline">"Seat 7A · window · added to your boarding pass."</div>
+    </div>
+    <div class="opt-action"><span class="pill">View flow →</span></div>
+  </a>
+
+</div>
+
+<div class="matrix-section">
+  <h3>Side by side</h3>
+  <p>The honest comparison — what shipping each one buys you and what it doesn't.</p>
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th></th>
+        <th>I · Concierge</th>
+        <th>II · Bundle</th>
+        <th>III · OTA</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Ships in</td><td>~2 weeks</td><td>~6 weeks</td><td>~4 weeks</td></tr>
+      <tr><td>API contracts</td><td class="yes">None</td><td class="partial">Duffel + Hotelbeds + Stripe</td><td class="partial">Duffel + Stripe (start)</td></tr>
+      <tr><td>PCI scope</td><td class="yes">Zero (Stripe Checkout link)</td><td class="partial">Yes (Stripe Connect)</td><td class="partial">Yes (Stripe Connect)</td></tr>
+      <tr><td>In-app payment moment</td><td class="no">No — email handoff</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+      <tr><td>Revenue model</td><td>Affiliate %</td><td class="yes">Markup + affiliate</td><td>Markup + affiliate</td></tr>
+      <tr><td>Defensible vs Booking.com</td><td class="no">No</td><td class="yes">Yes — bundled inventory</td><td class="no">No</td></tr>
+      <tr><td>Steps per booking</td><td>2-3</td><td>3-4 for whole trip</td><td>4 per item</td></tr>
+      <tr><td>Scaling ceiling</td><td>~100/day (manual)</td><td class="yes">Unlimited</td><td class="yes">Unlimited</td></tr>
+      <tr><td>Best for</td><td>Validate demand cheaply</td><td>Drift's killer feature</td><td>Premium UX brand</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="matrix-section">
+  <h3>Recommendation</h3>
+  <p style="line-height: 1.7;">
+    <strong style="color: var(--text);">Build V1 first as the wedge, then evolve into V2 inside the same app surface.</strong>
+    The concierge flow is shippable in ~2 weeks with zero API risk and tests whether users will actually trust Drift with a booking. Once you have ~500 paying bookings, the conversion data justifies the Duffel + Hotelbeds contracts and you upgrade to the trip-bundle flow — which is the long-term moat. V3 is the wrong direction unless we hear strong "I want seat selection in-app" feedback from real users; the premium UX doesn't pay for itself.
+  </p>
+</div>
+
+</body>
+</html>

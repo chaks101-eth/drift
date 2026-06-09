@@ -196,7 +196,7 @@ export default function HomePage() {
 
           {/* ─── Greeting — staggered entrance ─── */}
           <div className="mb-8" style={{ animation: 'fadeUp 0.9s ease 0.15s both' }}>
-            <div className="font-mono text-[9px] tracking-[3px] uppercase text-[#c8a44e]/70 mb-3"
+            <div className="font-mono text-[11px] tracking-[3px] uppercase text-[#c8a44e]/85 mb-3"
               style={{ animation: 'fadeUp 0.7s ease 0.1s both', filter: 'blur(0)' }}
             >
               {getGreeting()}{userName ? `, ${userName}` : ''}
@@ -289,13 +289,13 @@ export default function HomePage() {
                       {/* Status badge */}
                       <div className="mb-3 flex items-center gap-2 rounded-full border border-[#c8a44e]/30 bg-black/40 backdrop-blur-md px-3 py-1 transition-all duration-300 group-hover:border-[#c8a44e]/50 group-hover:bg-black/50">
                         {status === 'upcoming' && <span className="h-1.5 w-1.5 rounded-full bg-[#4ecdc4] live-dot" />}
-                        <span className="font-mono text-[8px] tracking-[2px] uppercase text-[#c8a44e]">
+                        <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#c8a44e]">
                           {status === 'upcoming'
                             ? away === 0 ? 'Departing today' : away === 1 ? 'Tomorrow' : `${away} days away`
                             : 'Continue drifting'
                           }
                         </span>
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="2.5" className="transition-transform duration-300 group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c8a44e" strokeWidth="2.5" className="transition-transform duration-300 group-hover:translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                       </div>
 
                       {/* Destination */}
@@ -308,7 +308,7 @@ export default function HomePage() {
                       {activeTrip.vibes?.length > 0 && (
                         <div className="flex gap-1.5 mt-2.5">
                           {activeTrip.vibes.slice(0, 3).map(v => (
-                            <span key={v} className="rounded-full bg-white/[0.08] backdrop-blur-md border border-white/[0.08] px-2.5 py-0.5 text-[8px] font-medium tracking-[1px] uppercase text-white/70">
+                            <span key={v} className="rounded-full bg-white/[0.1] backdrop-blur-md border border-white/[0.12] px-2.5 py-1 text-[10px] font-medium tracking-[1px] uppercase text-white/85">
                               {v}
                             </span>
                           ))}
@@ -316,7 +316,7 @@ export default function HomePage() {
                       )}
 
                       {/* Meta */}
-                      <div className="mt-2 font-mono text-[9px] text-white/35 tracking-[0.5px]">
+                      <div className="mt-2.5 font-mono text-[11px] text-white/60 tracking-[0.5px]">
                         {days > 0 && `${days} days`}
                         {activeTrip.start_date && `${days > 0 ? ' · ' : ''}${fmtDate(activeTrip.start_date)}`}
                         {` · ${activeTrip.travelers} traveler${activeTrip.travelers !== 1 ? 's' : ''}`}
@@ -413,9 +413,9 @@ export default function HomePage() {
                             transform: `translate(-50%, ${isHovered ? '0' : '-4px'})`,
                           }}
                         >
-                          <div className="rounded-lg border border-white/[0.08] bg-black/70 backdrop-blur-md px-2.5 py-1.5">
-                            <div className="text-[10px] text-white/90 font-medium">{trip.destination}</div>
-                            <div className="font-mono text-[7px] tracking-[1.5px] uppercase text-[#c8a44e]/80 mt-0.5">Preview →</div>
+                          <div className="rounded-lg border border-white/[0.12] bg-black/80 backdrop-blur-md px-3 py-2">
+                            <div className="text-[12px] text-white font-medium">{trip.destination}</div>
+                            <div className="font-mono text-[10px] tracking-[1.5px] uppercase text-[#c8a44e] mt-1">Preview →</div>
                           </div>
                         </div>
                       </button>
@@ -482,7 +482,7 @@ export default function HomePage() {
                   <div className="flex items-center justify-between mb-4">
                     <span className="font-serif text-[15px] italic text-[#c8a44e]/90">Recent Drifts</span>
                     {myTrips.length > 7 && (
-                      <button onClick={() => router.push('/trips/all')} className="font-mono text-[8px] tracking-[1.5px] uppercase text-white/35 hover:text-[#c8a44e] transition-colors">
+                      <button onClick={() => router.push('/trips/all')} className="font-mono text-[11px] tracking-[1.5px] uppercase text-white/55 hover:text-[#c8a44e] transition-colors">
                         View all {myTrips.length} →
                       </button>
                     )}
@@ -523,7 +523,7 @@ export default function HomePage() {
                               <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset 0 0 15px rgba(0,0,0,0.4)' }} />
                             </div>
                             {/* Label */}
-                            <span className={`text-[9px] transition-all duration-300 max-w-[60px] truncate text-center ${isHovered ? 'text-white/80' : 'text-white/40'}`}>
+                            <span className={`text-[11px] font-medium transition-all duration-300 max-w-[70px] truncate text-center ${isHovered ? 'text-white' : 'text-white/65'}`}>
                               {trip.destination}
                             </span>
                           </button>
@@ -531,9 +531,10 @@ export default function HomePage() {
                           {/* Delete */}
                           <button
                             onClick={(e) => deleteTrip(e, trip.id)}
-                            className="absolute -top-0.5 -right-0.5 z-10 h-4 w-4 rounded-full bg-black/70 flex items-center justify-center opacity-0 group-hover/orb:opacity-60 hover:!opacity-100 hover:bg-red-500/30 transition-all"
+                            aria-label={`Delete ${trip.destination} trip`}
+                            className="absolute -top-1 -right-1 z-10 h-5 w-5 rounded-full bg-black/80 border border-white/15 flex items-center justify-center opacity-0 group-hover/orb:opacity-90 hover:!opacity-100 hover:bg-red-500/40 hover:border-red-500/60 transition-all focus:outline-none focus-visible:opacity-100"
                           >
-                            <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                           </button>
                         </div>
                       )
@@ -556,8 +557,8 @@ export default function HomePage() {
                       </svg>
                     </div>
                     <div className="text-center">
-                      <div className="text-[11px] font-medium text-white/80 group-hover:text-[#c8a44e] transition-colors">Build</div>
-                      <div className="text-[8px] text-white/30 tracking-[1px] uppercase mt-0.5">From a reel</div>
+                      <div className="text-[13px] font-medium text-white/90 group-hover:text-[#c8a44e] transition-colors">Build</div>
+                      <div className="text-[10px] text-white/55 tracking-[1px] uppercase mt-0.5">From a reel</div>
                     </div>
                   </button>
 
@@ -566,13 +567,13 @@ export default function HomePage() {
                     className="group flex flex-col items-center gap-2.5"
                   >
                     <div className="h-[60px] w-[60px] rounded-2xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-center transition-all duration-300 group-hover:border-[#c8a44e]/30 group-hover:bg-[#c8a44e]/[0.06] group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(200,164,78,0.1)] active:scale-95">
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.3" className="text-white/50 group-hover:text-[#c8a44e] transition-colors">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.3" className="text-white/65 group-hover:text-[#c8a44e] transition-colors">
                         <polygon points="3 11 22 2 13 21 11 13 3 11" />
                       </svg>
                     </div>
                     <div className="text-center">
-                      <div className="text-[11px] font-medium text-white/80 group-hover:text-[#c8a44e] transition-colors">Compose</div>
-                      <div className="text-[8px] text-white/30 tracking-[1px] uppercase mt-0.5">From vibes</div>
+                      <div className="text-[13px] font-medium text-white/90 group-hover:text-[#c8a44e] transition-colors">Compose</div>
+                      <div className="text-[10px] text-white/55 tracking-[1px] uppercase mt-0.5">From vibes</div>
                     </div>
                   </button>
                 </div>
@@ -580,32 +581,32 @@ export default function HomePage() {
 
               {/* Telemetry + keyboard hint — for returning users. FTU gets a value-prop line instead. */}
               {activeTrip ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3 font-mono text-[8px] tracking-[1px] text-white/25 uppercase">
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center gap-3 font-mono text-[10px] tracking-[1px] text-white/55 uppercase">
                     <span>{myTrips.length} trips</span>
-                    <span className="text-white/10">◆</span>
+                    <span className="text-white/20">◆</span>
                     <span>{new Set(myTrips.map(t => t.destination)).size} dest</span>
-                    <span className="text-white/10">◆</span>
+                    <span className="text-white/20">◆</span>
                     <div className="flex items-center gap-1">
-                      <span className="h-1 w-1 rounded-full bg-[#4ecdc4] live-dot" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#4ecdc4] live-dot" />
                       <span>Active</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 font-mono text-[7px] tracking-[0.5px] text-white/15">
-                    <span className="rounded border border-white/[0.06] px-1 py-0.5">N</span>
+                  <div className="flex items-center gap-2.5 font-mono text-[10px] tracking-[0.5px] text-white/40">
+                    <span className="rounded border border-white/[0.1] px-1.5 py-0.5">N</span>
                     <span>new trip</span>
-                    <span className="text-white/8">·</span>
-                    <span className="rounded border border-white/[0.06] px-1 py-0.5">1-6</span>
+                    <span className="text-white/15">·</span>
+                    <span className="rounded border border-white/[0.1] px-1.5 py-0.5">1-6</span>
                     <span>open recent</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <p className="font-serif italic text-[12px] text-white/55 leading-relaxed">
+                <div className="flex flex-col gap-2.5">
+                  <p className="font-serif italic text-[14px] text-white/75 leading-relaxed">
                     Pick a few vibes. We build a 5-day itinerary in 30 seconds — hotels, restaurants, timings, all grounded.
                   </p>
-                  <div className="flex items-center gap-2 font-mono text-[7px] tracking-[1.5px] uppercase text-white/20">
-                    <span className="rounded border border-white/[0.06] px-1 py-0.5">N</span>
+                  <div className="flex items-center gap-2 font-mono text-[10px] tracking-[1.5px] uppercase text-white/40">
+                    <span className="rounded border border-white/[0.1] px-1.5 py-0.5">N</span>
                     <span>shortcut to start · or tap an orbit to preview</span>
                   </div>
                 </div>
@@ -620,9 +621,9 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="h-px w-6 bg-[#c8a44e]/40" />
-                <span className="font-mono text-[8px] tracking-[2.5px] uppercase text-[#c8a44e]/60">Distant Galaxies</span>
+                <span className="font-mono text-[10px] tracking-[2.5px] uppercase text-[#c8a44e]/80">Distant Galaxies</span>
               </div>
-              <button onClick={() => router.push('/explore')} className="font-mono text-[8px] text-white/30 hover:text-[#c8a44e] transition-colors tracking-[1.5px] uppercase">
+              <button onClick={() => router.push('/explore')} className="font-mono text-[11px] text-white/55 hover:text-[#c8a44e] transition-colors tracking-[1.5px] uppercase">
                 Explore →
               </button>
             </div>
@@ -639,16 +640,16 @@ export default function HomePage() {
                     <Image src={getImg(trip.destination)} alt={trip.destination} fill className="object-cover transition-transform duration-[2000ms] group-hover/t:scale-110" sizes="180px" unoptimized />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#08080c] via-transparent to-transparent" />
                   </div>
-                  <div className="p-2.5">
-                    <div className="text-[11px] text-white/70 group-hover/t:text-[#c8a44e] transition-colors truncate">{trip.destination}</div>
-                    <div className="flex items-center gap-1.5 mt-1">
+                  <div className="p-3">
+                    <div className="text-[13px] font-medium text-white/85 group-hover/t:text-[#c8a44e] transition-colors truncate">{trip.destination}</div>
+                    <div className="flex items-center gap-2 mt-1.5">
                       {trip.vibes?.slice(0, 2).map(v => (
-                        <span key={v} className="text-[7px] text-white/25 uppercase tracking-wide">{v}</span>
+                        <span key={v} className="text-[10px] text-white/50 uppercase tracking-wide">{v}</span>
                       ))}
                       {trip.heartCount > 0 && (
-                        <span className="ml-auto flex items-center gap-0.5">
-                          <svg width="7" height="7" viewBox="0 0 24 24" fill="#c8a44e" stroke="none" opacity={0.4}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-                          <span className="text-[7px] text-[#c8a44e]/40 tabular-nums">{trip.heartCount}</span>
+                        <span className="ml-auto flex items-center gap-1">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="#c8a44e" stroke="none" opacity={0.7}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                          <span className="text-[10px] text-[#c8a44e]/80 tabular-nums">{trip.heartCount}</span>
                         </span>
                       )}
                     </div>

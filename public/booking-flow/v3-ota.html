@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drift Booking · V3 OTA per-item</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+
+<div class="proto-header">
+  <div class="proto-crumbs">
+    <a href="index.html">Booking prototypes</a>
+    <span class="sep">/</span>
+    <span>V3 · OTA per-item</span>
+  </div>
+  <span class="proto-tagline">Direction 3 — premium per-item UX</span>
+  <h1 class="proto-title">Book each piece — <em>fast, in flow</em>.</h1>
+  <p class="proto-subtitle">User taps "Book" on a single card → full purchase flow for that one item, including seat select / room select / add-ons → checkout → confirmation. Like Booking.com but with Drift's restraint. Each booking is its own transaction.</p>
+</div>
+
+<div class="flow-rail-wrap">
+<div class="flow-rail">
+
+  <!-- ─── Step 1: Tap Book on flight card ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">1</span>
+      <span class="step-name">"Book" on flight card</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:41</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Goa, India</h1>
+        </div>
+        <div class="app-body">
+          <div class="eyebrow">Day 1 · Sat, Jun 14</div>
+          <div class="mock-card">
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+              <span style="font-family:var(--font-mono); font-size:10px; color:var(--gold); letter-spacing:1.5px;">✈ FLIGHT</span>
+              <span style="margin-left:auto; font-size:13px; font-weight:600;">$67</span>
+            </div>
+            <div class="flight-route">
+              <div>
+                <div class="iata">DEL</div>
+                <div style="font-size:11px; color:var(--text2); margin-top:4px;">12:00</div>
+              </div>
+              <div class="mid">
+                <div class="dash"></div>
+                <span class="icon">✈</span>
+                <div class="dash"></div>
+              </div>
+              <div style="text-align:right;">
+                <div class="iata">GOI</div>
+                <div style="font-size:11px; color:var(--text2); margin-top:4px;">13:00</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:var(--text3); text-align:center; margin-top:6px;">Direct · 1h 0m</div>
+            <div style="border-top:1px solid var(--border); margin-top:12px; padding-top:10px; font-size:11px; color:var(--text2);">Air India · AI882</div>
+          </div>
+          <button class="btn-primary" style="margin-top:8px;">Book this flight →</button>
+          <button class="btn-link" style="display:block; margin: 12px auto 0;">Find alternatives</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Same entry point — but tapping opens an immersive checkout, not a 5-minute hold queue.</p>
+  </div>
+
+  <!-- ─── Step 2: Select seat ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">2</span>
+      <span class="step-name">Pick your seat</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:42</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Seat</h1>
+          <span class="step-pill">1 / 4</span>
+        </div>
+        <div class="app-body">
+          <div class="h-large">Pick your <em>seat</em></div>
+          <p class="lede">AI882 · Airbus A320 · 1h flight to Goa.</p>
+
+          <div class="seat-map">
+            <div style="text-align:center; font-family:var(--font-mono); font-size:9px; color:var(--text3); letter-spacing: 1.5px; margin-bottom:8px;">FRONT</div>
+            <div class="seat-row"><span class="row-num">1</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat avail">A</span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">2</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat taken"></span></div>
+            <div class="seat-row"><span class="row-num">3</span><span class="seat taken"></span><span class="seat avail">B</span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">4</span><span class="seat avail">A</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat taken"></span><span class="seat taken"></span></div>
+            <div class="seat-row"><span class="row-num">5</span><span class="seat taken"></span><span class="seat taken"></span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">6</span><span class="seat avail">A</span><span class="seat avail">B</span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat taken"></span><span class="seat taken"></span><span class="seat taken"></span></div>
+            <div class="seat-row"><span class="row-num">7</span><span class="seat sel">A</span><span class="seat avail">B</span><span class="seat avail">C</span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat avail">E</span><span class="seat avail">F</span></div>
+            <div class="seat-row"><span class="row-num">8</span><span class="seat taken"></span><span class="seat avail">B</span><span class="seat taken"></span><span class="seat-aisle"></span><span class="seat avail">D</span><span class="seat taken"></span><span class="seat avail">F</span></div>
+
+            <div class="seat-legend">
+              <span><span class="sw" style="background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2);"></span>Available</span>
+              <span><span class="sw" style="background: var(--gold);"></span>Selected</span>
+              <span><span class="sw" style="background: rgba(255,255,255,0.03);"></span>Taken</span>
+            </div>
+          </div>
+
+          <div class="mock-card" style="display:flex; align-items:center; gap:10px; background: rgba(200,164,78,0.05); border-color: rgba(200,164,78,0.2);">
+            <div style="font-size:14px;">🪟</div>
+            <div style="flex:1;">
+              <div style="font-size: 12px; font-weight: 600;">Seat 7A · Window</div>
+              <div style="font-size: 11px; color: var(--text2);">Extra legroom · +$8</div>
+            </div>
+            <div style="font-size: 13px; color: var(--gold); font-weight: 600;">+$8</div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <div class="totals" style="border:none; padding:0 0 10px; margin:0 0 10px;">
+            <div><span class="tot-lbl">Subtotal</span></div>
+            <div style="text-align:right;"><div class="tot-val" style="font-size:18px;">$75</div></div>
+          </div>
+          <button class="btn-primary">Continue →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Visual seat picker — small but high-trust. Drift can charge a tiny markup for premium seats vs the airline's site.</p>
+  </div>
+
+  <!-- ─── Step 3: Add-ons (baggage, meal) ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">3</span>
+      <span class="step-name">Add-ons</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:43</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Extras</h1>
+          <span class="step-pill">2 / 4</span>
+        </div>
+        <div class="app-body">
+          <p class="lede">All optional. Skip if it's just you and a backpack.</p>
+
+          <div class="eyebrow gold">Baggage</div>
+          <div class="room-opt sel">
+            <div class="row" style="align-items:center;">
+              <div>
+                <div class="name">Cabin only</div>
+                <div class="feat">7kg + 1 personal item · Included</div>
+              </div>
+              <div style="font-size:13px; color:var(--ok); font-weight:600;">Free</div>
+            </div>
+          </div>
+          <div class="room-opt">
+            <div class="row" style="align-items:center;">
+              <div>
+                <div class="name">+ Check-in 15kg</div>
+                <div class="feat">Standard checked bag</div>
+              </div>
+              <div style="font-size:13px; color:var(--gold); font-weight:600;">+$22</div>
+            </div>
+          </div>
+          <div class="room-opt">
+            <div class="row" style="align-items:center;">
+              <div>
+                <div class="name">+ Check-in 25kg</div>
+                <div class="feat">For longer trips or sports gear</div>
+              </div>
+              <div style="font-size:13px; color:var(--gold); font-weight:600;">+$38</div>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Meal preference</div>
+          <div class="mock-card">
+            <div class="row">
+              <span class="val">No meal needed</span>
+              <span style="color: var(--gold); font-size: 13px;">✓</span>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Travel insurance</div>
+          <div class="mock-card">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+              <div>
+                <div class="name" style="font-size:13px;">Cover for $11</div>
+                <div style="font-size: 11px; color: var(--text2); margin-top: 4px; line-height: 1.5;">Cancellation, lost bags, medical. Skip if you have your own.</div>
+              </div>
+              <div class="toggle off" style="background: rgba(255,255,255,0.06);">
+                <span style="display:block; position:absolute; width:16px; height:16px; background:var(--text3); border-radius:50%; top:2px; left:2px;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Continue →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Unlike Booking.com, no upsell traps. Each add-on has a clear use case in its description. Default state = cheapest path.</p>
+  </div>
+
+  <!-- ─── Step 4: Passenger + payment ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">4</span>
+      <span class="step-name">Details + pay</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:44</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="back">‹</div>
+          <h1>Confirm & pay</h1>
+          <span class="step-pill">3 / 4</span>
+        </div>
+        <div class="app-body">
+          <div class="eyebrow gold">Passenger</div>
+          <div class="mock-card">
+            <div class="field">
+              <label>Full name (passport)</label>
+              <input value="Chakshu Tyagi" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>DOB</label>
+                <input value="14 Mar 1996" />
+              </div>
+              <div class="field">
+                <label>Passport</label>
+                <input placeholder="P1234567" />
+              </div>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Card</div>
+          <div class="pay-card">
+            <div class="chip"></div>
+            <div class="num">•••• •••• •••• 4242</div>
+            <div class="meta">
+              <span>VISA · Chakshu Tyagi</span>
+              <span>12 / 28</span>
+            </div>
+          </div>
+
+          <div class="eyebrow gold" style="margin-top: 18px;">Order</div>
+          <div class="mock-card">
+            <div class="row"><span class="lbl">AI882 · Base</span><span class="val">$67</span></div>
+            <div class="row"><span class="lbl">Seat 7A · Window</span><span class="val">$8</span></div>
+            <div class="row"><span class="lbl">Taxes & fees</span><span class="val">$11</span></div>
+            <div class="totals">
+              <div><span class="tot-lbl">Total</span></div>
+              <div style="text-align:right;"><div class="tot-val" style="font-size: 22px;">$86</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Pay $86 →</button>
+          <p style="text-align: center; font-size: 10px; color: var(--text3); margin-top:8px;">🔒 Stripe secure · Cancel free within 24h</p>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Single screen for details + payment + summary. Less scrolling than Booking.com's 4-page checkout.</p>
+  </div>
+
+  <!-- ─── Step 5: Boarding pass moment ─── -->
+  <div class="flow-step">
+    <div class="step-label">
+      <span class="step-num">5</span>
+      <span class="step-name">Boarding pass</span>
+    </div>
+    <div class="phone">
+      <div class="phone-statusbar">
+        <span>9:45</span>
+        <span class="right">●●●● ▮</span>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <h1 style="text-align:center; padding-right:32px;">Booked</h1>
+        </div>
+        <div class="app-body">
+          <div class="success-icon" style="margin: 20px auto 12px;">✓</div>
+          <div style="text-align:center;">
+            <div class="h-large" style="text-align:center;">See you at <em>gate</em>.</div>
+            <p class="lede" style="text-align:center;">PNR sent to your inbox + added to your trip board.</p>
+          </div>
+
+          <!-- Boarding-pass-style ticket -->
+          <div style="background: linear-gradient(135deg, #1a1a26, #0c0c14); border: 1px solid rgba(200,164,78,0.2); border-radius: 16px; padding: 18px; margin: 20px 0; position: relative; overflow: hidden;">
+            <div style="position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(to right, var(--gold), var(--gold-2));"></div>
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 18px;">
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 9px; letter-spacing:1.5px; color: var(--gold);">AI · BOARDING</div>
+                <div style="font-family: var(--font-serif); font-size: 16px; margin-top: 4px;">Chakshu Tyagi</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family: var(--font-mono); font-size: 9px; letter-spacing:1.5px; color: var(--gold);">SEAT</div>
+                <div style="font-family: var(--font-serif); font-size: 22px; color: var(--gold);">7A</div>
+              </div>
+            </div>
+            <div class="flight-route" style="margin-bottom: 14px;">
+              <div>
+                <div class="iata" style="color: var(--text);">DEL</div>
+                <div style="font-size:11px; color:var(--text2); margin-top: 2px;">12:00</div>
+              </div>
+              <div class="mid">
+                <div class="dash"></div>
+                <span class="icon">✈</span>
+                <div class="dash"></div>
+              </div>
+              <div style="text-align:right;">
+                <div class="iata" style="color: var(--text);">GOI</div>
+                <div style="font-size:11px; color:var(--text2); margin-top: 2px;">13:00</div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 14px; border-top: 1px dashed var(--border2);">
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 8px; color: var(--text3); letter-spacing:1px;">FLIGHT</div>
+                <div style="font-size: 12px; font-weight: 600; margin-top: 2px;">AI882</div>
+              </div>
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 8px; color: var(--text3); letter-spacing:1px;">DATE</div>
+                <div style="font-size: 12px; font-weight: 600; margin-top: 2px;">Sat, Jun 14</div>
+              </div>
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 8px; color: var(--text3); letter-spacing:1px;">PNR</div>
+                <div style="font-size: 12px; font-weight: 600; margin-top: 2px; color: var(--gold);">X4F7K2</div>
+              </div>
+            </div>
+            <!-- Barcode mockup -->
+            <div style="margin-top: 14px; height: 32px; background: repeating-linear-gradient(to right, var(--text) 0 1px, transparent 1px 3px, var(--text) 3px 5px, transparent 5px 7px); opacity: 0.85; border-radius: 4px;"></div>
+          </div>
+
+          <button class="btn-secondary">Add to Apple Wallet</button>
+        </div>
+        <div class="cta-bar">
+          <button class="btn-primary">Back to my trip →</button>
+        </div>
+      </div>
+    </div>
+    <p class="step-caption">Boarding-pass-styled confirmation is the screenshot moment — works as social proof when shared.</p>
+  </div>
+
+</div>
+</div>
+
+<div class="tradeoffs">
+  <div class="tradeoff win">
+    <h4>Wins</h4>
+    <p>Premium UX. Each booking is a self-contained moment with high craft (seat map, boarding pass). Users can book what they need, when they need it — including last-minute flights.</p>
+  </div>
+  <div class="tradeoff cost">
+    <h4>Costs</h4>
+    <p>Doesn't differentiate from MakeMyTrip/Kayak structurally. You still need full transactional APIs (same as V2). User has to repeat steps for 8 items in a 5-day trip = friction.</p>
+  </div>
+  <div class="tradeoff dep">
+    <h4>Dependencies</h4>
+    <p>Duffel for flights (with seat map data), Hotelbeds for hotels, Stripe for payment. Plus design time on the boarding pass + room picker craft moments.</p>
+  </div>
+</div>
+
+</body>
+</html>

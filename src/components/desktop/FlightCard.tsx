@@ -2,6 +2,19 @@
 
 import { parsePrice } from '@/lib/parse-price'
 import { useTripStore, type ItineraryItem } from '@/stores/trip-store'
+import { AIRLINE_NAMES } from '@/lib/amadeus'
+
+// Resolve a useful airline label: full name + flight number when we have them.
+// Existing trips stored just the IATA code in meta.airline; new ones store both.
+function resolveAirlineLabel(meta: Record<string, unknown>, detail: string): string {
+  const code = meta.airline as string | undefined
+  const name = (meta.airlineName as string | undefined) || (code && AIRLINE_NAMES[code]) || ''
+  const flightNumber = meta.flightNumber as string | undefined
+  if (name && flightNumber) return `${name} · ${flightNumber}`
+  if (name) return name
+  // Fall back to item.detail (often already formatted "Air India AI123") or the raw code
+  return detail || code || ''
+}
 
 interface Props {
   item: ItineraryItem
@@ -34,7 +47,7 @@ export default function DesktopFlightCard({ item, onClick }: Props) {
 
   const dep = (meta.departure || {}) as Record<string, string>
   const arr = (meta.arrival || {}) as Record<string, string>
-  const airline = (meta.airline as string) || item.detail || ''
+  const airline = resolveAirlineLabel(meta, item.detail || '')
   const duration = (meta.duration as string) || ''
   const stops = (meta.stops as string) || 'Direct'
   const layover = meta.layover as string | undefined

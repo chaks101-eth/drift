@@ -83,7 +83,16 @@ export default function BoardView({ trip, items }: BoardViewProps) {
   const [insightOpen, setInsightOpen] = useState(false)
   const [showMaps, setShowMaps] = useState(false)
   const [groupOpen, setGroupOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [lastSeenGroup, setLastSeenGroup] = useState<number>(0)
+
+  // Close overflow menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    const onClick = () => setMenuOpen(false)
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [menuOpen])
 
   // Read last-seen timestamp for this trip on mount; write when user opens the sheet
   useEffect(() => {
@@ -207,9 +216,9 @@ export default function BoardView({ trip, items }: BoardViewProps) {
       <div className="flex h-full flex-col items-center justify-center gap-4 px-6">
         <div className="text-center">
           <div className="font-serif text-xl text-drift-text mb-2">Trip is empty</div>
-          <p className="text-xs text-drift-text3">This trip has no activities yet. Try generating a new one or chat with Drift to add items.</p>
+          <p className="text-sm text-drift-text2">This trip has no activities yet. Try generating a new one or chat with Drift to add items.</p>
         </div>
-        <button onClick={() => openChat('Help me build an itinerary for this trip')} className="rounded-xl bg-drift-gold px-6 py-3 text-xs font-semibold text-drift-bg">
+        <button onClick={() => openChat('Help me build an itinerary for this trip')} className="rounded-xl bg-drift-gold px-6 py-3 text-sm font-semibold text-drift-bg">
           Chat with Drift
         </button>
       </div>
@@ -271,7 +280,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
               {trip.destination}
               {trip.country && <span className="text-drift-text3 font-light italic">, {trip.country}</span>}
             </h1>
-            <p className="mt-1 font-mono text-[10px] tracking-[0.5px] text-drift-text3">
+            <p className="mt-1 font-mono text-[11px] tracking-[0.5px] text-drift-text2">
               {fmtDate(trip.start_date)} → {fmtDate(trip.end_date)}{yr ? `, ${yr}` : ''} · {nights}N · {trip.travelers} {trip.travelers === 1 ? 'traveler' : 'travelers'}
             </p>
           </div>
@@ -303,19 +312,6 @@ export default function BoardView({ trip, items }: BoardViewProps) {
             </button>
 
             <button
-              onClick={() => setShowMaps(!showMaps)}
-              aria-label={showMaps ? 'Hide maps' : 'Show maps'}
-              className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all active:scale-95 ${
-                showMaps
-                  ? 'border-drift-gold/30 bg-drift-gold/10 text-drift-gold'
-                  : 'border-drift-border2 bg-drift-surface text-drift-text2'
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z" /><path d="M8 2v16" /><path d="M16 6v16" />
-              </svg>
-            </button>
-            <button
               onClick={handleShare}
               disabled={sharing}
               aria-label="Share trip"
@@ -325,17 +321,47 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                 <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
               </svg>
             </button>
-            <button
-              onClick={() => {
-                if (token) window.open(`/api/trips/${trip.id}/calendar?token=${token}`, '_blank')
-              }}
-              aria-label="Export to Calendar"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-drift-border2 bg-drift-surface text-drift-text2 active:scale-95 transition-transform"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </button>
+            {/* Overflow menu — Maps toggle + Calendar export */}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }}
+                aria-label="More actions"
+                aria-expanded={menuOpen}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-drift-border2 bg-drift-surface text-drift-text2 active:scale-95 transition-transform"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-11 z-50 min-w-[180px] overflow-hidden rounded-xl border border-drift-border2 bg-drift-card shadow-[0_12px_40px_rgba(0,0,0,0.6)]"
+                >
+                  <button
+                    onClick={() => { setShowMaps(!showMaps); setMenuOpen(false) }}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] text-drift-text active:bg-white/[0.04]"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={showMaps ? 'text-drift-gold' : 'text-drift-text2'}>
+                      <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z" /><path d="M8 2v16" /><path d="M16 6v16" />
+                    </svg>
+                    {showMaps ? 'Hide maps' : 'Show maps'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (token) window.open(`/api/trips/${trip.id}/calendar?token=${token}`, '_blank')
+                      setMenuOpen(false)
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] text-drift-text active:bg-white/[0.04] border-t border-drift-border2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-drift-text2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Export to Calendar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -345,13 +371,13 @@ export default function BoardView({ trip, items }: BoardViewProps) {
             {!insightOpen ? (
               <button
                 onClick={() => setInsightOpen(true)}
-                className="group flex w-full items-center gap-2 rounded-full border border-drift-gold/20 bg-drift-gold/[0.04] px-3.5 py-2 text-left text-[11px] text-drift-gold active:bg-drift-gold/10 transition-colors"
+                className="group flex w-full items-center gap-2 rounded-full border border-drift-gold/20 bg-drift-gold/[0.04] px-3.5 py-2.5 text-left text-[12px] text-drift-gold active:bg-drift-gold/10 transition-colors"
               >
-                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-drift-gold/70">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-drift-gold/80">
                   <polygon points="3 11 22 2 13 21 11 13 3 11" />
                 </svg>
                 <span>Why Drift composed this trip</span>
-                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" className="ml-auto opacity-50">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" className="ml-auto opacity-60">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>
@@ -362,8 +388,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                     <polygon points="3 11 22 2 13 21 11 13 3 11" />
                   </svg>
                   <div className="flex-1">
-                    <div className="text-[9px] font-semibold uppercase tracking-[1.5px] text-drift-text3 mb-1.5">Why this trip</div>
-                    <div className="text-[12px] text-drift-text2 leading-relaxed">{briefText}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[1.5px] text-drift-text2 mb-1.5">Why this trip</div>
+                    <div className="text-[13px] text-drift-text leading-relaxed">{briefText}</div>
                   </div>
                   <button onClick={() => setInsightOpen(false)} className="shrink-0 text-drift-text3 -mt-1 p-1 text-lg leading-none">&times;</button>
                 </div>
@@ -377,7 +403,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
       {showDiscoveryHint && (
         <button
           onClick={() => { setShowDiscoveryHint(false); try { sessionStorage.setItem('drift-hint-seen', '1') } catch {} }}
-          className="mx-5 mt-3 flex w-[calc(100%-2.5rem)] items-center gap-2 rounded-lg px-3 py-1.5 text-[10px] text-drift-text3 active:bg-white/[0.03] transition-colors animate-[fadeUp_0.4s_var(--ease-smooth)]"
+          className="mx-5 mt-3 flex w-[calc(100%-2.5rem)] items-center gap-2 rounded-lg px-3 py-2 text-[11px] text-drift-text2 active:bg-white/[0.03] transition-colors animate-[fadeUp_0.4s_var(--ease-smooth)]"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 opacity-60">
             <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" />
@@ -391,12 +417,12 @@ export default function BoardView({ trip, items }: BoardViewProps) {
       {isAnonymous && !authPromptDismissed && (
         <div className="mx-5 mt-3 flex items-center gap-2.5 rounded-xl border border-drift-gold/15 bg-drift-gold/[0.04] px-3 py-2.5">
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-medium text-drift-text">Save this trip</div>
-            <div className="text-[9px] text-drift-text3">Sign in to keep it forever</div>
+            <div className="text-[13px] font-medium text-drift-text">Save this trip</div>
+            <div className="text-[11px] text-drift-text2">Sign in to keep it forever</div>
           </div>
           <a
             href="/m/login"
-            className="shrink-0 flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-semibold text-[#1a1a1a]"
+            className="shrink-0 flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-[12px] font-semibold text-[#1a1a1a]"
           >
             <svg width="11" height="11" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
             Google
@@ -414,7 +440,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <p className="flex-1 text-[10px] text-drift-text2">
+          <p className="flex-1 text-[12px] text-drift-text2">
             <span className="font-semibold text-drift-warn">~{overBudgetPct}% over budget.</span>{' '}
             <button onClick={() => openChat('Help me reduce the budget for this trip')} className="font-semibold text-drift-gold">Adjust →</button>
           </p>
@@ -422,15 +448,15 @@ export default function BoardView({ trip, items }: BoardViewProps) {
       )}
 
       {/* Day pills — sticky on scroll */}
-      <div className="sticky top-0 z-30 mt-5 flex gap-2 overflow-x-auto bg-drift-bg/95 backdrop-blur-sm px-5 py-2 scrollbar-hide">
+      <div className="sticky top-0 z-30 mt-5 flex gap-2 overflow-x-auto bg-drift-bg px-5 py-2 scrollbar-hide">
         {days.map((day, i) => (
           <button
             key={i}
             onClick={() => scrollToDay(i)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${
               activeDay === i
                 ? 'bg-drift-gold text-drift-bg'
-                : 'border border-drift-border2 bg-transparent text-drift-text3'
+                : 'border border-drift-border2 bg-transparent text-drift-text2'
             }`}
           >
             Day {i + 1}
@@ -448,9 +474,9 @@ export default function BoardView({ trip, items }: BoardViewProps) {
             {/* Day header — single line, editorial */}
             <div className="mb-4 flex items-center gap-2.5">
               <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-drift-gold/80" />
-              <span className="shrink-0 font-mono text-[9px] font-semibold uppercase tracking-[1.5px] text-drift-text3">Day {di + 1}</span>
+              <span className="shrink-0 font-mono text-[10px] font-semibold uppercase tracking-[1.5px] text-drift-text2">Day {di + 1}</span>
               {day.label && !day.label.toLowerCase().startsWith('day ') && (
-                <span className="shrink-0 text-[12px] font-medium text-drift-text truncate max-w-[140px]">{day.label}</span>
+                <span className="shrink-0 text-[13px] font-medium text-drift-text truncate max-w-[160px]">{day.label}</span>
               )}
               <div className="flex-1 h-px bg-white/[0.05]" />
               {day.weather && (
@@ -464,7 +490,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                       <><path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M17.66 6.34l1.41-1.41M2 12h4" stroke="#9ca3af" /><path d="M17.5 21H9a5 5 0 01-.5-9.97A7 7 0 0117 10a4.5 4.5 0 01.5 11z" stroke="#9ca3af" /></>
                     )}
                   </svg>
-                  <span className={`font-mono text-[10px] ${day.weather.isRainy ? 'text-blue-400/80' : day.weather.isSunny ? 'text-amber-400/80' : 'text-drift-text3'}`}>
+                  <span className={`font-mono text-[11px] ${day.weather.isRainy ? 'text-blue-400/90' : day.weather.isSunny ? 'text-amber-400/90' : 'text-drift-text2'}`}>
                     {day.weather.tempMax}°
                   </span>
                 </div>
@@ -546,8 +572,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
                             : <><path d="M5 17h14l1-5H4l1 5z" /><circle cx="7.5" cy="17" r="2" /><circle cx="16.5" cy="17" r="2" /><path d="M5 12l1-4h12l1 4" /></>
                           }
                         </svg>
-                        <span className="text-[11px] font-medium text-drift-text2">{travel.duration}</span>
-                        <span className="text-[10px] text-drift-text3">{travel.distance}</span>
+                        <span className="text-[12px] font-medium text-drift-text">{travel.duration}</span>
+                        <span className="text-[11px] text-drift-text2">{travel.distance}</span>
                       </div>
                     )}
                   </div>
@@ -558,8 +584,8 @@ export default function BoardView({ trip, items }: BoardViewProps) {
               {/* AI insight */}
               {day.insight && (
                 <div className="flex gap-2.5 rounded-[14px] border border-drift-gold/8 bg-gradient-to-br from-drift-gold/4 to-drift-gold/1 p-3">
-                  <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-drift-gold-dim text-[8px] font-extrabold text-drift-bg">D</div>
-                  <p className="flex-1 text-[10.5px] leading-relaxed text-drift-text2">
+                  <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-drift-gold-dim text-[10px] font-extrabold text-drift-bg">D</div>
+                  <p className="flex-1 text-[12px] leading-relaxed text-drift-text2">
                     <strong className="text-drift-text">Drift:</strong> {day.insight}{' '}
                     <button onClick={() => openChat(`Tell me more about day ${di + 1}`)} className="font-semibold text-drift-gold">
                       Ask Drift →
@@ -575,7 +601,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
 
       {/* Trip Summary */}
       <div className="mx-5 mt-4 rounded-2xl border border-drift-border bg-drift-card p-5">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-wider text-drift-text3">Trip Estimate</div>
+        <div className="mb-4 text-[11px] font-bold uppercase tracking-wider text-drift-text2">Trip Estimate</div>
         {[
           { label: 'Flights', val: costs.flights, color: 'text-drift-gold' },
           { label: 'Hotels', val: costs.hotels, color: 'text-drift-ok' },
@@ -599,7 +625,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
           Start Booking
           <span className="absolute left-[-100%] top-0 h-full w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shine_5s_ease-in-out_2s_infinite]" />
         </button>
-        <p className="mt-2 text-center text-[8px] text-drift-text3">We redirect you to each provider. No markup.</p>
+        <p className="mt-2 text-center text-[10px] text-drift-text2">We redirect you to each provider. No markup.</p>
       </div>
 
       {/* Plan another trip */}
@@ -609,7 +635,7 @@ export default function BoardView({ trip, items }: BoardViewProps) {
             useTripStore.getState().resetOnboarding()
             window.location.href = '/m/plan/vibes'
           }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-drift-border2 py-3 text-[11px] font-semibold text-drift-text3 transition-all active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-drift-border2 py-3 text-[13px] font-semibold text-drift-text2 transition-all active:scale-[0.98]"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -679,7 +705,7 @@ function StayCard({ stay, onClick }: StayCardProps) {
         {/* Content */}
         <div className="flex flex-1 flex-col p-3 min-w-0">
           {/* Check-in label */}
-          <div className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[1.5px] text-drift-ok/80">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[1.5px] text-drift-ok">
             <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M3 21h18M3 7v14M21 7v14M6 11h4M14 11h4M6 15h4M14 15h4M10 21V7l2-4 2 4v14" />
             </svg>
@@ -690,15 +716,15 @@ function StayCard({ stay, onClick }: StayCardProps) {
           <div className="mt-1 text-[13px] font-semibold leading-snug text-drift-text truncate">{item.name}</div>
 
           {/* Detail */}
-          {item.detail && <div className="mt-0.5 text-[10px] text-drift-text3 line-clamp-1">{item.detail}</div>}
+          {item.detail && <div className="mt-0.5 text-[11px] text-drift-text2 line-clamp-1">{item.detail}</div>}
 
           {/* Rating */}
           {rating && rating > 0 && (
-            <div className="mt-1 flex items-center gap-1 text-[9px] text-drift-text3">
-              <span className="text-amber-400/80">★</span>
-              <span className="font-medium text-drift-text2">{rating.toFixed(1)}</span>
+            <div className="mt-1 flex items-center gap-1 text-[11px] text-drift-text2">
+              <span className="text-amber-400">★</span>
+              <span className="font-medium text-drift-text">{rating.toFixed(1)}</span>
               {reviewCount && reviewCount > 0 && (
-                <span className="text-drift-text3/60">({reviewCount >= 1000 ? `${(reviewCount / 1000).toFixed(1)}K` : reviewCount})</span>
+                <span className="text-drift-text3">({reviewCount >= 1000 ? `${(reviewCount / 1000).toFixed(1)}K` : reviewCount})</span>
               )}
             </div>
           )}
@@ -706,13 +732,13 @@ function StayCard({ stay, onClick }: StayCardProps) {
           {/* Price footer */}
           <div className="mt-auto pt-1.5 flex items-end justify-between gap-2 border-t border-white/[0.05]">
             <div>
-              <div className="text-[9px] text-drift-text3 tabular-nums">{stay.nights} {stay.nights === 1 ? 'night' : 'nights'}</div>
-              {perNight > 0 && <div className="text-[9px] text-drift-text3/70 tabular-nums">{formatBudget(perNight)}/night</div>}
+              <div className="text-[11px] text-drift-text2 tabular-nums">{stay.nights} {stay.nights === 1 ? 'night' : 'nights'}</div>
+              {perNight > 0 && <div className="text-[11px] text-drift-text3 tabular-nums">{formatBudget(perNight)}/night</div>}
             </div>
             {total > 0 && (
               <div className="text-right">
-                <div className="text-[12px] font-semibold text-drift-text tabular-nums">{formatBudget(total)}</div>
-                <div className="text-[7px] uppercase tracking-wider text-drift-text3">total</div>
+                <div className="text-[13px] font-semibold text-drift-text tabular-nums">{formatBudget(total)}</div>
+                <div className="text-[9px] uppercase tracking-wider text-drift-text2">total</div>
               </div>
             )}
           </div>

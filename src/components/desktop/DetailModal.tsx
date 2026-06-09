@@ -152,9 +152,25 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
             <div className="flex-1 overflow-y-auto p-9 lg:p-10 pb-6 scrollbar-hide">
               <div className="pr-2">
 
-            {/* Category — neutral, small caps */}
-            <div className="text-[9px] font-semibold uppercase tracking-[2.5px] text-drift-text3 mb-3">
-              {categoryLabel}
+            {/* Category + Verified status — neutral, small caps */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-[2.5px] text-drift-text2">
+                {categoryLabel}
+              </span>
+              {meta.source && (
+                <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
+                    ? 'bg-drift-ok/10 text-drift-ok'
+                    : 'bg-drift-surface2 text-drift-text2'
+                }`}>
+                  {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? (
+                    <>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                      Verified
+                    </>
+                  ) : 'AI Suggested'}
+                </span>
+              )}
             </div>
 
             {/* Title */}
@@ -162,7 +178,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
 
             {/* Detail / address */}
             {(item.detail || address) && (
-              <div className="flex items-start gap-1.5 text-[12px] text-drift-text3 mb-7 leading-relaxed">
+              <div className="flex items-start gap-1.5 text-[13px] text-drift-text2 mb-7 leading-relaxed">
                 <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" className="mt-1 shrink-0 opacity-50">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
                 </svg>
@@ -176,7 +192,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
                 {stats.map((s, i) => (
                   <div key={i} className={`${i > 0 ? 'pl-6 border-l border-white/[0.05]' : ''}`}>
                     <div className="text-[16px] font-medium text-drift-text tabular-nums">{s.value}</div>
-                    <div className="mt-1 text-[9px] uppercase tracking-[1.5px] text-drift-text3">{s.label}</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[1.5px] text-drift-text2">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -190,7 +206,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
             {/* Highlights — minimal, separated by middots */}
             {features.length > 0 && (
               <div className="mb-8">
-                <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-2.5">Highlights</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[2px] text-drift-text2 mb-2.5">Highlights</div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] text-drift-text2">
                   {features.map((f, i) => (
                     <span key={i} className="flex items-center gap-3">
@@ -205,7 +221,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
             {/* Mini-map */}
             {(meta.lat && meta.lng) ? (
               <div className="mb-8">
-                <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-2.5">Location</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[2px] text-drift-text2 mb-2.5">Location</div>
                 <div className="overflow-hidden rounded-xl border border-white/[0.05]">
                   <TripMap items={[item]} height="180px" />
                 </div>
@@ -220,7 +236,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#c8a44e" strokeWidth="1.5" className="opacity-70 shrink-0">
                     <polygon points="3 11 22 2 13 21 11 13 3 11" />
                   </svg>
-                  <div className="text-[9px] font-semibold uppercase tracking-[2.5px] text-drift-gold/80">Why Drift picked this</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[2.5px] text-drift-gold">Why Drift picked this</div>
                 </div>
 
                 {/* The reason — leads the section */}
@@ -231,7 +247,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
                 {/* Structured factor list */}
                 {whyFactors.length > 0 && (
                   <div className="border-t border-white/[0.04] pt-4">
-                    <div className="text-[8px] font-semibold uppercase tracking-[2px] text-drift-text3 mb-2.5">Key reasons</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[2px] text-drift-text2 mb-2.5">Key reasons</div>
                     <ul className="space-y-1.5">
                       {whyFactors.map((f, i) => (
                         <li key={i} className="flex items-start gap-2.5 text-[12px] text-drift-text2 leading-snug">
@@ -251,8 +267,8 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
             {alts.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-baseline justify-between mb-3">
-                  <div className="text-[9px] font-semibold uppercase tracking-[2px] text-drift-text3">Alternatives</div>
-                  <div className="text-[10px] text-drift-text3">{alts.length} options</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[2px] text-drift-text2">Alternatives</div>
+                  <div className="text-[11px] text-drift-text2">{alts.length} options</div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {alts.map((alt, i) => {
@@ -265,7 +281,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
                             <Image src={alt.image_url} alt={alt.name} fill className="object-cover" unoptimized />
                             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.85)] to-transparent" />
                             {savings > 0 && (
-                              <span className="absolute top-2 right-2 rounded bg-black/60 backdrop-blur-md border border-white/10 px-1.5 py-0.5 text-[9px] font-medium text-drift-ok">
+                              <span className="absolute top-2 right-2 rounded bg-black/65 backdrop-blur-md border border-white/15 px-2 py-0.5 text-[10px] font-medium text-drift-ok">
                                 Save {formatBudget(savings)}
                               </span>
                             )}
@@ -273,13 +289,13 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
                         )}
                         <div className="p-3">
                           <div className="text-[12px] font-semibold text-drift-text line-clamp-1">{alt.name}</div>
-                          {alt.detail && <div className="mt-0.5 text-[10px] text-drift-text3 line-clamp-1">{alt.detail}</div>}
+                          {alt.detail && <div className="mt-0.5 text-[11px] text-drift-text2 line-clamp-1">{alt.detail}</div>}
                           <div className="mt-2.5 flex items-center justify-between">
                             <span className="text-[12px] font-semibold text-drift-text2 tabular-nums">{altPrice === 0 ? 'Free' : formatBudget(altPrice)}</span>
                             <button
                               onClick={() => handleSwap(alt)}
                               disabled={swapping !== null}
-                              className="rounded-md border border-white/[0.08] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-drift-text2 transition-all hover:border-drift-gold/40 hover:text-drift-gold hover:bg-drift-gold/[0.04] disabled:opacity-50"
+                              className="rounded-md border border-white/[0.12] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-drift-text2 transition-all hover:border-drift-gold/40 hover:text-drift-gold hover:bg-drift-gold/[0.04] disabled:opacity-50"
                             >
                               {swapping === alt.name ? '...' : 'Swap'}
                             </button>

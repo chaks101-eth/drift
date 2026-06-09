@@ -189,7 +189,7 @@ export default function DetailSheet() {
           {allPhotos.length > 1 && (
             <div className="absolute bottom-2 left-1/2 z-[3] flex -translate-x-1/2 gap-1.5">
               {allPhotos.map((_, i) => (
-                <span key={i} className={`rounded-full transition-all ${i === activePhoto ? 'h-[5px] w-3.5 bg-white' : 'h-[5px] w-[5px] bg-white/35'}`} />
+                <span key={i} className={`rounded-full transition-all ${i === activePhoto ? 'h-1.5 w-5 bg-white' : 'h-1.5 w-1.5 bg-white/45'}`} />
               ))}
             </div>
           )}
@@ -200,40 +200,40 @@ export default function DetailSheet() {
           <h2 className="mt-4 font-serif text-xl font-semibold text-drift-text">{item.name}</h2>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {meta.source && (
-              <span className={`inline-block rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+              <span className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                 ['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string)
-                  ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text3'
+                  ? 'bg-drift-ok/10 text-drift-ok' : 'bg-drift-surface2 text-drift-text2'
               }`}>
                 {['catalog', 'ai+grounded', 'url_import_enriched'].includes(meta.source as string) ? 'Verified Place' : 'AI Suggested'}
               </span>
             )}
             {stateLabel && (
-              <span className={`inline-block rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+              <span className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                 bookableState === 'A'
                   ? 'bg-drift-gold/15 text-drift-gold'
                   : bookableState === 'B'
                   ? 'bg-drift-warn/10 text-drift-warn'
-                  : 'bg-drift-surface2 text-drift-text3'
+                  : 'bg-drift-surface2 text-drift-text2'
               }`}>
                 {stateLabel}
               </span>
             )}
           </div>
-          <p className="mt-1.5 text-xs leading-relaxed text-drift-text2">{item.description || item.detail || ''}</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-drift-text2">{item.description || item.detail || ''}</p>
 
           {/* Address + Maps link */}
           {(meta.address || mapsUrl) && (
             <div className="mt-3 space-y-1.5">
               {meta.address && (
-                <div className="flex items-start gap-2 text-[11px] text-drift-text3">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" strokeWidth="1.5" className="mt-0.5 shrink-0">
+                <div className="flex items-start gap-2 text-[12px] text-drift-text2">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mt-0.5 shrink-0">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
                   </svg>
                   {meta.address as string}
                 </div>
               )}
               {mapsUrl && (
-                <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] font-medium text-drift-gold">
+                <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[12px] font-medium text-drift-gold">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
                   </svg>
@@ -248,8 +248,8 @@ export default function DetailSheet() {
             <div className="mt-4 flex gap-3">
               {stats.map((s, i) => (
                 <div key={i} className="flex-1 rounded-xl border border-drift-border2 bg-drift-surface p-3 text-center">
-                  <div className="text-sm font-bold text-drift-text">{s.v}</div>
-                  <div className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-drift-text3">{s.l}</div>
+                  <div className="text-base font-bold text-drift-text">{s.v}</div>
+                  <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-drift-text2">{s.l}</div>
                 </div>
               ))}
             </div>
@@ -259,7 +259,7 @@ export default function DetailSheet() {
           {features.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
               {features.map((f, i) => (
-                <span key={i} className="rounded-full border border-drift-border2 bg-drift-surface px-3 py-1 text-[10px] font-medium text-drift-text2">
+                <span key={i} className="rounded-full border border-drift-border2 bg-drift-surface px-3 py-1 text-[11px] font-medium text-drift-text2">
                   {f as string}
                 </span>
               ))}
@@ -269,16 +269,16 @@ export default function DetailSheet() {
           {/* AI Reason */}
           <div className="mt-4 rounded-xl border border-drift-gold/8 bg-gradient-to-br from-drift-gold/4 to-drift-gold/1 p-3">
             <div className="flex gap-2.5">
-              <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-drift-gold-dim text-[8px] font-extrabold text-drift-bg">
+              <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-drift-gold to-drift-gold-dim text-[10px] font-extrabold text-drift-bg">
                 D
               </div>
-              <p className="flex-1 text-[10.5px] leading-relaxed text-drift-text2">{reason}</p>
+              <p className="flex-1 text-[12px] leading-relaxed text-drift-text">{reason}</p>
             </div>
           </div>
 
           {/* Booking action — state-aware (Phase 1 of booking bridge) */}
           {bookableCta.variant === 'none' || !outboundUrl ? (
-            <div className="mt-4 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-center text-[11px] text-drift-text3">
+            <div className="mt-4 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-center text-[12px] text-drift-text2">
               Part of your trip context — no booking needed here
             </div>
           ) : (
@@ -288,7 +288,7 @@ export default function DetailSheet() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|${item.category}|${bookableState}|${bookableCta.trackLabel}`)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-[11px] font-bold ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-bold ${
                   bookableCta.variant === 'primary'
                     ? 'bg-drift-gold text-drift-bg'
                     : bookableCta.variant === 'secondary'
@@ -310,7 +310,7 @@ export default function DetailSheet() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => trackEvent('funnel_booking_click', 'conversion', `${item.name}|${item.category}|${bookableState}|view_map_secondary`)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-[11px] font-bold text-drift-text"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-drift-border2 bg-drift-surface px-4 py-3 text-[13px] font-bold text-drift-text"
                 >
                   Maps
                 </a>
@@ -321,14 +321,14 @@ export default function DetailSheet() {
           {/* Alternatives */}
           {alts.length > 0 && (
             <div className="mt-5">
-              <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.12em] text-drift-text3">Alternatives</div>
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-drift-text2">Alternatives</div>
               <div className="-mx-1 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {alts.map((alt, i) => (
                   <div key={i} className="w-[160px] shrink-0 rounded-xl border border-drift-border2 bg-drift-surface p-3">
-                    <div className="text-xs font-semibold text-drift-text line-clamp-1">{alt.name}</div>
-                    <div className="mt-0.5 text-[10px] text-drift-text3 line-clamp-1">{alt.detail}</div>
+                    <div className="text-[13px] font-semibold text-drift-text line-clamp-1">{alt.name}</div>
+                    <div className="mt-0.5 text-[11px] text-drift-text2 line-clamp-1">{alt.detail}</div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs font-bold text-drift-text">{(() => { const n = parsePrice(alt.price); return n === 0 ? 'Free' : formatBudget(n) })()}</span>
+                      <span className="text-[13px] font-bold text-drift-text">{(() => { const n = parsePrice(alt.price); return n === 0 ? 'Free' : formatBudget(n) })()}</span>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation()
@@ -350,7 +350,7 @@ export default function DetailSheet() {
                             useUIStore.getState().toast('Swap failed — check your connection', true)
                           }
                         }}
-                        className="rounded-lg bg-drift-gold px-2.5 py-1 text-[9px] font-bold text-drift-bg disabled:opacity-50"
+                        className="rounded-lg bg-drift-gold px-3 py-1.5 text-[11px] font-bold text-drift-bg disabled:opacity-50"
                       >Swap</button>
                     </div>
                   </div>
@@ -360,32 +360,33 @@ export default function DetailSheet() {
           )}
 
 
-          {/* Bottom actions */}
-          <div className="mt-4 flex gap-2">
+          {/* Bottom actions — Ask AI is primary, Delete is icon-only, Alternatives is link */}
+          <div className="mt-4 flex items-center gap-2">
             <button
               onClick={() => { closeDetail(); useUIStore.getState().openCardMenu(item.id) }}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-drift-border2 bg-drift-surface text-drift-text3"
+              aria-label="More options"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-drift-border2 bg-drift-surface text-drift-text2 active:scale-95 transition-transform"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
               </svg>
             </button>
             <button
               onClick={() => { closeDetail(); openChat(`Tell me more about ${item.name}`) }}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-drift-border2 bg-drift-surface py-3 text-xs font-semibold text-drift-text"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-drift-gold py-3 text-[13px] font-bold text-drift-bg active:scale-[0.98] transition-transform"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
               </svg>
-              Ask AI
-            </button>
-            <button
-              onClick={() => { closeDetail(); openChat(`Find me alternatives for ${item.name}`) }}
-              className="flex flex-1 items-center justify-center rounded-xl border border-drift-border2 bg-drift-surface py-3 text-xs font-semibold text-drift-text"
-            >
-              Find Alternatives
+              Ask Drift
             </button>
           </div>
+          <button
+            onClick={() => { closeDetail(); openChat(`Find me alternatives for ${item.name}`) }}
+            className="mt-2.5 w-full text-center text-[12px] font-medium text-drift-text2 hover:text-drift-gold active:text-drift-gold transition-colors"
+          >
+            Find alternatives →
+          </button>
         </div>
       </div>
     </div>

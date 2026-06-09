@@ -91,10 +91,11 @@ export default function NavBar({ showBack = false }: { showBack?: boolean }) {
           <>
             {/* New Trip CTA — single primary action */}
             <button
+              type="button"
               onClick={() => router.push('/vibes')}
-              className="mr-2 flex items-center gap-1.5 px-4 py-[7px] rounded-full text-[10px] font-bold uppercase tracking-[1.5px] bg-drift-gold text-drift-bg hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,164,78,0.3)] transition-all"
+              className="mr-2 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[1.5px] bg-drift-gold text-drift-bg hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,164,78,0.3)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-drift-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-drift-bg"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               New Trip
             </button>
 
@@ -124,14 +125,16 @@ function ProfileDropdown({ user, initial, displayName, authed, menuOpen, setMenu
   return (
     <div className="relative" ref={menuRef}>
       <button
+        type="button"
         onClick={() => setMenuOpen(!menuOpen)}
         aria-label="Profile menu"
-        className={`flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-semibold transition-all ${
+        aria-expanded={menuOpen}
+        className={`flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-drift-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-drift-bg ${
           menuOpen
             ? 'bg-drift-gold text-drift-bg'
             : authed
-            ? 'bg-white/[0.06] text-drift-text2 hover:bg-white/[0.1]'
-            : 'border border-white/[0.08] text-drift-text3 hover:border-white/15 hover:text-drift-text2'
+            ? 'bg-white/[0.08] text-drift-text hover:bg-white/[0.12]'
+            : 'border border-white/[0.12] text-drift-text2 hover:border-white/20 hover:text-drift-text'
         }`}
       >
         {user?.avatar ? (
@@ -148,13 +151,13 @@ function ProfileDropdown({ user, initial, displayName, authed, menuOpen, setMenu
           <div className="px-4 pt-4 pb-3 border-b border-white/[0.04]">
             {authed ? (
               <>
-                <div className="text-[13px] font-semibold text-drift-text truncate">{displayName}</div>
-                {user?.email && <div className="mt-0.5 text-[11px] text-drift-text3 truncate">{user.email}</div>}
+                <div className="text-[14px] font-semibold text-drift-text truncate">{displayName}</div>
+                {user?.email && <div className="mt-0.5 text-[12px] text-drift-text2 truncate">{user.email}</div>}
               </>
             ) : (
               <>
-                <div className="text-[12px] text-drift-text2">Guest session</div>
-                <div className="mt-0.5 text-[10px] text-drift-text3">Sign in to save your trips</div>
+                <div className="text-[13px] text-drift-text">Guest session</div>
+                <div className="mt-0.5 text-[12px] text-drift-text2">Sign in to save your trips</div>
               </>
             )}
           </div>
@@ -193,16 +196,17 @@ function ProfileDropdown({ user, initial, displayName, authed, menuOpen, setMenu
 function MenuItem({ icon, label, onClick, muted, accent }: { icon: React.ReactNode; label: string; onClick: () => void; muted?: boolean; accent?: boolean }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-[12px] transition-colors ${
+      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors focus:outline-none focus-visible:bg-white/[0.06] ${
         accent
-          ? 'text-drift-gold hover:bg-drift-gold/[0.06]'
+          ? 'text-drift-gold hover:bg-drift-gold/[0.08]'
           : muted
-          ? 'text-drift-text3 hover:bg-white/[0.04] hover:text-drift-text2'
-          : 'text-drift-text2 hover:bg-white/[0.04] hover:text-drift-text'
+          ? 'text-drift-text2 hover:bg-white/[0.04] hover:text-drift-text'
+          : 'text-drift-text hover:bg-white/[0.04]'
       }`}
     >
-      <span className="opacity-60">{icon}</span>
+      <span className="opacity-75">{icon}</span>
       {label}
     </button>
   )

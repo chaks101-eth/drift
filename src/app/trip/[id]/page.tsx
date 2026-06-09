@@ -60,8 +60,8 @@ export default function DesktopTripPage() {
           if (data.trip) useTripStore.getState().setCurrentTrip(data.trip)
           if (data.items) useTripStore.getState().setCurrentItems(data.items)
         }
-      } catch (e) {
-        console.error('[Desktop Board] Failed to load trip:', e)
+      } catch {
+        // Trip load failed — the not-found state below will render
       }
       if (!cancelled) setLoading(false)
     }
