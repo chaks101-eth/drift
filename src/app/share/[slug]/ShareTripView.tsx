@@ -3,6 +3,7 @@ import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
 import { supabase, ensureAnonSession } from '@/lib/supabase'
 import { getDestinationImage } from '@/lib/images'
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
@@ -76,11 +77,8 @@ const categoryColors: Record<string, string> = {
   flight: '#c8a44e', hotel: '#4ecdc4', activity: '#e8cc6e', food: '#f0a500', transfer: '#7a7a85',
 }
 
-const FALLBACK_IMAGES: Record<string, string> = {
-  hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
-  food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-  activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400',
-}
+// Real-images-only: no stock fallbacks. Items without a real photo render
+// an editorial PlaceholderImage instead.
 
 type ShareTripViewProps = {
   trip: Trip
@@ -448,7 +446,8 @@ export default function ShareTripView({
                 const rating = meta?.rating as number | undefined
                 const reviewCount = meta?.reviewCount as number | undefined
                 const catColor = categoryColors[item.category] || '#7a7a85'
-                const imgSrc = failedImages.has(item.id) ? FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.activity : item.image_url
+                // Real-images-only: empty string when image failed/missing → render placeholder
+                const imgSrc = failedImages.has(item.id) ? '' : (item.image_url || '')
                 const reacted = !!reactions[item.id]?.reacted
                 const reactCount = reactions[item.id]?.count || 0
 
@@ -458,27 +457,29 @@ export default function ShareTripView({
                     className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0c0c12] hover:border-white/[0.15] hover:-translate-y-0.5 hover:shadow-[0_16px_48px_rgba(0,0,0,0.5)] transition-all
                       max-md:flex max-md:flex-row max-md:hover:-translate-y-0"
                   >
-                    {/* Image: top on desktop (140px), left on mobile (104px wide) */}
-                    {imgSrc && (
-                      <div className="relative h-[140px] w-full overflow-hidden max-md:h-[104px] max-md:w-[104px] max-md:shrink-0">
+                    {/* Image: real photo or editorial placeholder */}
+                    <div className="relative h-[140px] w-full overflow-hidden max-md:h-[104px] max-md:w-[104px] max-md:shrink-0">
+                      {imgSrc ? (
                         <Image
                           src={imgSrc}
                           alt={item.name}
                           fill
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                           sizes="240px"
-                          unoptimized={!imgSrc.includes('unsplash.com')}
+                          unoptimized={!imgSrc.includes('googleusercontent.com')}
                           onError={() => onImageError(item.id)}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.7)] via-transparent to-transparent max-md:bg-gradient-to-r max-md:from-transparent max-md:to-[rgba(8,8,12,0.4)]" />
-                        {rating && rating > 0 && (
-                          <div className="absolute top-2 left-2 flex items-center gap-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 px-1.5 py-0.5">
-                            <span className="text-[9px] text-amber-400">★</span>
-                            <span className="text-[9px] tabular-nums text-white/90">{rating.toFixed(1)}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <PlaceholderImage category={item.category} name={item.name} iconScale={0.75} />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.7)] via-transparent to-transparent max-md:bg-gradient-to-r max-md:from-transparent max-md:to-[rgba(8,8,12,0.4)]" />
+                      {rating && rating > 0 && (
+                        <div className="absolute top-2 left-2 flex items-center gap-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 px-1.5 py-0.5">
+                          <span className="text-[9px] text-amber-400">★</span>
+                          <span className="text-[9px] tabular-nums text-white/90">{rating.toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Content */}
                     <div className="p-3.5 flex flex-col gap-1.5 max-md:flex-1 max-md:min-w-0">

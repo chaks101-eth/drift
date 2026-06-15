@@ -49,7 +49,10 @@ export async function getPlaceData(
 
     const c = findData.candidates[0]
 
-    // Build photo URL — resolve redirect to direct CDN URL
+    // Build photo URL — resolve redirect to a stable googleusercontent.com CDN URL.
+    // We never store the raw maps.googleapis.com URL because it embeds our API key
+    // and Google rejects it from client referrers (browser would 403 and fall back
+    // to the placeholder anyway, making every photo identical).
     let photoUrl: string | null = null
     if (c.photos?.length) {
       const photoRef = c.photos[0].photo_reference
@@ -57,11 +60,13 @@ export async function getPlaceData(
       try {
         const photoRes = await fetch(apiPhotoUrl, { redirect: 'manual' })
         const location = photoRes.headers.get('location')
-        photoUrl = (location && location.includes('googleusercontent.com'))
-          ? location
-          : apiPhotoUrl
+        if (location && location.includes('googleusercontent.com')) {
+          photoUrl = location
+        }
+        // If the redirect didn't resolve, leave photoUrl as null — the client will
+        // render a real-image placeholder, not a stale/broken Google API URL.
       } catch {
-        photoUrl = apiPhotoUrl
+        photoUrl = null
       }
     }
 
@@ -215,11 +220,12 @@ export async function getDestinationPhoto(
     try {
       const photoRes = await fetch(apiPhotoUrl, { redirect: 'manual' })
       const location = photoRes.headers.get('location')
+      // Only return a stable CDN URL — never the raw API URL which embeds our key.
       return (location && location.includes('googleusercontent.com'))
         ? location
-        : apiPhotoUrl
+        : null
     } catch {
-      return apiPhotoUrl
+      return null
     }
   } catch {
     return null

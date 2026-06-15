@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { parsePrice } from '@/lib/parse-price'
 import { trackEvent } from '@/lib/analytics'
 import { getBookableState, getBookableCTA, getOutboundUrl, getBookableStateLabel } from '@/lib/bookable-state'
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 import type { ItemMetadata } from '@/stores/trip-store'
 // Comments removed — replaced with trip-level group notes
 
@@ -50,16 +51,15 @@ export default function DetailSheet() {
 
   if (!item) return null
 
-  const fallbackImg: Record<string, string> = {
-    hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=400&fit=crop&q=80',
-    food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=400&fit=crop&q=80',
-    activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=800&h=400&fit=crop&q=80',
-  }
+  // Real-images-only: build the gallery from actual photos. Show placeholder
+  // when no real image_url + no enriched meta.photos exist.
   const photos = (meta.photos || []).filter((p): p is string => typeof p === 'string' && p.length > 0)
-  const mainImg = item.image_url || fallbackImg[item.category] || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'
-  const allPhotos = photos.length > 1
-    ? [mainImg, ...photos.filter((p) => p !== mainImg)].slice(0, 6)
-    : [mainImg]
+  const mainImg = item.image_url || ''
+  const allPhotos: string[] = mainImg
+    ? (photos.length > 1
+        ? [mainImg, ...photos.filter((p) => p !== mainImg)].slice(0, 6)
+        : [mainImg])
+    : (photos.length > 0 ? photos.slice(0, 6) : [])
 
   const reason = meta.reason || generateFallbackReason(item, currentTrip?.vibes || [])
   const features = meta.features || []
@@ -169,23 +169,29 @@ export default function DetailSheet() {
           </svg>
         </button>
 
-        {/* Gallery */}
+        {/* Gallery — real photos only; placeholder if none */}
         <div className="relative overflow-hidden">
-          <div ref={scrollRef} onScroll={handleScroll} className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide">
-            {allPhotos.map((url, i) => (
-              <div key={i} className="relative h-[210px] w-full shrink-0 snap-start bg-drift-surface">
-                <Image
-                  src={url}
-                  alt={`${item.name} photo ${i + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="100vw"
-                  unoptimized
-                  onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg[item.category] || fallbackImg.activity }}
-                />
-              </div>
-            ))}
-          </div>
+          {allPhotos.length > 0 ? (
+            <div ref={scrollRef} onScroll={handleScroll} className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide">
+              {allPhotos.map((url, i) => (
+                <div key={i} className="relative h-[210px] w-full shrink-0 snap-start bg-drift-surface">
+                  <Image
+                    src={url}
+                    alt={`${item.name} photo ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="100vw"
+                    unoptimized
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative h-[210px] w-full">
+              <PlaceholderImage category={item.category} name={item.name} iconScale={1.4} />
+            </div>
+          )}
           {allPhotos.length > 1 && (
             <div className="absolute bottom-2 left-1/2 z-[3] flex -translate-x-1/2 gap-1.5">
               {allPhotos.map((_, i) => (

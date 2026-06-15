@@ -14,6 +14,7 @@ import { trackEvent } from '@/lib/analytics'
 import { useReactions } from '@/hooks/useCollaboration'
 import { usePolls, useGroupTrip } from '@/hooks/useGroupTrip'
 import { useCollaborators } from '@/hooks/useCollaboration'
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 
 // Interactive map — same Leaflet-based component used on desktop
 const TripMap = dynamic(() => import('@/components/desktop/TripMap'), { ssr: false })
@@ -667,7 +668,7 @@ function StayCard({ stay, onClick }: StayCardProps) {
   const meta = (item.metadata || {}) as ItemMetadata
   const rating = meta.rating as number | undefined
   const reviewCount = meta.reviewCount as number | undefined
-  const img = item.image_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&h=400&fit=crop&q=80'
+  const img = item.image_url || ''
 
   // Per-night vs total pricing
   const priceRaw = item.price || ''
@@ -689,16 +690,20 @@ function StayCard({ stay, onClick }: StayCardProps) {
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-drift-ok/50 via-drift-ok/20 to-transparent" />
 
       <div className="flex">
-        {/* Image */}
+        {/* Image — real photo or editorial placeholder */}
         <div className="relative h-[112px] w-[104px] shrink-0 overflow-hidden">
-          <Image
-            src={img}
-            alt={item.name}
-            fill
-            className="object-cover"
-            sizes="104px"
-            unoptimized={!img.includes('unsplash.com') && !img.includes('googleusercontent.com')}
-          />
+          {img ? (
+            <Image
+              src={img}
+              alt={item.name}
+              fill
+              className="object-cover"
+              sizes="104px"
+              unoptimized={!img.includes('googleusercontent.com')}
+            />
+          ) : (
+            <PlaceholderImage category="hotel" name={item.name} iconScale={0.55} />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[rgba(8,8,12,0.45)]" />
         </div>
 

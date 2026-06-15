@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateItinerary } from '@/lib/ai-agent'
 import { parsePrice } from '@/lib/parse-price'
 import { createServerClient } from '@/lib/supabase'
-import { getDestinationImage, getItemImage, resetImageCounter, upsizeGoogleImage } from '@/lib/images'
+import { getDestinationImage, upsizeGoogleImage } from '@/lib/images'
 import { searchFlights, searchFlightsGrounded, flightToItineraryItem, resolveIATA, searchGroundedTransport, transportToItineraryItem } from '@/lib/amadeus'
 import { findCatalogDestination, getCatalogData, buildRichCatalogContext, enrichItemsWithCatalog } from '@/lib/catalog'
 import { groundedDestinationSearch, formatGroundedContext, groundedDestinationSuggestions, fixItemLinks } from '@/lib/grounded-search'
@@ -555,7 +555,6 @@ export async function POST(req: NextRequest) {
       }
 
       // ─── Apply images and insert ──────────────────────────────
-      resetImageCounter()
       const itemsToInsert = items.map((item, idx) => {
         const cat = mapCategory(item.category)
 
@@ -565,14 +564,16 @@ export async function POST(req: NextRequest) {
             item.name.toLowerCase().includes(k) || k.includes(item.name.toLowerCase())
           )?.[1]
 
-        // Image priority: enriched SerpAPI photos > catalog image > curated Unsplash
+        // Image priority: enriched SerpAPI photos > real catalog/Google Places image > empty.
+        // We do NOT fall back to stock Unsplash photos — items without a real photo render
+        // an editorial placeholder client-side (gradient + category icon + place initial).
         const enrichedPhoto = enriched?.photos?.[0] || enriched?.photoUrls?.[0]
         const hasRealImage = item.image_url && !item.image_url.startsWith('https://images.unsplash')
         const imageUrl = enrichedPhoto
           ? upsizeGoogleImage(enrichedPhoto)
           : hasRealImage
             ? upsizeGoogleImage(item.image_url)
-            : getItemImage(cat, item.name, body.destination)
+            : ''
 
         // Merge enrichment metadata (ratings, booking, photos, maps)
         const meta = { ...(item.metadata || {}) }

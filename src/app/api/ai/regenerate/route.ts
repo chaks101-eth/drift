@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { findCatalogDestination, getCatalogData, templateToItineraryItems } from '@/lib/catalog'
-import { getItemImage, resetImageCounter } from '@/lib/images'
+// Real images only — no stock fallbacks. Items without a real photo render
+// an editorial placeholder client-side.
 import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/ai/regenerate — regenerate itinerary items with new params
@@ -160,16 +161,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 8. Apply images and insert new items
-    resetImageCounter()
     const validCategories = ['flight', 'hotel', 'activity', 'food', 'transfer', 'day'] as const
     const mapCat = (c: string) => validCategories.includes(c as typeof validCategories[number]) ? c : 'activity'
 
     const insertItems = newItems.map((item, idx) => {
       const cat = mapCat(item.category)
       const hasRealImage = item.image_url && !item.image_url.startsWith('https://images.unsplash')
-      const imageUrl = hasRealImage
-        ? item.image_url
-        : getItemImage(cat, item.name, trip.destination)
+      const imageUrl = hasRealImage ? item.image_url : ''
 
       return {
         trip_id: tripId,

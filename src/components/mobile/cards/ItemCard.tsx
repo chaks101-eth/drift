@@ -6,14 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { parsePrice } from '@/lib/parse-price'
 import { useTripStore, type ItineraryItem, type ItemMetadata } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
-
-// Category-specific fallback images (curated Unsplash, never expire)
-const FALLBACK_IMAGES: Record<string, string> = {
-  hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=400&fit=crop&q=80',
-  food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop&q=80',
-  activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400&h=400&fit=crop&q=80',
-  default: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=400&fit=crop&q=80',
-}
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 
 interface ItemCardProps {
   item: ItineraryItem
@@ -45,10 +38,11 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
 
   const [showWhy, setShowWhy] = useState(false)
   const [showAlts, setShowAlts] = useState(false)
-  const [imgSrc, setImgSrc] = useState(item.image_url || FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
+  const [imgSrc, setImgSrc] = useState<string | null>(item.image_url || null)
   const onImgError = useCallback(() => {
-    setImgSrc(FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
-  }, [item.category])
+    // Real-images-only — no stock fallback. Show editorial placeholder instead.
+    setImgSrc(null)
+  }, [])
 
   const reason = (meta.reason as string) || (meta.honest_take as string) || ''
   const alts = (meta.alts as Array<{ name: string; detail: string; price: string; image_url?: string; trust?: Array<{ type: string; text: string }> }>) || []
@@ -94,21 +88,20 @@ export default function ItemCard({ item, tripVibes, onTap, onMenu, reaction, onR
         </button>
 
         <div className="flex gap-0">
-          {/* Image */}
-          <div className="relative h-[92px] w-[92px] shrink-0 bg-drift-surface">
-            <Image
-              src={imgSrc}
-              alt={item.name}
-              fill
-              className="object-cover"
-              sizes="92px"
-              unoptimized={!imgSrc.includes('unsplash.com') && !imgSrc.includes('googleusercontent.com') && !imgSrc.includes('googleapis.com')}
-              onError={onImgError}
-            />
-            {imgSrc.includes('unsplash.com') && (
-              <span className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 py-px text-[9px] text-white/70">
-                Illustration
-              </span>
+          {/* Image — real photo or editorial placeholder (no stock) */}
+          <div className="relative h-[92px] w-[92px] shrink-0 bg-drift-surface overflow-hidden">
+            {imgSrc ? (
+              <Image
+                src={imgSrc}
+                alt={item.name}
+                fill
+                className="object-cover"
+                sizes="92px"
+                unoptimized={!imgSrc.includes('googleusercontent.com')}
+                onError={onImgError}
+              />
+            ) : (
+              <PlaceholderImage category={item.category} name={item.name} iconScale={0.6} />
             )}
           </div>
 

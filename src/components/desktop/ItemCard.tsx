@@ -6,13 +6,7 @@ import { parsePrice } from '@/lib/parse-price'
 import { supabase } from '@/lib/supabase'
 import { useTripStore, type ItineraryItem, type ItemMetadata } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
-
-const FALLBACK_IMAGES: Record<string, string> = {
-  hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop&q=80',
-  food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop&q=80',
-  activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400&h=300&fit=crop&q=80',
-  default: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=300&fit=crop&q=80',
-}
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 
 const catIcons: Record<string, { icon: React.ReactNode; cls: string; label: string }> = {
   hotel: {
@@ -59,13 +53,14 @@ export default function DesktopItemCard({ item, onClick, draggable, onDragStart,
   const toast = useUIStore((s) => s.toast)
   const cat = catIcons[item.category] || catIcons.activity
 
-  const [imgSrc, setImgSrc] = useState(item.image_url || FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
+  const [imgSrc, setImgSrc] = useState<string | null>(item.image_url || null)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const onImgError = useCallback(() => {
-    setImgSrc(FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
-  }, [item.category])
+    // Real-images-only — show editorial placeholder, not a stock photo
+    setImgSrc(null)
+  }, [])
 
   // Close menu on outside click
   useEffect(() => {
@@ -135,17 +130,21 @@ export default function DesktopItemCard({ item, onClick, draggable, onDragStart,
         border-white/[0.06] bg-[#0c0c12]
         hover:border-white/15 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.6)]`}
     >
-      {/* Image */}
+      {/* Image — real photo or editorial placeholder (no stock) */}
       <div className="relative h-[140px] w-full overflow-hidden">
-        <Image
-          src={imgSrc}
-          alt={item.name}
-          fill
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          sizes="230px"
-          unoptimized={!imgSrc.includes('unsplash.com') && !imgSrc.includes('googleusercontent.com')}
-          onError={onImgError}
-        />
+        {imgSrc ? (
+          <Image
+            src={imgSrc}
+            alt={item.name}
+            fill
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            sizes="230px"
+            unoptimized={!imgSrc.includes('googleusercontent.com')}
+            onError={onImgError}
+          />
+        ) : (
+          <PlaceholderImage category={item.category} name={item.name} iconScale={0.85} />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,8,12,0.85)] via-[rgba(8,8,12,0.1)] to-transparent" />
 
         {/* 3-dot menu */}

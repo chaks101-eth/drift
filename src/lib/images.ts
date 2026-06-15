@@ -151,30 +151,44 @@ const FLIGHT_IMAGES = [
 ]
 
 const HOTEL_IMAGES = [
-  u('photo-1520250497591-112f2f40a3f4'),
-  u('photo-1566073771259-6a8506099945'),
-  u('photo-1582719508461-905c673771fd'),
-  u('photo-1571896349842-33c89424de2d'),
-  u('photo-1551882547-ff40c63fe5fa'),
+  u('photo-1520250497591-112f2f40a3f4'), // resort balcony
+  u('photo-1566073771259-6a8506099945'), // luxury bed
+  u('photo-1582719508461-905c673771fd'), // hotel pool
+  u('photo-1571896349842-33c89424de2d'), // chic suite
+  u('photo-1551882547-ff40c63fe5fa'),    // boutique room
+  u('photo-1578683010236-d716f9a3f461'), // luxury bathroom
+  u('photo-1611892440504-42a792e24d32'), // hotel exterior
+  u('photo-1540541338287-41700207dee6'), // beach resort
+  u('photo-1551776235-dde6d4829808'),     // mountain lodge
+  u('photo-1564501049412-61c2a3083791'), // modern hotel
 ]
 
 const ACTIVITY_IMAGES = [
-  u('photo-1506929562872-bb421503ef21'),
-  u('photo-1533105079780-92b9be482077'),
-  u('photo-1501785888041-af3ef285b470'),
-  u('photo-1476514525535-07fb3b4ae5f1'),
-  u('photo-1504280390367-361c6d9f38f4'),
-  u('photo-1528543606781-2f6e6857f318'),
-  u('photo-1518709268805-4e9042af9f23'),
+  u('photo-1506929562872-bb421503ef21'), // beach sunset
+  u('photo-1533105079780-92b9be482077'), // hiking trail
+  u('photo-1501785888041-af3ef285b470'), // mountain view
+  u('photo-1476514525535-07fb3b4ae5f1'), // adventure
+  u('photo-1504280390367-361c6d9f38f4'), // boat ride
+  u('photo-1528543606781-2f6e6857f318'), // city walk
+  u('photo-1518709268805-4e9042af9f23'), // ancient temple
+  u('photo-1530789253388-582c481c54b0'), // landscape
+  u('photo-1469854523086-cc02fe5d8800'), // waterfalls
+  u('photo-1488646953014-85cb44e25828'), // nature
+  u('photo-1504609813442-a8924e83f76e'), // surfing
+  u('photo-1539635278303-d4002c07eae3'), // scenic boat
 ]
 
 const FOOD_IMAGES = [
-  u('photo-1414235077428-338989a2e8c0'),
-  u('photo-1504674900247-0877df9cc836'),
-  u('photo-1540189549336-e6e99c3679fe'),
-  u('photo-1565299624946-b28f40a0ae38'),
-  u('photo-1555939594-58d7cb561ad1'),
-  u('photo-1476224203421-9ac39bcb3327'),
+  u('photo-1414235077428-338989a2e8c0'), // restaurant interior
+  u('photo-1504674900247-0877df9cc836'), // plated dish
+  u('photo-1540189549336-e6e99c3679fe'), // street food
+  u('photo-1565299624946-b28f40a0ae38'), // burger
+  u('photo-1555939594-58d7cb561ad1'),    // pasta
+  u('photo-1476224203421-9ac39bcb3327'), // fine dining
+  u('photo-1551782450-a2132b4ba21d'),    // sushi
+  u('photo-1559339352-11d035aa65de'),    // asian cuisine
+  u('photo-1517248135467-4c7edcad34c4'), // indonesian
+  u('photo-1546069901-ba9599a7e63c'),    // healthy plate
 ]
 
 // ─── Destination-Specific Pools ──────────────────────────────
@@ -210,6 +224,41 @@ const DEST_POOLS: Record<string, { hotel: string[]; food: string[]; activity: st
     hotel: [u('photo-1570213489059-0aac6626cade'), u('photo-1602002418082-a4443e081dd1'), u('photo-1570077188670-e3a8d69ac5ff'), u('photo-1571003123894-1f0594d2b5d9')],
     food: [u('photo-1504674900247-0877df9cc836'), u('photo-1555396273-367ea4eb4db5'), u('photo-1414235077428-338989a2e8c0'), u('photo-1540189549336-e6e99c3679fe')],
     activity: [u('photo-1613395877344-13d4a8e0d49e'), u('photo-1570077188670-e3a8d69ac5ff'), u('photo-1601581875309-fafbf2d3ed3a'), u('photo-1533105079780-92b9be482077')],
+  },
+  'goa': {
+    hotel: [u('photo-1582719508461-905c673771fd'), u('photo-1540541338287-41700207dee6'), u('photo-1520250497591-112f2f40a3f4'), u('photo-1611892440504-42a792e24d32')],
+    food: [u('photo-1567620905732-2d1ec7ab7445'), u('photo-1504674900247-0877df9cc836'), u('photo-1559339352-11d035aa65de'), u('photo-1546069901-ba9599a7e63c')],
+    activity: [u('photo-1512343879784-a960bf40e7f2'), u('photo-1582510003544-4d00b7f74220'), u('photo-1504280390367-361c6d9f38f4'), u('photo-1506929562872-bb421503ef21')],
+  },
+  'maldives': {
+    hotel: [u('photo-1514282401047-d79a71a590e8'), u('photo-1573843981267-be1999ff37cd'), u('photo-1602002418082-a4443e081dd1'), u('photo-1540541338287-41700207dee6')],
+    food: [u('photo-1532635241-17e820acc59f'), u('photo-1546069901-ba9599a7e63c'), u('photo-1504674900247-0877df9cc836'), u('photo-1555939594-58d7cb561ad1')],
+    activity: [u('photo-1514282401047-d79a71a590e8'), u('photo-1572294258006-1a0dc6e2ca80'), u('photo-1539635278303-d4002c07eae3'), u('photo-1506929562872-bb421503ef21')],
+  },
+  'singapore': {
+    hotel: [u('photo-1525625293386-3f8f99389edd'), u('photo-1551882547-ff40c63fe5fa'), u('photo-1564501049412-61c2a3083791'), u('photo-1571896349842-33c89424de2d')],
+    food: [u('photo-1525755662778-989d0524087e'), u('photo-1559339352-11d035aa65de'), u('photo-1565299624946-b28f40a0ae38'), u('photo-1504674900247-0877df9cc836')],
+    activity: [u('photo-1525625293386-3f8f99389edd'), u('photo-1546484959-f9a381d1330d'), u('photo-1539635278303-d4002c07eae3'), u('photo-1528127269322-539801943592')],
+  },
+  'jaipur': {
+    hotel: [u('photo-1551776235-dde6d4829808'), u('photo-1566073771259-6a8506099945'), u('photo-1611892440504-42a792e24d32'), u('photo-1520250497591-112f2f40a3f4')],
+    food: [u('photo-1567620905732-2d1ec7ab7445'), u('photo-1565299624946-b28f40a0ae38'), u('photo-1504674900247-0877df9cc836'), u('photo-1414235077428-338989a2e8c0')],
+    activity: [u('photo-1477587458883-47145ed94245'), u('photo-1564507592333-c60657eea523'), u('photo-1599661046827-dacde6976549'), u('photo-1518709268805-4e9042af9f23')],
+  },
+  'manali': {
+    hotel: [u('photo-1551776235-dde6d4829808'), u('photo-1564501049412-61c2a3083791'), u('photo-1520250497591-112f2f40a3f4'), u('photo-1611892440504-42a792e24d32')],
+    food: [u('photo-1414235077428-338989a2e8c0'), u('photo-1504674900247-0877df9cc836'), u('photo-1567620905732-2d1ec7ab7445'), u('photo-1546069901-ba9599a7e63c')],
+    activity: [u('photo-1626621341517-bbf3d9990a23'), u('photo-1501785888041-af3ef285b470'), u('photo-1533105079780-92b9be482077'), u('photo-1469854523086-cc02fe5d8800')],
+  },
+  'pattaya': {
+    hotel: [u('photo-1582719508461-905c673771fd'), u('photo-1540541338287-41700207dee6'), u('photo-1571896349842-33c89424de2d'), u('photo-1520250497591-112f2f40a3f4')],
+    food: [u('photo-1559339352-11d035aa65de'), u('photo-1504674900247-0877df9cc836'), u('photo-1565299624946-b28f40a0ae38'), u('photo-1555939594-58d7cb561ad1')],
+    activity: [u('photo-1652346637723-83799b99ea87'), u('photo-1506929562872-bb421503ef21'), u('photo-1539635278303-d4002c07eae3'), u('photo-1504280390367-361c6d9f38f4')],
+  },
+  'phuket': {
+    hotel: [u('photo-1582719508461-905c673771fd'), u('photo-1540541338287-41700207dee6'), u('photo-1551776235-dde6d4829808'), u('photo-1611892440504-42a792e24d32')],
+    food: [u('photo-1559339352-11d035aa65de'), u('photo-1504674900247-0877df9cc836'), u('photo-1565299624946-b28f40a0ae38'), u('photo-1546069901-ba9599a7e63c')],
+    activity: [u('photo-1589394815804-964ed0be2eb5'), u('photo-1506929562872-bb421503ef21'), u('photo-1552465011-b4e21bf6e79a'), u('photo-1504280390367-361c6d9f38f4')],
   },
 }
 

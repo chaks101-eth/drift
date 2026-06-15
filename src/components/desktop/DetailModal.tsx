@@ -7,16 +7,11 @@ import { parsePrice } from '@/lib/parse-price'
 import { supabase } from '@/lib/supabase'
 import { useTripStore, type ItineraryItem, type ItemMetadata } from '@/stores/trip-store'
 import { useUIStore } from '@/stores/ui-store'
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 // Comments removed — replaced with trip-level group notes
 
 const TripMap = dynamic(() => import('./TripMap'), { ssr: false })
 
-const FALLBACK_IMAGES: Record<string, string> = {
-  hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1000&h=800&fit=crop&q=80',
-  food: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1000&h=800&fit=crop&q=80',
-  activity: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=1000&h=800&fit=crop&q=80',
-  default: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1000&h=800&fit=crop&q=80',
-}
 
 const CATEGORY_LABELS: Record<string, string> = {
   flight: 'Flight',
@@ -52,7 +47,7 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
   const photos = (meta.photos as string[]) || []
   const address = meta.address as string | undefined
 
-  const [imgSrc, setImgSrc] = useState(item.image_url || FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)
+  const [imgSrc, setImgSrc] = useState<string | null>(item.image_url || null)
   const [swapping, setSwapping] = useState<string | null>(null)
 
   // Keyboard navigation
@@ -108,29 +103,33 @@ export default function DetailModal({ item, tripId, onClose, onChat }: Props) {
       <div className="fixed inset-0 z-[250] flex items-center justify-center p-8 pointer-events-none">
         <div className="relative grid max-h-[86vh] w-full max-w-[980px] overflow-hidden rounded-3xl border border-white/[0.06] bg-[#0c0c12] shadow-[0_60px_140px_rgba(0,0,0,0.85)] pointer-events-auto animate-[fadeUp_0.4s_cubic-bezier(0.2,0.8,0.2,1)] lg:grid-cols-[440px_1fr]">
 
-          {/* ─── Left: Image ────────────────────────────────── */}
-          <div className="relative min-h-[280px] lg:min-h-[520px] bg-[#08080c]">
-            <Image
-              src={imgSrc}
-              alt={item.name}
-              fill
-              className="object-cover"
-              sizes="440px"
-              unoptimized
-              onError={() => setImgSrc(FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.default)}
-            />
-
-            {/* Photo nav dots — bottom center */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-5 left-0 right-0 flex gap-1.5 justify-center">
-                {photos.slice(0, 6).map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setImgSrc(p)}
-                    className={`h-1 rounded-full transition-all duration-300 ${imgSrc === p ? 'w-8 bg-white' : 'w-3 bg-white/35 hover:bg-white/55'}`}
-                  />
-                ))}
-              </div>
+          {/* ─── Left: Image — real photo or editorial placeholder ─── */}
+          <div className="relative min-h-[280px] lg:min-h-[520px] bg-[#08080c] overflow-hidden">
+            {imgSrc ? (
+              <>
+                <Image
+                  src={imgSrc}
+                  alt={item.name}
+                  fill
+                  className="object-cover"
+                  sizes="440px"
+                  unoptimized
+                  onError={() => setImgSrc(null)}
+                />
+                {photos.length > 1 && (
+                  <div className="absolute bottom-5 left-0 right-0 flex gap-1.5 justify-center">
+                    {photos.slice(0, 6).map((p, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setImgSrc(p)}
+                        className={`h-1 rounded-full transition-all duration-300 ${imgSrc === p ? 'w-8 bg-white' : 'w-3 bg-white/35 hover:bg-white/55'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <PlaceholderImage category={item.category} name={item.name} iconScale={1.5} />
             )}
           </div>
 

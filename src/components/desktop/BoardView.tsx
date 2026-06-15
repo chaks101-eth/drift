@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import DesktopItemCard from './ItemCard'
 import DesktopFlightCard from './FlightCard'
 import DayWeather from './DayWeather'
+import PlaceholderImage from '@/components/shared/PlaceholderImage'
 import { useReactions, useCollaborators } from '@/hooks/useCollaboration'
 import { usePolls, useGroupTrip } from '@/hooks/useGroupTrip'
 
@@ -632,7 +633,7 @@ function StayCard({ stay, onClick }: StayCardProps) {
   const meta = (item.metadata || {}) as ItemMetadata
   const rating = meta.rating as number | undefined
   const reviewCount = meta.reviewCount as number | undefined
-  const img = item.image_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&h=400&fit=crop&q=80'
+  const img = item.image_url || ''
 
   // Per-night vs total pricing
   const priceRaw = item.price || ''
@@ -654,16 +655,20 @@ function StayCard({ stay, onClick }: StayCardProps) {
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-drift-ok/40 via-drift-ok/20 to-transparent" />
 
       <div className="flex">
-        {/* Image */}
+        {/* Image — real photo or editorial placeholder */}
         <div className="relative h-[140px] w-[130px] shrink-0 overflow-hidden">
-          <Image
-            src={img}
-            alt={item.name}
-            fill
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            sizes="130px"
-            unoptimized={!img.includes('unsplash.com') && !img.includes('googleusercontent.com')}
-          />
+          {img ? (
+            <Image
+              src={img}
+              alt={item.name}
+              fill
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              sizes="130px"
+              unoptimized={!img.includes('googleusercontent.com')}
+            />
+          ) : (
+            <PlaceholderImage category="hotel" name={item.name} iconScale={0.7} />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[rgba(8,8,12,0.45)]" />
         </div>
 
