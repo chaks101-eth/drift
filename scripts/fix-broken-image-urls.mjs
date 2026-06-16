@@ -1,29 +1,32 @@
 #!/usr/bin/env node
-// ─── Backfill broken image_urls in itinerary_items ─────────────────────────
+// ─── Backfill bad image_urls in itinerary_items ────────────────────────────
 //
-// Background:
-//   Older trips were saved with image_url set to the raw Google Places photo
-//   API endpoint URL — `https://maps.googleapis.com/maps/api/place/photo?...&key=...`.
-//   Those URLs embed our API key, and Google rejects them from client referrers,
-//   so every broken image hit the same per-category Unsplash fallback. Result:
-//   every hotel in every trip showed the same stock photo.
+// Targets THREE patterns that all need a fresh Google Places lookup:
 //
-//   This script:
-//     1. Finds every itinerary_item whose image_url matches the broken pattern
-//     2. Re-fetches a stable googleusercontent.com photo URL for each (best path)
-//     3. If re-fetch fails, sets image_url to '' so the client renders the new
-//        editorial PlaceholderImage component instead of a broken loader
+//   1. maps.googleapis.com/maps/api/place/photo (legacy redirect URLs that
+//      embed our API key — Google rejects them from client referrers and the
+//      browser onError handler used to fall back to identical stock photos)
+//   2. places.googleapis.com/v1/places/.../photos/.../media (new Places API v1
+//      URLs whose photo references go stale — Google returns INVALID_ARGUMENT
+//      when hit again, so they 404 in the browser)
+//   3. images.unsplash.com (stock fallbacks injected by the now-removed
+//      getItemImage() server-side fallback — not broken, but not real photos
+//      of the place — and the user wants real photos only)
+//
+// For each: re-do a Find Place lookup by `name, destination` → resolve photo
+// redirect → store the stable googleusercontent.com URL. If recovery fails,
+// store '' so the editorial PlaceholderImage renders instead of a stock photo
+// or broken loader.
 //
 // Usage:
 //   node scripts/fix-broken-image-urls.mjs            (dry run — shows counts)
 //   node scripts/fix-broken-image-urls.mjs --write    (actually applies changes)
 //   node scripts/fix-broken-image-urls.mjs --write --limit 50  (test on a subset)
 //
-// Cost:
-//   Google Places Find Place: $17 / 1000 requests
-//   Google Places Photo:      $7 / 1000 (returns a redirect, then googleusercontent CDN is free)
-//   ~200 trips × ~10 items each = ~2,000 items × $0.024 each = ~$48 worst case.
-//   Most likely well under that since many items are flights/transfers/days that don't need photos.
+// Cost (Google Places):
+//   Find Place: $17 / 1000 requests
+//   Photo:      $7 / 1000 (returns a redirect; CDN delivery is free)
+//   ~2,200 items at ~$0.024 each = ~$53 worst case.
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
@@ -49,12 +52,16 @@ if (!PLACES_KEY) {
 const stamp = () => new Date().toISOString().slice(11, 19);
 const log = (msg) => console.log(`[${stamp()}] ${msg}`);
 
-// ─── Find broken items (paginated — Supabase caps at 1000 per query) ───
+// ─── Find items that need fixing (paginated — Supabase caps at 1000 per query) ───
 log(`Mode: ${WRITE ? 'WRITE (will modify DB)' : 'DRY RUN (no writes)'}`);
-log('Querying broken itinerary_items…');
+log('Querying itinerary_items with bad image_url…');
 
-// Match anything that looks like a raw Google Places photo API URL (has the
-// `maps.googleapis.com/maps/api/place/photo` path AND embeds our key).
+// Three patterns covered:
+//   1. maps.googleapis.com (legacy, embeds API key)
+//   2. places.googleapis.com/v1 (new API format, photo refs go stale)
+//   3. images.unsplash.com (stock placeholder, not a real photo of the place)
+// Supabase `or()` filter handles the union in one paginated query.
+const BAD_FILTER = 'image_url.like.*maps.googleapis.com/maps/api/place/photo*,image_url.like.*places.googleapis.com/v1*,image_url.like.*images.unsplash.com*';
 const PAGE_SIZE = 1000;
 const brokenItems = [];
 let offset = 0;
@@ -62,7 +69,8 @@ while (true) {
   const { data, error } = await sb
     .from('itinerary_items')
     .select('id, name, category, image_url, trip_id')
-    .like('image_url', '%maps.googleapis.com/maps/api/place/photo%')
+    .in('category', ['hotel', 'activity', 'food'])
+    .or(BAD_FILTER)
     .order('created_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
 
@@ -75,26 +83,34 @@ while (true) {
   if (data.length < PAGE_SIZE) break;
   offset += PAGE_SIZE;
 }
-const queryErr = null;
-
-if (queryErr) {
-  console.error('Query failed:', queryErr.message);
-  process.exit(1);
-}
 
 if (!brokenItems?.length) {
   log('No broken image_urls found. Nothing to do.');
   process.exit(0);
 }
 
-log(`Found ${brokenItems.length} items with broken image_url.`);
+log(`Found ${brokenItems.length} items needing fix.`);
 
-// Group by category for the report
+// Group by category + URL kind for the report
 const byCategory = brokenItems.reduce((acc, it) => {
   acc[it.category] = (acc[it.category] || 0) + 1;
   return acc;
 }, {});
 log('By category: ' + Object.entries(byCategory).map(([k, v]) => `${k}=${v}`).join(', '));
+
+const urlKind = (url) => {
+  if (!url) return 'empty';
+  if (url.includes('maps.googleapis.com')) return 'legacy maps';
+  if (url.includes('places.googleapis.com/v1')) return 'places v1';
+  if (url.includes('images.unsplash.com')) return 'unsplash stock';
+  return 'other';
+};
+const byKind = brokenItems.reduce((acc, it) => {
+  const k = urlKind(it.image_url);
+  acc[k] = (acc[k] || 0) + 1;
+  return acc;
+}, {});
+log('By URL kind:  ' + Object.entries(byKind).map(([k, v]) => `${k}=${v}`).join(', '));
 
 // ─── Pull trip destinations (needed for Google Places lookup) ───────────
 const tripIds = [...new Set(brokenItems.map(i => i.trip_id))];
