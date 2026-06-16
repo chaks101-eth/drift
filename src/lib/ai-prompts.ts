@@ -128,8 +128,26 @@ Generate a complete day-by-day travel itinerary as a JSON array. Output ONLY val
 <constraints>
 HARD RULES (never violate):
 1. Every activity/food/hotel item MUST have metadata.reason (opinionated 1-line tagline) and metadata.whyFactors (2-4 bullet reasons connecting to vibes/budget/location).
-2. NEVER use filler: "relax at hotel", "free time", "explore on your own", "leisure time", "at your own pace". Every slot must be a specific, named, real place. For downtime, suggest a specific cafe, park, viewpoint, or beach — not hotel time.
-3. Use REAL place names that exist on Google Maps. Do not invent fictional venues.
+
+2. THE GOOGLE MAPS TEST (single most important rule):
+   Before you write any item's "name" field, ask: "If a traveler typed this exact string into Google Maps, would it land on a specific business / landmark / point-of-interest listing — with a photo?" If no, rewrite the name. The "name" field is for the venue itself, NOT a description of what you'll do there.
+
+   BANNED NAME PATTERNS (every one of these has appeared in past trips and broke photo lookup):
+   a) Verb-suffix descriptors: "Galle Fort Exploration", "Banaue Rice Terraces Trek", "Boracay White Beach Stroll", "Mayon Volcano Viewing", "Cebu City Exploration", "Pamukkale Walk", "Old Town Tour".
+      → Use the bare place name: "Galle Fort", "Banaue Rice Terraces", "Mayon Volcano".
+   b) Generic categories with city: "Hotel in Cebu City", "Resort in Panglao, Bohol", "Beachfront Resort in El Nido", "Mid-range Hotel in Manila".
+      → Pick a SPECIFIC named hotel from your knowledge: "Movenpick Hotel Mactan", "Henann Resort Alona Beach". If you truly don't know one, name a known landmark hotel chain branch.
+   c) Meal-as-name descriptions: "Sunset Dinner on White Beach", "Lunch with a View", "Dinner by the Sea", "Riverside Dinner in Bohol", "Cebu Lechon Dinner", "Bicolano Delights for Dinner", "Farewell Dinner in Boracay".
+      → Pick a named restaurant: "Lantaw Native Restaurant", "Rico's Lechon", "Lobby Lounge at The Peninsula".
+   d) Event / state names: "TIM BOUTIQUE Check-in", "Aeyo Eco Lodge Check-out", "Morning Relaxation", "Free Time", "Leisure & Beach Relaxation", "Relaxation / Free Time".
+      → Hotel check-in/out is already shown separately — don't generate it. For downtime, name a specific beach, cafe, viewpoint, or park.
+   e) Parenthetical annotations: "Island Lunch (Included in Tour)", "Palawan Island Hopping (El Nido Tour A)", "Galle Fort Exploration (Walking Tour)".
+      → Drop the parenthetical and use the venue / activity provider's actual name.
+   f) Generic place-types: "Local Roadside Eatery", "Riverside Cafe & Grill", "Beachfront Hotel", "Mountain Hearth".
+      → Name a real one. If you genuinely don't know a specific one, omit the item.
+
+3. Use REAL place names that exist on Google Maps. Do not invent fictional venues. If your knowledge of the destination is too thin to name 5+ specific venues, reduce the item count rather than invent generic ones. A 4-day trip with 12 real venues beats a 5-day trip with 6 real venues + 9 generic ones.
+
 4. All prices in USD. Hotel prices MUST include "/night" suffix (e.g., "$100/night").
 5. When catalog/grounded data is provided, PREFER those exact names for photo/GPS matching.
 
@@ -206,11 +224,22 @@ GOOD day for "Bali, beach + foodie" vibes:
   {"category":"food","name":"Single Fin","detail":"Clifftop bar with sunset views & seafood","description":"Right below Uluwatu, this open-air bar serves fresh grilled seafood while you watch surfers tackle the reef break. The fish tacos are legendary. Get there by 5pm or lose your cliff-edge table.","price":"$25","time":"17:30","position":2,"metadata":{"reason":"Best sunset-dinner combo on the Bukit — locals and surfers agree","whyFactors":["Unbeatable cliff-edge sunset view","Fresh daily seafood","Matches foodie + beach vibes"],"info":[{"l":"Cuisine","v":"Seafood & Cocktails"}],"features":["Ocean View","Live DJ on weekends"],"alts":[{"name":"El Kabron","detail":"More upscale Mediterranean option on the same cliff","price":"$45"}]}}
 ]
 
-BAD (would be rejected):
-- {"name": "Relax at Hotel"} — NEVER. Use a specific beach, cafe, or park instead.
-- {"name": "Explore the area"} — NEVER. Name the exact street, market, or neighborhood.
-- {"reason": "Great place to visit"} — TOO GENERIC. Say WHY: "The only temple in Bali where the sunset aligns with the shrine — spiritual + beach vibes in one shot"
-- {"whyFactors": ["Nice place", "Good reviews"]} — TOO VAGUE. Connect to vibes, location, or specific qualities.
+BAD (would be rejected — these are real failures from production):
+NAME-PATTERN VIOLATIONS:
+- {"name": "Relax at Hotel"} → Use a specific beach, cafe, or park instead.
+- {"name": "Explore the area"} → Name the exact street, market, or neighborhood.
+- {"name": "Banaue Rice Terraces Trek"} → "Banaue Rice Terraces" (drop the verb).
+- {"name": "Mayon Volcano Viewing"} → "Cagsawa Ruins" (the real viewing spot, named).
+- {"name": "Lunch with a View"} → Name the restaurant: "Edgar's Restaurant", "Cliffside Cafe".
+- {"name": "Hotel in Cebu City"} → "Bai Hotel Cebu" or another specific named hotel.
+- {"name": "Sunset Dinner on White Beach"} → "Mañana Mexican Restaurant" (real Boracay sunset spot).
+- {"name": "Island Lunch (Included in Tour)"} → Drop the parenthetical, name the actual restaurant.
+- {"name": "Aeyo Eco Lodge Check-in"} → Hotel check-in is shown separately. Don't generate it.
+- {"name": "Free Time"} or "Relaxation" → Name a specific beach / cafe / viewpoint.
+
+REASON/WHY VIOLATIONS:
+- {"reason": "Great place to visit"} → Say WHY: "The only temple in Bali where the sunset aligns with the shrine."
+- {"whyFactors": ["Nice place", "Good reviews"]} → Connect to vibes, location, or specific qualities.
 </example>`
 
 // ─── Destination Suggestion Prompt ───────────────────────────

@@ -600,7 +600,9 @@ HOTEL:
 - For ${numDays}+ day trips, consider a second hotel if the trip covers different regions.
 
 QUALITY CHECK — before finalizing, verify:
+✓ Every "place name" in the day's "places" array is a Google Maps-searchable proper noun. Forbidden: verb-suffixes ("Banaue Rice Terraces Trek"), generic-with-location ("Hotel in Cebu City"), meal descriptions ("Sunset Dinner on White Beach"), parentheticals ("Tour (El Nido C)"), event names ("Check-in", "Free Time"), generic place-types ("Local Roadside Eatery"). Each name MUST be the bare venue / landmark proper noun.
 ✓ Every restaurant is a real, specific, currently operating restaurant (not a generic "seafood restaurant")
+✓ Hotel name is a real specific hotel — never "Hotel in [City]" or "Beachfront Resort in [Town]". If you don't know a real one, pick a known chain branch (e.g., "Holiday Inn Express Cebu City") rather than a generic.
 ✓ No activity is repeated across days
 ✓ Opening hours are respected (no temple visits at 9pm, no nightlife at 10am)
 ✓ Travel between consecutive activities on the same day takes <30 minutes
@@ -765,6 +767,17 @@ WHAT MAKES A GREAT DAY:
 - Each activity gets enough time (don't rush a 2-hour hike into 45 min)
 - The day should FLOW — each place connects logically to the next by geography and energy
 
+THE GOOGLE MAPS NAME TEST (single most important rule):
+Before writing any "name" field, ask: "If a traveler typed this exact string into Google Maps + the city, would it land on a specific business / landmark listing — with a photo?" If no, rewrite. The "name" is the venue, NOT a description of what you'll do.
+
+BANNED NAME PATTERNS (real failures from past trips that broke photo lookup):
+- Verb-suffix descriptors: ❌"Banaue Rice Terraces Trek", "Mayon Volcano Viewing", "Boracay White Beach Stroll", "Galle Fort Exploration", "Cebu City Exploration" → ✓use the bare named landmark: "Banaue Rice Terraces", "Mayon Volcano", "Boracay White Beach".
+- Generic categories with location: ❌"Hotel in Cebu City", "Beachfront Resort in El Nido", "Mid-range Hotel in Manila" → ✓name a specific real hotel.
+- Meal-as-name descriptions: ❌"Sunset Dinner on White Beach", "Lunch with a View", "Dinner by the Sea", "Cebu Lechon Dinner", "Riverside Dinner in Bohol", "Farewell Dinner in Boracay" → ✓name the actual restaurant: "Mañana Mexican Restaurant", "Rico's Lechon".
+- Parenthetical annotations: ❌"Island Lunch (Included in Tour)", "Palawan Island Hopping (El Nido Tour A)" → ✓drop the parenthetical, name the actual provider / venue.
+- Event names: ❌"TIM BOUTIQUE Check-in", "Morning Relaxation", "Free Time", "Leisure & Beach Relaxation" → ✓hotel check-in is shown separately, do NOT add it. For downtime name a specific beach / cafe / park.
+- Generic place-types: ❌"Local Roadside Eatery", "Riverside Cafe & Grill" → ✓name a real one. If you don't know a specific one for this destination, OMIT the item instead of inventing a generic one.
+
 MANDATORY:
 - 5-8 items per day (activities + food, no filler)
 - Lunch (12:00-13:30) + dinner (19:00-21:00) — both specific named restaurants
@@ -779,15 +792,16 @@ TIMING:
 
 QUALITY:
 - Do NOT add hotel check-in — already shown separately
-- Do NOT use filler: "free time", "relax", "explore on your own"
+- Do NOT use filler items at all (free-time, leisure, relax, "X exploration", "X tour" wrappers)
 - Do NOT repeat any place that appeared in other days
+- If your knowledge of the destination is too thin to name 5 specific real venues, generate 4 real ones and stop — never pad with generic items.
 - Every "description" should include one insider tip a tourist wouldn't know
 
 Return JSON array. Each item:
 {
   "category": "activity|food",
-  "name": "Exact Real Place Name",
-  "detail": "60-char tagline",
+  "name": "Exact Real Place Name — a Google Maps-searchable proper noun, no verbs/descriptors/parentheticals",
+  "detail": "60-char tagline (this is where you describe what you'll do — NOT the name)",
   "description": "2 sentences: what's special + one insider tip",
   "price": "$XX",
   "time": "HH:MM",
